@@ -1,0 +1,5 @@
+- hosts: control
+  become: yes
+  tasks:
+    - name: Ping
+      ping:
