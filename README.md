@@ -37,4 +37,7 @@ ssh-copy-id -f -i ~/.ssh/turingpi.pub control
 curl -LsSf https://astral.sh/uv/install.sh | sh
 # install ansible
 uv tool install ansible-core --with ansible
+
+# create Fine Grained Personal Access Token with ability to create PR
+# https://github.com/settings/personal-access-tokens/
 ```
