@@ -1,0 +1,5 @@
+- hosts: workers
+  become: yes
+  tasks:
+    - name: Ping
+      ping:

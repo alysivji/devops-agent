@@ -1,0 +1,16 @@
+# Failed playbook runs (ansible-playbook --retry)
+*.retry
+
+# Local Ansible cache and tmp
+.ansible/
+
+# Vault password files (never commit)
+.vault_pass
+vault_pass.txt
+*.vault_pass
+
+# Python (collections / local tooling)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
