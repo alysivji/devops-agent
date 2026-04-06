@@ -11,5 +11,8 @@ help: ## this help
 install: ## install requirements
 	uv sync
 
-pytest: ## run tests
+run: ## run the agent
+	uv run python -m agent.main
+
+test: ## run tests
 	uv run pytest --subprocess-vcr=record

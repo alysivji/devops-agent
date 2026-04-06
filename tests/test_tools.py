@@ -1,4 +1,4 @@
-from agent.tools import run_ansible_playbook
+from agent.tools import run_ansible_playbook, list_ansible_playbooks
 
 import pytest
 
@@ -11,3 +11,12 @@ class TestRunAnsiblePlaybook:
     @pytest.mark.subprocess_vcr
     def test_run_ansible_playbook_success(self):
         result = run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+
+
+class TestListAnsiblePlaybooks:
+    def test_list_ansible_playbooks(self):
+        playbooks = list_ansible_playbooks()
+        assert isinstance(playbooks, list)
+        assert len(playbooks) > 0
+        assert "ansible/playbooks/hello-control.yaml" in playbooks
+        assert "ansible/playbooks/hello-workers.yaml" in playbooks
