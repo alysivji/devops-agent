@@ -7,7 +7,6 @@ from strands.models.openai import OpenAIModel
 from .tools import list_ansible_playbooks, run_ansible_playbook
 
 dotenv.load_dotenv()
-result = list_ansible_playbooks()
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_KEY:

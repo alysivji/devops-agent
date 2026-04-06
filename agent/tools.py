@@ -1,9 +1,12 @@
+import logging
 import os
 import pathlib
 import subprocess
 from typing import Final
 
 from strands import tool
+
+logger = logging.getLogger(__name__)
 
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
 
@@ -70,7 +73,6 @@ def run_ansible_playbook(playbook_path: str) -> str:
             text=True,
         )
         return _decode_output(result.stdout)
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError(
-            f"Ansible playbook execution failed: {_decode_output(exc.stderr)}"
-        ) from exc
+    except subprocess.CalledProcessError:
+        logger.exception("Ansible playbook execution failed")
+        raise RuntimeError("Ansible playbook execution failed")

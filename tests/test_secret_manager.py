@@ -48,6 +48,13 @@ def test_default_value_is_returned_when_missing(tmp_path: Path) -> None:
     assert secrets_manager.get(list, "ALLOWED_HOSTS", ["localhost"]) == ["localhost"]
 
 
+def test_none_default_is_returned_when_missing(tmp_path: Path) -> None:
+    env_path = write_env_file(tmp_path, "")
+    secrets_manager = SecretsManager(path=env_path)
+
+    assert secrets_manager.get(str, "SECRET_KEY", None) is None
+
+
 def test_missing_required_value_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv("SECRET_KEY", raising=False)
 
