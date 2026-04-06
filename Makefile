@@ -10,3 +10,6 @@ help: ## this help
 #########
 install: ## install requirements
 	uv sync
+
+pytest: ## run tests
+	uv run pytest --subprocess-vcr=record
