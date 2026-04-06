@@ -1,6 +1,6 @@
-from agent.tools import run_ansible_playbook, list_ansible_playbooks
-
 import pytest
+
+from agent.tools import list_ansible_playbooks, run_ansible_playbook
 
 
 class TestRunAnsiblePlaybook:
@@ -11,6 +11,7 @@ class TestRunAnsiblePlaybook:
     @pytest.mark.subprocess_vcr
     def test_run_ansible_playbook_success(self):
         result = run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+        assert "PLAY RECAP" in result
 
 
 class TestListAnsiblePlaybooks:
