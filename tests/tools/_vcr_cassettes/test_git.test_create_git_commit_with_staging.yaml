@@ -1,0 +1,111 @@
+version: 1
+interactions:
+- args:
+  - git
+  - init
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+  duration: 0.0030815601348876953
+  returncode: 0
+  stdout: |
+    Initialized empty Git repository in /tmp/pytest-of-ansible/pytest-18/test_create_git_commit_with_st0/repo/.git/
+  stderr: "hint: Using 'master' as the name for the initial branch. This default branch name\nhint: is subject to change. To configure the initial branch name to use in all\nhint: of your new repositories, which will suppress this warning, call:\nhint:\nhint: \tgit config --global init.defaultBranch <name>\nhint:\nhint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\nhint: 'development'. The just-created branch can be renamed via this command:\nhint:\nhint: \tgit branch -m <name>\n"
+- args:
+  - git
+  - config
+  - user.name
+  - DevOps Agent Tests
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+  duration: 0.0018699169158935547
+  returncode: 0
+  stdout: ''
+  stderr: ''
+- args:
+  - git
+  - config
+  - user.email
+  - devops-agent-tests@example.com
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+  duration: 0.001848459243774414
+  returncode: 0
+  stdout: ''
+  stderr: ''
+- args:
+  - git
+  - add
+  - README.md
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+  duration: 0.0022153854370117188
+  returncode: 0
+  stdout: ''
+  stderr: ''
+- args:
+  - git
+  - commit
+  - -m
+  - Initial commit
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+    text: true
+  duration: 0.0054645538330078125
+  returncode: 0
+  stdout: |
+    [master (root-commit) b5a475c] Initial commit
+     1 file changed, 1 insertion(+)
+     create mode 100644 README.md
+  stderr: ''
+- args:
+  - git
+  - add
+  - -A
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+    text: true
+  duration: 0.0023391246795654297
+  returncode: 0
+  stdout: ''
+  stderr: ''
+- args:
+  - git
+  - commit
+  - -m
+  - Add git tools
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+    text: true
+  duration: 0.005549192428588867
+  returncode: 0
+  stdout: |
+    [master 5ee6a62] Add git tools
+     1 file changed, 2 insertions(+)
+     create mode 100644 playbook.yml
+  stderr: ''
+- args:
+  - git
+  - log
+  - '-1'
+  - --pretty=format:%H %s
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+    text: true
+  duration: 0.0021860599517822266
+  returncode: 0
+  stdout: 5ee6a620e3f23de046d2f8fd5dbc1c67ab11da3a Add git tools
+  stderr: ''
+metadata:
+  test_name: test_create_git_commit_with_staging
+  recorded_at: '2026-04-07T20:44:30.608460+00:00'
+  python_version: 3.13.5
+  platform: Linux-6.12.74+deb13+1-amd64
+  cassette_count: 8
