@@ -4,6 +4,7 @@ import socket
 import subprocess
 import time
 from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -55,6 +56,16 @@ def _wait_for_remote(url: str, timeout_seconds: float = 10.0) -> None:
     raise RuntimeError(f"Timed out waiting for git remote {url}: {error_output}")
 
 
+@contextmanager
+def _chdir(path: Path) -> Iterator[None]:
+    current_dir = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(current_dir)
+
+
 @dataclass(frozen=True)
 class GitHttpMockServer:
     root: Path
@@ -90,8 +101,7 @@ class GitHttpMockServer:
     def install_post_receive_hook(self, repo_name: str, log_path: Path) -> None:
         hook_path = self.root / f"{repo_name}.git" / "hooks" / "post-receive"
         hook_path.write_text(
-            "#!/bin/sh\n"
-            f"cat >> {log_path}\n",
+            f"#!/bin/sh\ncat >> {log_path}\n",
             encoding="utf-8",
         )
         hook_path.chmod(0o755)
@@ -144,28 +154,27 @@ def git_http_mock_server(tmp_path: Path) -> Iterator[GitHttpMockServer]:
 @pytest.fixture
 def git_working_repo_with_remote(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     git_http_mock_server: GitHttpMockServer,
 ) -> Path:
     repo_path = tmp_path / "working-repo"
     repo_path.mkdir()
-    monkeypatch.chdir(repo_path)
 
-    _run_git(["init"], cwd=repo_path)
-    _run_git(["config", "user.name", "DevOps Agent Tests"], cwd=repo_path)
-    _run_git(["config", "user.email", "devops-agent-tests@example.com"], cwd=repo_path)
+    with _chdir(repo_path):
+        _run_git(["init"], cwd=repo_path)
+        _run_git(["config", "user.name", "DevOps Agent Tests"], cwd=repo_path)
+        _run_git(["config", "user.email", "devops-agent-tests@example.com"], cwd=repo_path)
 
-    tracked_file = repo_path / "README.md"
-    tracked_file.write_text("# Temp Repo\n", encoding="utf-8")
-    _run_git(["add", "README.md"], cwd=repo_path)
-    _run_git(["commit", "-m", "Initial commit"], cwd=repo_path)
+        tracked_file = repo_path / "README.md"
+        tracked_file.write_text("# Temp Repo\n", encoding="utf-8")
+        _run_git(["add", "README.md"], cwd=repo_path)
+        _run_git(["commit", "-m", "Initial commit"], cwd=repo_path)
 
-    remote_name = "origin"
-    remote_repo_name = "origin"
-    git_http_mock_server.create_bare_repo(remote_repo_name)
-    _run_git(
-        ["remote", "add", remote_name, git_http_mock_server.repo_url(remote_repo_name)],
-        cwd=repo_path,
-    )
+        remote_name = "origin"
+        remote_repo_name = "origin"
+        git_http_mock_server.create_bare_repo(remote_repo_name)
+        _run_git(
+            ["remote", "add", remote_name, git_http_mock_server.repo_url(remote_repo_name)],
+            cwd=repo_path,
+        )
 
     return repo_path
