@@ -1,4 +1,4 @@
-from .ansible import list_ansible_playbooks, run_ansible_playbook
+from .ansible import get_ansible_playbook_registry, run_ansible_playbook
 from .git import (
     create_git_branch,
     create_git_commit,
@@ -12,7 +12,7 @@ __all__ = [
     "create_git_commit",
     "git_push",
     "git_status",
-    "list_ansible_playbooks",
+    "get_ansible_playbook_registry",
     "list_git_commits",
     "run_ansible_playbook",
 ]

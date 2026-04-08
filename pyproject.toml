@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "pydantic>=2.12.0",
+    "pyyaml>=6.0.3",
     "python-dotenv>=1.1.1",
     "strands-agents-tools>=0.3.0",
     "strands-agents[openai]>=1.34.1",
@@ -19,10 +21,12 @@ dev = [
     "pytest>=8.4.2",
     "ruff>=0.15.9",
     "subprocess-vcr>=0.1.0",
+    "types-pyyaml>=6.0.12.20250915",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = "--subprocess-vcr=replay"
 markers = [
     "subprocess_vcr: record and replay subprocess output",
 ]
