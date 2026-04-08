@@ -1,3 +1,10 @@
+# devops-agent:
+#   name: hello-workers
+#   description: Ping the worker node group.
+#   target: workers
+#   tags:
+#     - connectivity
+#     - workers
 - hosts: workers
   become: yes
   tasks:

@@ -6,9 +6,9 @@ from .config import OPENAI_API_KEY, OPENAI_MODEL
 from .tools import (
     create_git_branch,
     create_git_commit,
+    get_ansible_playbook_registry,
     git_push,
     git_status,
-    list_ansible_playbooks,
     list_git_commits,
     run_ansible_playbook,
 )
@@ -27,9 +27,9 @@ agent = Agent(
     tools=[
         create_git_branch,
         create_git_commit,
+        get_ansible_playbook_registry,
         git_push,
         git_status,
-        list_ansible_playbooks,
         list_git_commits,
         run_ansible_playbook,
     ],

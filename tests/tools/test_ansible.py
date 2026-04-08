@@ -1,6 +1,8 @@
+import subprocess
+
 import pytest
 
-from agent.tools import list_ansible_playbooks, run_ansible_playbook
+from agent.tools import get_ansible_playbook_registry, run_ansible_playbook
 
 
 class TestRunAnsiblePlaybook:
@@ -8,16 +10,39 @@ class TestRunAnsiblePlaybook:
         with pytest.raises(FileNotFoundError):
             run_ansible_playbook("playbooks/test_playbook.yml")
 
-    @pytest.mark.subprocess_vcr
-    def test_run_ansible_playbook_success(self):
+    def test_run_ansible_playbook_success(self, monkeypatch: pytest.MonkeyPatch):
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(
+                args=args[0],
+                returncode=0,
+                stdout="PLAY RECAP",
+                stderr="",
+            )
+
+        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
         result = run_ansible_playbook("ansible/playbooks/hello-control.yaml")
         assert "PLAY RECAP" in result
 
 
-class TestListAnsiblePlaybooks:
-    def test_list_ansible_playbooks(self):
-        playbooks = list_ansible_playbooks()
-        assert isinstance(playbooks, list)
-        assert len(playbooks) > 0
-        assert "ansible/playbooks/hello-control.yaml" in playbooks
-        assert "ansible/playbooks/hello-workers.yaml" in playbooks
+class TestGetAnsiblePlaybookRegistry:
+    def test_get_ansible_playbook_registry(self):
+        registry = get_ansible_playbook_registry()
+
+        assert isinstance(registry, list)
+        assert len(registry) > 0
+        assert registry == [
+            {
+                "description": "Ping the control node group.",
+                "name": "hello-control",
+                "path": "ansible/playbooks/hello-control.yaml",
+                "tags": ["connectivity", "control"],
+                "target": "control",
+            },
+            {
+                "description": "Ping the worker node group.",
+                "name": "hello-workers",
+                "path": "ansible/playbooks/hello-workers.yaml",
+                "tags": ["connectivity", "workers"],
+                "target": "workers",
+            },
+        ]

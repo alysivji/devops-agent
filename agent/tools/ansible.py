@@ -4,11 +4,26 @@ import pathlib
 import subprocess
 from typing import Final
 
+import yaml
+from pydantic import BaseModel, ValidationError
 from strands import tool
 
 logger = logging.getLogger(__name__)
 
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
+PLAYBOOKS_DIR: Final[pathlib.Path] = pathlib.Path("ansible/playbooks")
+METADATA_PREFIX: Final[str] = "# devops-agent:"
+
+
+class AnsiblePlaybookMetadata(BaseModel):
+    name: str
+    description: str
+    target: str
+    tags: list[str] = []
+
+
+class AnsiblePlaybookRegistryEntry(AnsiblePlaybookMetadata):
+    path: str
 
 
 def _ansible_env() -> dict[str, str]:
@@ -18,6 +33,8 @@ def _ansible_env() -> dict[str, str]:
     tmp_dir = str(ANSIBLE_TMP_DIR.resolve())
     env["ANSIBLE_LOCAL_TEMP"] = tmp_dir
     env["ANSIBLE_REMOTE_TEMP"] = tmp_dir
+    env["LC_ALL"] = "en_US.UTF-8"
+    env["LANG"] = "en_US.UTF-8"
     return env
 
 
@@ -28,20 +45,48 @@ def _decode_output(output: str | bytes) -> str:
     return output
 
 
+def _parse_playbook_metadata(playbook_path: pathlib.Path) -> AnsiblePlaybookRegistryEntry:
+    metadata_lines: list[str] = []
+
+    with playbook_path.open(encoding="utf-8") as playbook_file:
+        for line in playbook_file:
+            if line.startswith(METADATA_PREFIX):
+                metadata_lines.append(line.removeprefix(METADATA_PREFIX))
+                continue
+            if metadata_lines and line.startswith("#"):
+                metadata_lines.append(line.removeprefix("#"))
+                continue
+            if metadata_lines:
+                break
+
+    if not metadata_lines:
+        raise ValueError(f"Playbook is missing metadata header: {playbook_path}")
+
+    metadata = yaml.safe_load("".join(metadata_lines))
+    if not isinstance(metadata, dict):
+        raise ValueError(f"Playbook metadata must be a mapping: {playbook_path}")
+
+    try:
+        validated = AnsiblePlaybookMetadata.model_validate(metadata)
+    except ValidationError as exc:
+        raise ValueError(f"Invalid playbook metadata for {playbook_path}: {exc}") from exc
+
+    return AnsiblePlaybookRegistryEntry(path=str(playbook_path), **validated.model_dump())
+
+
 @tool
-def list_ansible_playbooks() -> list[str]:
-    """List all Ansible playbooks in the current directory.
+def get_ansible_playbook_registry() -> list[dict[str, str | list[str]]]:
+    """Return the Ansible playbook registry with validated metadata.
 
     Returns:
-        A list of playbook paths relative to the current working directory.
+        A list of playbook metadata dictionaries, including the playbook path.
     """
-    playbooks_dir = pathlib.Path("ansible/playbooks")
-    playbooks = [
-        str(file)
-        for file in sorted(playbooks_dir.iterdir())
+    registry = [
+        _parse_playbook_metadata(file).model_dump()
+        for file in sorted(PLAYBOOKS_DIR.iterdir())
         if file.is_file() and file.suffix in [".yaml", ".yml"]
     ]
-    return playbooks
+    return registry
 
 
 @tool
