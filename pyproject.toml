@@ -28,6 +28,7 @@ dev = [
 pythonpath = ["."]
 addopts = "--subprocess-vcr=replay"
 markers = [
+    "git_http_integration: tests that require the git-http-mock-server Node dependency",
     "subprocess_vcr: record and replay subprocess output",
 ]
 

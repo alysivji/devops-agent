@@ -1,0 +1,10 @@
+{
+  "name": "devops-agent",
+  "private": true,
+  "devDependencies": {
+    "git-http-mock-server": "2.0.0"
+  },
+  "scripts": {
+    "git-http-mock-server": "git-http-mock-server"
+  }
+}
