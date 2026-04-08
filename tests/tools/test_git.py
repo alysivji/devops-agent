@@ -1,7 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import Any
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -91,65 +90,11 @@ class TestCreateGitCommit:
 
 
 class TestGitPush:
-    @patch("agent.tools.git.subprocess.run")
-    def test_git_push_uses_current_branch_when_branch_not_provided(self, mock_run: Mock):
-        mock_run.side_effect = [
-            Mock(stdout="main\n", stderr=""),
-            Mock(stdout="", stderr=""),
-        ]
-
-        result = git_push()
-
-        assert result == "Pushed main to origin"
-        assert mock_run.call_args_list == [
-            call(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-                check=True,
-                stdout=-1,
-                stderr=-1,
-                text=True,
-            ),
-            call(
-                ["git", "push", "origin", "main"],
-                check=True,
-                stdout=-1,
-                stderr=-1,
-                text=True,
-            ),
-        ]
-
-    @patch("agent.tools.git.subprocess.run")
-    def test_git_push_uses_explicit_remote_and_branch(self, mock_run: Mock):
-        mock_run.return_value = Mock(stdout="", stderr="")
-
-        result = git_push(remote="upstream", branch="feature/test")
-
-        assert result == "Pushed feature/test to upstream"
-        mock_run.assert_called_once_with(
-            ["git", "push", "upstream", "feature/test"],
-            check=True,
-            stdout=-1,
-            stderr=-1,
-            text=True,
-        )
-
-    @pytest.mark.parametrize("remote", ["", "   "])
-    def test_git_push_rejects_empty_remote(self, remote: str):
-        with pytest.raises(ValueError):
-            git_push(remote=remote)
-
-    @pytest.mark.parametrize("branch", ["", "   "])
-    def test_git_push_rejects_empty_branch(self, branch: str):
-        with pytest.raises(ValueError):
-            git_push(branch=branch)
-
-
-@pytest.mark.git_http_integration
-class TestGitPushIntegration:
-    def test_git_push_pushes_current_branch_to_http_remote(
+    @pytest.mark.git_http_integration
+    def test_git_push_uses_current_branch_when_branch_not_provided(
         self,
         git_working_repo_with_remote: Path,
-        git_http_mock_server: Any,
+        git_http_mock_server,
     ):
         _ = git_working_repo_with_remote
         received_refs_log = git_http_mock_server.root / "origin-received-refs.log"
@@ -174,16 +119,16 @@ class TestGitPushIntegration:
         )
 
         result = git_push()
-
         received_refs = received_refs_log.read_text(encoding="utf-8").strip()
 
         assert result == "Pushed feature/http-push to origin"
         assert received_refs.endswith("refs/heads/feature/http-push")
 
-    def test_git_push_pushes_explicit_branch_to_http_remote(
+    @pytest.mark.git_http_integration
+    def test_git_push_uses_explicit_remote_and_branch(
         self,
         git_working_repo_with_remote: Path,
-        git_http_mock_server: Any,
+        git_http_mock_server,
     ):
         _ = git_working_repo_with_remote
         received_refs_log = git_http_mock_server.root / "origin-explicit-received-refs.log"
@@ -214,17 +159,17 @@ class TestGitPushIntegration:
         )
 
         result = git_push(remote="origin", branch="feature/explicit-http")
-
         received_refs = received_refs_log.read_text(encoding="utf-8").strip()
 
         assert result == "Pushed feature/explicit-http to origin"
         assert received_refs.endswith("refs/heads/feature/explicit-http")
 
+    @pytest.mark.git_http_integration
     def test_git_push_surfaces_missing_remote_repo_failure(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
-        git_http_mock_server: Any,
+        git_http_mock_server,
     ):
         repo_path = tmp_path / "working-repo"
         repo_path.mkdir()
@@ -283,6 +228,16 @@ class TestGitPushIntegration:
 
         with pytest.raises(RuntimeError, match="not found|repository|404"):
             git_push()
+
+    @pytest.mark.parametrize("remote", ["", "   "])
+    def test_git_push_rejects_empty_remote(self, remote: str):
+        with pytest.raises(ValueError):
+            git_push(remote=remote)
+
+    @pytest.mark.parametrize("branch", ["", "   "])
+    def test_git_push_rejects_empty_branch(self, branch: str):
+        with pytest.raises(ValueError):
+            git_push(branch=branch)
 
 
 class TestCreateGitBranch:
