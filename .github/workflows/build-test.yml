@@ -26,8 +26,17 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
       - name: Install dependencies
         run: uv sync --frozen --all-groups
+
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Lint
         run: uv run ruff check .

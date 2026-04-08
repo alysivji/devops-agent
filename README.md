@@ -22,6 +22,16 @@ Figuring out agentic workflows with a Turing Pi cluster.
 ### Commands
 
 ```bash
+# install Python and Node test dependencies
+uv sync --all-groups
+npm install
+
+# run tests
+uv run pytest --subprocess-vcr=record
+
+# run only Git HTTP integration tests
+uv run pytest -m git_http_integration
+
 # create key for workers
 ssh-keygen -t ed25519
 
@@ -41,3 +51,8 @@ uv tool install ansible-core --with ansible
 # create Fine Grained Personal Access Token with ability to create PR
 # https://github.com/settings/personal-access-tokens/
 ```
+
+## Testing
+
+Git HTTP integration tests use `git-http-mock-server`, which shells out to the system `git`
+installation. Run `npm install` before executing `uv run pytest -m git_http_integration`.

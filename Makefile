@@ -10,6 +10,7 @@ help: ## this help
 #########
 install: ## install requirements
 	uv sync --all-groups
+	npm install
 
 install-pre-commit: ## install the git pre-commit hook
 	uv run pre-commit install
@@ -29,6 +30,9 @@ typecheck: ## run mypy
 
 test: ## run tests
 	uv run pytest --subprocess-vcr=record
+
+test-git-http: ## run git HTTP integration tests
+	uv run pytest -m git_http_integration
 
 check: ## run local CI checks
 	uv run pre-commit run --all-files
