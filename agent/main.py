@@ -4,7 +4,9 @@ from strands.models.openai import OpenAIModel
 
 from .config import OPENAI_API_KEY, OPENAI_MODEL
 from .tools import (
+    create_git_branch,
     create_git_commit,
+    git_push,
     git_status,
     list_ansible_playbooks,
     list_git_commits,
@@ -23,7 +25,9 @@ model = OpenAIModel(
 agent = Agent(
     model=model,
     tools=[
+        create_git_branch,
         create_git_commit,
+        git_push,
         git_status,
         list_ansible_playbooks,
         list_git_commits,
