@@ -1,5 +1,3 @@
-import subprocess
-
 import pytest
 
 from agent.tools import get_ansible_playbook_registry, run_ansible_playbook
@@ -10,16 +8,8 @@ class TestRunAnsiblePlaybook:
         with pytest.raises(FileNotFoundError):
             run_ansible_playbook("playbooks/test_playbook.yml")
 
-    def test_run_ansible_playbook_success(self, monkeypatch: pytest.MonkeyPatch):
-        def fake_run(*args, **kwargs):
-            return subprocess.CompletedProcess(
-                args=args[0],
-                returncode=0,
-                stdout="PLAY RECAP",
-                stderr="",
-            )
-
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+    @pytest.mark.subprocess_vcr
+    def test_run_ansible_playbook_success(self):
         result = run_ansible_playbook("ansible/playbooks/hello-control.yaml")
         assert "PLAY RECAP" in result
 
