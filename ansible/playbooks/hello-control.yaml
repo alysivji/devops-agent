@@ -1,10 +1,10 @@
-# devops-agent:
-#   name: hello-control
-#   description: Ping the control node group.
-#   target: control
-#   tags:
-#     - connectivity
-#     - control
+# name: hello-control
+# description: Ping the control node group.
+# target: control
+# tags:
+#   - connectivity
+#   - control
+
 - hosts: control
   become: yes
   tasks:

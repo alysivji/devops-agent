@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
 PLAYBOOKS_DIR: Final[pathlib.Path] = pathlib.Path("ansible/playbooks")
-METADATA_PREFIX: Final[str] = "# devops-agent:"
 
 
 class AnsiblePlaybookMetadata(BaseModel):
@@ -50,10 +49,7 @@ def _parse_playbook_metadata(playbook_path: pathlib.Path) -> AnsiblePlaybookRegi
 
     with playbook_path.open(encoding="utf-8") as playbook_file:
         for line in playbook_file:
-            if line.startswith(METADATA_PREFIX):
-                metadata_lines.append(line.removeprefix(METADATA_PREFIX))
-                continue
-            if metadata_lines and line.startswith("#"):
+            if line.startswith("#"):
                 metadata_lines.append(line.removeprefix("#"))
                 continue
             if metadata_lines:
