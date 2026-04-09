@@ -1,4 +1,3 @@
-import configparser
 import logging
 import os
 import pathlib
@@ -16,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
 PLAYBOOKS_DIR: Final[pathlib.Path] = pathlib.Path("ansible/playbooks")
-INVENTORY_PATH: Final[pathlib.Path] = pathlib.Path("ansible/inventory.ini")
 
 
 class AnsiblePlaybookMetadata(BaseModel):
@@ -164,14 +162,6 @@ def get_ansible_playbook_registry() -> list[dict[str, str | bool | list[str]]]:
         if file.is_file() and file.suffix in [".yaml", ".yml"]
     ]
     return registry
-
-
-@tool
-def get_ansible_inventory_groups() -> list[str]:
-    """Return the supported top-level inventory groups from ansible/inventory.ini."""
-    parser = configparser.ConfigParser(allow_no_value=True)
-    parser.read(INVENTORY_PATH, encoding="utf-8")
-    return sorted(section for section in parser.sections() if ":" not in section)
 
 
 @tool

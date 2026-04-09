@@ -1,4 +1,4 @@
-from .tools.agent import create_ansible_playbook
+from .create_ansible_playbook import create_ansible_playbook
 from .tools.ansible import get_ansible_playbook_registry, run_ansible_playbook
 from .utils import build_agent, build_model
 

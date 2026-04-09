@@ -1,7 +1,7 @@
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-from .tools.ansible import get_ansible_inventory_groups
+from .inventory import get_ansible_inventory_groups
 from .utils import build_agent, build_model
 
 SYSTEM_PROMPT = """
