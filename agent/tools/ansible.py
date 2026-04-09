@@ -11,8 +11,6 @@ import yaml
 from pydantic import BaseModel, ValidationError
 from strands import tool
 
-from ..utils import validate_generated_playbook_yaml
-
 logger = logging.getLogger(__name__)
 
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
@@ -86,40 +84,6 @@ def normalize_playbook_name(name: str) -> str:
     if not normalized:
         raise ValueError("playbook name must contain at least one alphanumeric character")
     return normalized
-
-
-def build_playbook_path(name: str, directory: pathlib.Path = PLAYBOOKS_DIR) -> pathlib.Path:
-    """Resolve a playbook name to a canonical file path."""
-    return directory / f"{normalize_playbook_name(name)}.yaml"
-
-
-def render_metadata_header(metadata: AnsiblePlaybookMetadata) -> str:
-    """Render the commented YAML metadata header used by the playbook registry."""
-    dumped = yaml.safe_dump(metadata.model_dump(), sort_keys=False).strip()
-    return "\n".join(f"# {line}" for line in dumped.splitlines())
-
-
-def render_playbook_document(metadata: AnsiblePlaybookMetadata, playbook_yaml: str) -> str:
-    """Combine the metadata header and YAML body into the stored playbook format."""
-    validate_generated_playbook_yaml(playbook_yaml)
-    return f"{render_metadata_header(metadata)}\n\n{playbook_yaml.strip()}"
-
-
-def write_playbook_file(
-    metadata: AnsiblePlaybookMetadata,
-    playbook_yaml: str,
-    directory: pathlib.Path = PLAYBOOKS_DIR,
-) -> pathlib.Path:
-    """Write an approved draft to disk, rejecting filename collisions."""
-    playbook_path = build_playbook_path(metadata.name, directory)
-    if playbook_path.exists():
-        raise FileExistsError(f"Playbook already exists: {playbook_path}")
-
-    playbook_path.write_text(
-        render_playbook_document(metadata, playbook_yaml) + "\n",
-        encoding="utf-8",
-    )
-    return playbook_path
 
 
 @tool

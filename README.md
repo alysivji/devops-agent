@@ -32,14 +32,14 @@ See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectatio
 - Decide when to run them
 - React to failures
 
-## Human-In-The-Loop Playbook Drafting
+## Human-In-The-Loop Playbook Generation
 
-The first drafting workflow supports only two inventory targets:
+The first generation workflow supports only two inventory targets:
 
 - `control` for local playbooks
 - `cluster` for remote playbooks over SSH
 
-The agent now drafts a hello-world connectivity playbook, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
+The agent now generates a hello-world connectivity playbook, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
 
 ### Draft metadata
 

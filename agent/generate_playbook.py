@@ -1,0 +1,50 @@
+from __future__ import annotations
+
+from pydantic import BaseModel, field_validator
+
+from .tools import get_ansible_inventory_groups
+from .utils import build_agent, build_model, validate_generated_playbook_yaml
+
+SYSTEM_PROMPT = """
+Role:
+You generate Ansible playbooks for this repository.
+
+Repo constraints:
+- Return valid Ansible playbook YAML only.
+- Do not create files.
+- Do not include commentary outside the YAML returned in `playbook_yaml`.
+
+Supported targets:
+- `control`: local execution on the control node
+- `cluster`: remote execution over SSH on the Raspberry Pi cluster nodes
+
+Hardware and role context:
+- The `control` node is an Intel i5-6500T system with 16GB DDR4 RAM.
+- The `control` node hosts control plane and management services.
+- The `cluster` nodes are Raspberry Pi Compute Module 3+ systems.
+- The `cluster` nodes run distributed workloads and containers.
+"""
+
+
+class GeneratedPlaybookYaml(BaseModel):
+    playbook_yaml: str
+
+    @field_validator("playbook_yaml")
+    @classmethod
+    def validate_playbook_yaml(cls, value: str) -> str:
+        validate_generated_playbook_yaml(value)
+        return value
+
+
+class GeneratePlaybookAgent:
+    def __init__(self) -> None:
+        self.agent = build_agent(
+            model=build_model(),
+            system_prompt=SYSTEM_PROMPT,
+            # TODO add web search and http request tools for getting info
+            tools=[get_ansible_inventory_groups],
+        )
+
+    def run(self, prompt: str) -> GeneratedPlaybookYaml:
+        generated_playbook = self.agent.structured_output(GeneratedPlaybookYaml, prompt)
+        return generated_playbook
