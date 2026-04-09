@@ -128,29 +128,6 @@ def normalize_playbook_name(name: str) -> str:
     return normalized
 
 
-def find_ansible_playbooks_by_name(name: str) -> list[AnsiblePlaybookRegistryEntry]:
-    """Return registry entries whose normalized names match the provided name."""
-    normalized_name = normalize_playbook_name(name)
-    matches: list[AnsiblePlaybookRegistryEntry] = []
-
-    for entry in get_ansible_playbook_registry():
-        validated_entry = AnsiblePlaybookRegistryEntry.model_validate(entry)
-        if normalize_playbook_name(validated_entry.name) == normalized_name:
-            matches.append(validated_entry)
-
-    return matches
-
-
-def get_ansible_playbook_by_name(name: str) -> AnsiblePlaybookRegistryEntry:
-    """Return a single registry entry for the provided name."""
-    matches = find_ansible_playbooks_by_name(name)
-    if not matches:
-        raise ValueError(f"Playbook name is not in the registry: {name}")
-    if len(matches) > 1:
-        raise ValueError(f"Playbook name is ambiguous in the registry: {name}")
-    return matches[0]
-
-
 @tool
 def get_ansible_inventory_groups() -> list[str]:
     """Return the supported top-level inventory groups from ansible/inventory.ini."""
