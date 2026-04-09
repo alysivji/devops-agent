@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Optional
 
 from strands import Agent
 from strands.models.openai import OpenAIModel
@@ -20,8 +20,11 @@ def build_agent(
     model: OpenAIModel,
     *,
     system_prompt: str,
-    tools: Sequence[Any],
+    tools: Optional[Sequence[Any]] = None,
 ) -> Agent:
+    if tools is None:
+        tools = []
+
     return Agent(
         model=model,
         system_prompt=system_prompt,
