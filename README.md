@@ -2,6 +2,8 @@
 
 Figuring out agentic workflows with a Turing Pi cluster.
 
+See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectations, branch naming, and PR writeups.
+
 ## Notes
 
 ### Roles
