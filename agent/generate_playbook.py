@@ -1,9 +1,8 @@
-from __future__ import annotations
-
-from pydantic import BaseModel, field_validator
+import yaml
+from pydantic import BaseModel, ValidationError, field_validator
 
 from .tools import get_ansible_inventory_groups
-from .utils import build_agent, build_model, validate_generated_playbook_yaml
+from .utils import build_agent, build_model
 
 SYSTEM_PROMPT = """
 Role:
@@ -32,7 +31,9 @@ class GeneratedPlaybookYaml(BaseModel):
     @field_validator("playbook_yaml")
     @classmethod
     def validate_playbook_yaml(cls, value: str) -> str:
-        validate_generated_playbook_yaml(value)
+        parsed = yaml.safe_load(value)
+        if not isinstance(parsed, list) or not parsed:
+            raise ValidationError("generated playbook YAML must be a non-empty YAML list")
         return value
 
 

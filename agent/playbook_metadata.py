@@ -12,8 +12,7 @@ Role:
 You draft metadata for Ansible playbooks in this repository.
 
 Repo constraints:
-- Metadata must match the actual playbook YAML.
-- The only supported targets in v1 are `control` and `cluster`.
+- Keep metadata consistent with the YAML
 - Use concise registry-friendly names, descriptions, and tags.
 - Do not create files.
 """
