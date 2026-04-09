@@ -1,6 +1,9 @@
 from ..create_ansible_playbook import create_ansible_playbook
-from ..inventory import get_ansible_inventory_groups
-from .ansible import get_ansible_playbook_registry, run_ansible_playbook
+from .ansible import (
+    get_ansible_inventory_groups,
+    get_ansible_playbook_registry,
+    run_ansible_playbook,
+)
 from .git import (
     create_git_branch,
     create_git_commit,
