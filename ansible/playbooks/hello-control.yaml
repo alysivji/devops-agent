@@ -1,6 +1,7 @@
 # name: hello-control
 # description: Ping the control node group.
 # target: control
+# requires_approval: true
 # tags:
 #   - connectivity
 #   - control
