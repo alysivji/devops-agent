@@ -1,0 +1,14 @@
+# name: hello-local-test
+# description: Ping the local control node without privilege escalation.
+# target: control
+# requires_approval: false
+# tags:
+#   - connectivity
+#   - test
+
+---
+- hosts: control
+  gather_facts: false
+  tasks:
+    - name: Ping
+      ansible.builtin.ping:
