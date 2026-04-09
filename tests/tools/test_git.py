@@ -67,7 +67,8 @@ class TestGitStatus:
     def test_git_status(self, git_repo: Path):
         (git_repo / "README.md").write_text("# Temp Repo\nupdated\n", encoding="utf-8")
 
-        result = git_status()
+        with _chdir(git_repo):
+            result = git_status()
 
         assert result == "M README.md"
 
@@ -75,9 +76,8 @@ class TestGitStatus:
 class TestListGitCommits:
     @pytest.mark.subprocess_vcr
     def test_list_git_commits(self, git_repo: Path):
-        _ = git_repo
-
-        result = list_git_commits(limit=5)
+        with _chdir(git_repo):
+            result = list_git_commits(limit=5)
 
         assert result.endswith(" Initial commit")
 
@@ -91,7 +91,8 @@ class TestCreateGitCommit:
     def test_create_git_commit_with_staging(self, git_repo: Path):
         (git_repo / "playbook.yml").write_text("---\n- hosts: all\n", encoding="utf-8")
 
-        result = create_git_commit("Add git tools")
+        with _chdir(git_repo):
+            result = create_git_commit("Add git tools")
 
         assert result.endswith(" Add git tools")
         assert (git_repo / "playbook.yml").exists()
@@ -255,23 +256,23 @@ class TestGitPush:
 class TestCreateGitBranch:
     @pytest.mark.subprocess_vcr
     def test_create_git_branch_from_local_base_branch(self, git_repo: Path):
-        _ = git_repo
-        subprocess.run(
-            ["git", "branch", "local-base"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        with _chdir(git_repo):
+            subprocess.run(
+                ["git", "branch", "local-base"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
 
-        result = create_git_branch("feature/test", base_ref="local-base")
-        current_branch = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        ).stdout.strip()
+            result = create_git_branch("feature/test", base_ref="local-base")
+            current_branch = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            ).stdout.strip()
 
         assert result == "Created and switched to feature/test from local-base"
         assert current_branch == "feature/test"

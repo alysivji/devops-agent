@@ -1,6 +1,220 @@
 version: 1
 interactions:
 - args:
+  - locale
+  - -a
+  kwargs:
+    stdout: PIPE
+    stderr: -3
+    text: true
+  duration: 0.025332927703857422
+  returncode: 0
+  stdout: |
+    en_NZ
+    nl_NL.UTF-8
+    pt_BR.UTF-8
+    fr_CH.ISO8859-15
+    eu_ES.ISO8859-15
+    en_US.US-ASCII
+    af_ZA
+    bg_BG
+    cs_CZ.UTF-8
+    fi_FI
+    zh_CN.UTF-8
+    eu_ES
+    sk_SK.ISO8859-2
+    nl_BE
+    fr_BE
+    sk_SK
+    en_US.UTF-8
+    en_NZ.ISO8859-1
+    de_CH
+    sk_SK.UTF-8
+    de_DE.UTF-8
+    am_ET.UTF-8
+    zh_HK
+    be_BY.UTF-8
+    uk_UA
+    pt_PT.ISO8859-1
+    en_AU.US-ASCII
+    kk_KZ.PT154
+    en_US
+    nl_BE.ISO8859-15
+    de_AT.ISO8859-1
+    hr_HR.ISO8859-2
+    fr_FR.ISO8859-1
+    af_ZA.UTF-8
+    am_ET
+    fi_FI.ISO8859-1
+    ro_RO.UTF-8
+    af_ZA.ISO8859-15
+    en_NZ.UTF-8
+    fi_FI.UTF-8
+    hr_HR.UTF-8
+    da_DK.UTF-8
+    ca_ES.ISO8859-1
+    en_AU.ISO8859-15
+    ro_RO.ISO8859-2
+    de_AT.UTF-8
+    pt_PT.ISO8859-15
+    sv_SE
+    fr_CA.ISO8859-1
+    fr_BE.ISO8859-1
+    en_US.ISO8859-15
+    it_CH.ISO8859-1
+    en_NZ.ISO8859-15
+    en_AU.UTF-8
+    de_AT.ISO8859-15
+    af_ZA.ISO8859-1
+    hu_HU.UTF-8
+    et_EE.UTF-8
+    he_IL.UTF-8
+    uk_UA.KOI8-U
+    be_BY
+    kk_KZ
+    hu_HU.ISO8859-2
+    it_CH
+    pt_BR
+    ko_KR
+    it_IT
+    fr_BE.UTF-8
+    ru_RU.ISO8859-5
+    zh_TW
+    zh_CN.GB2312
+    no_NO.ISO8859-15
+    de_DE.ISO8859-15
+    en_CA
+    fr_CH.UTF-8
+    sl_SI.UTF-8
+    uk_UA.ISO8859-5
+    pt_PT
+    hr_HR
+    cs_CZ
+    fr_CH
+    he_IL
+    zh_CN.GBK
+    zh_CN.GB18030
+    fr_CA
+    pl_PL.UTF-8
+    ja_JP.SJIS
+    sr_YU.ISO8859-5
+    be_BY.CP1251
+    sr_YU.ISO8859-2
+    sv_SE.UTF-8
+    sr_YU.UTF-8
+    de_CH.UTF-8
+    sl_SI
+    pt_PT.UTF-8
+    ro_RO
+    en_NZ.US-ASCII
+    ja_JP
+    zh_CN
+    fr_CH.ISO8859-1
+    ko_KR.eucKR
+    be_BY.ISO8859-5
+    nl_NL.ISO8859-15
+    en_GB.ISO8859-1
+    en_CA.US-ASCII
+    is_IS.ISO8859-1
+    ru_RU.CP866
+    nl_NL
+    fr_CA.ISO8859-15
+    sv_SE.ISO8859-15
+    hy_AM
+    en_CA.ISO8859-15
+    en_US.ISO8859-1
+    zh_TW.Big5
+    ca_ES.UTF-8
+    ru_RU.CP1251
+    en_GB.UTF-8
+    en_GB.US-ASCII
+    ru_RU.UTF-8
+    eu_ES.UTF-8
+    es_ES.ISO8859-1
+    hu_HU
+    el_GR.ISO8859-7
+    en_AU
+    it_CH.UTF-8
+    en_GB
+    sl_SI.ISO8859-2
+    ru_RU.KOI8-R
+    nl_BE.UTF-8
+    et_EE
+    fr_FR.ISO8859-15
+    cs_CZ.ISO8859-2
+    lt_LT.UTF-8
+    pl_PL.ISO8859-2
+    fr_BE.ISO8859-15
+    is_IS.UTF-8
+    tr_TR.ISO8859-9
+    da_DK.ISO8859-1
+    lt_LT.ISO8859-4
+    lt_LT.ISO8859-13
+    zh_TW.UTF-8
+    bg_BG.CP1251
+    el_GR.UTF-8
+    be_BY.CP1131
+    da_DK.ISO8859-15
+    is_IS.ISO8859-15
+    no_NO.ISO8859-1
+    nl_NL.ISO8859-1
+    nl_BE.ISO8859-1
+    sv_SE.ISO8859-1
+    pt_BR.ISO8859-1
+    zh_CN.eucCN
+    it_IT.UTF-8
+    en_CA.UTF-8
+    uk_UA.UTF-8
+    de_CH.ISO8859-15
+    de_DE.ISO8859-1
+    ca_ES
+    sr_YU
+    hy_AM.ARMSCII-8
+    ru_RU
+    zh_HK.UTF-8
+    eu_ES.ISO8859-1
+    is_IS
+    bg_BG.UTF-8
+    ja_JP.UTF-8
+    it_CH.ISO8859-15
+    fr_FR.UTF-8
+    ko_KR.UTF-8
+    et_EE.ISO8859-15
+    kk_KZ.UTF-8
+    ca_ES.ISO8859-15
+    en_IE.UTF-8
+    es_ES
+    de_CH.ISO8859-1
+    en_CA.ISO8859-1
+    es_ES.ISO8859-15
+    en_AU.ISO8859-1
+    el_GR
+    da_DK
+    no_NO
+    it_IT.ISO8859-1
+    en_IE
+    zh_HK.Big5HKSCS
+    hi_IN.ISCII-DEV
+    ja_JP.eucJP
+    it_IT.ISO8859-15
+    pl_PL
+    ko_KR.CP949
+    fr_CA.UTF-8
+    fi_FI.ISO8859-15
+    en_GB.ISO8859-15
+    fr_FR
+    hy_AM.UTF-8
+    no_NO.UTF-8
+    es_ES.UTF-8
+    de_AT
+    tr_TR.UTF-8
+    de_DE
+    lt_LT
+    tr_TR
+    C
+    POSIX
+  stderr: null
+- args:
   - ansible-playbook
   - ansible/playbooks/hello-control.yaml
   kwargs:
@@ -8,69 +222,174 @@ interactions:
     stderr: PIPE
     text: true
     env:
-      BROWSER: /home/ansible/.vscode-server/cli/servers/Stable-e7fb5e96c0730b9deb70b33781f98e2f35975036/server/bin/helpers/browser.sh
-      COLORTERM: truecolor
-      DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1001/bus
-      GIT_ASKPASS: /home/ansible/.vscode-server/cli/servers/Stable-e7fb5e96c0730b9deb70b33781f98e2f35975036/server/extensions/git/dist/askpass.sh
-      GK_GL_ADDR: http://127.0.0.1:43843
-      GK_GL_PATH: /tmp/gitkraken/gitlens/gitlens-ipc-server-115170-43843.json
-      HOME: /home/ansible
-      LANG: en_US.UTF-8
-      LOGNAME: ansible
-      LS_COLORS: 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.7z=01;31:*.ace=01;31:*.alz=01;31:*.apk=01;31:*.arc=01;31:*.arj=01;31:*.bz=01;31:*.bz2=01;31:*.cab=01;31:*.cpio=01;31:*.crate=01;31:*.deb=01;31:*.drpm=01;31:*.dwm=01;31:*.dz=01;31:*.ear=01;31:*.egg=01;31:*.esd=01;31:*.gz=01;31:*.jar=01;31:*.lha=01;31:*.lrz=01;31:*.lz=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.lzo=01;31:*.pyz=01;31:*.rar=01;31:*.rpm=01;31:*.rz=01;31:*.sar=01;31:*.swm=01;31:*.t7z=01;31:*.tar=01;31:*.taz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tgz=01;31:*.tlz=01;31:*.txz=01;31:*.tz=01;31:*.tzo=01;31:*.tzst=01;31:*.udeb=01;31:*.war=01;31:*.whl=01;31:*.wim=01;31:*.xz=01;31:*.z=01;31:*.zip=01;31:*.zoo=01;31:*.zst=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.jxl=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:'
+      APP_TYPE: production
+      APP_VERSION: 0.46.1
+      ASDF_DIR: /opt/homebrew/opt/asdf/libexec
+      BOOKMARKS_FILE: /Users/alysivji/.bookmarks
+      CODEX_CI: '1'
+      CODEX_INTERNAL_ORIGINATOR_OVERRIDE: codex_sdk_ts
+      CODEX_THREAD_ID: 019d7350-f19a-7ad1-93a9-a2d9d00ade55
+      CODEX_WORKING_DIR: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      COLORTERM: ''
+      COMMAND_MODE: unix2003
+      CONDUCTOR_BIN_DIR: /Users/alysivji/Library/Application Support/com.conductor.app/bin
+      CONDUCTOR_DEFAULT_BRANCH: main
+      CONDUCTOR_PORT: '55000'
+      CONDUCTOR_ROOT_PATH: /Users/alysivji/siv-dev/devops-agent
+      CONDUCTOR_WORKSPACE_NAME: stockholm
+      CONDUCTOR_WORKSPACE_PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      DISABLE_AUTO_UPDATE: 'true'
+      GH_PAGER: cat
+      GIT_PAGER: cat
+      GOENV_ROOT: /Users/alysivji/.goenv
+      GOENV_SHELL: zsh
+      GOPATH: /Users/alysivji/go/1.22.5
+      GOROOT: /Users/alysivji/.goenv/versions/1.22.5
+      HOME: /Users/alysivji
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      LESS: -R
+      LOGNAME: alysivji
+      LSCOLORS: Gxfxcxdxbxegedabagacad
       MAKEFLAGS: ''
       MAKELEVEL: '1'
-      MAKE_TERMERR: /dev/pts/0
-      MAKE_TERMOUT: /dev/pts/0
+      MANPATH: '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/share/man:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/share/man:/Applications/Xcode.app/Contents/Developer/usr/share/man:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man:'
       MFLAGS: ''
-      MOTD_SHOWN: pam
-      PATH: /home/ansible/devops-agent/.venv/bin:/home/ansible/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ansible/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/ansible/.vscode-server/cli/servers/Stable-e7fb5e96c0730b9deb70b33781f98e2f35975036/server/bin/remote-cli:/home/ansible/.local/bin:/home/ansible/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
-      PWD: /home/ansible/devops-agent
-      SHELL: /bin/bash
+      NO_COLOR: '1'
+      NVM_BIN: /Users/alysivji/.nvm/versions/node/v24.11.1/bin
+      NVM_CD_FLAGS: -q
+      NVM_DIR: /Users/alysivji/.nvm
+      NVM_INC: /Users/alysivji/.nvm/versions/node/v24.11.1/include/node
+      OLDPWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      P9K_SSH: '0'
+      PAGER: less
+      PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv/bin:/Users/alysivji/.codex/tmp/arg0/codex-arg054dMKF:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/Users/alysivji/.pyenv/shims:/Users/alysivji/.asdf/shims:/opt/homebrew/opt/asdf/libexec/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/usr/local/share/dotnet:~/.dotnet/tools:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/.goenv/shims:/Users/alysivji/Library/Application
+        Support/com.conductor.app/./bin:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/Library/Application Support/com.conductor.app/./bin
+      PWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      PYENV_SHELL: zsh
+      RBENV_SHELL: zsh
+      SHELL: /bin/zsh
       SHLVL: '2'
-      SSH_CLIENT: 192.168.8.145 54109 22
-      SSH_CONNECTION: 192.168.8.145 54109 192.168.8.191 22
-      TERM: xterm-256color
-      TERM_PROGRAM: vscode
-      TERM_PROGRAM_VERSION: 1.114.0
-      USER: ansible
-      UV: /home/ansible/.local/bin/uv
-      UV_RUN_RECURSION_DEPTH: '1'
-      VIRTUAL_ENV: /home/ansible/devops-agent/.venv
-      VSCODE_GIT_ASKPASS_EXTRA_ARGS: ''
-      VSCODE_GIT_ASKPASS_MAIN: /home/ansible/.vscode-server/cli/servers/Stable-e7fb5e96c0730b9deb70b33781f98e2f35975036/server/extensions/git/dist/askpass-main.js
-      VSCODE_GIT_ASKPASS_NODE: /home/ansible/.vscode-server/cli/servers/Stable-e7fb5e96c0730b9deb70b33781f98e2f35975036/server/node
-      VSCODE_GIT_IPC_HANDLE: /run/user/1001/vscode-git-d4702c8935.sock
-      VSCODE_IPC_HOOK_CLI: /run/user/1001/vscode-ipc-fe829eed-1312-4b04-8cf1-23a03fd4cfdb.sock
-      VSCODE_PYTHON_AUTOACTIVATE_GUARD: '1'
-      XDG_RUNTIME_DIR: /run/user/1001
-      XDG_SESSION_CLASS: user
-      XDG_SESSION_ID: '167'
-      XDG_SESSION_TYPE: tty
+      SSH_AUTH_SOCK: /private/tmp/com.apple.launchd.SHYHZ0D5ee/Listeners
+      TERM: dumb
+      TMPDIR: /var/folders/ln/l1485pqj0b3292r83bk054nh0000gp/T/
+      USER: alysivji
+      USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
+      VIRTUAL_ENV: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv
+      XPC_FLAGS: '0x0'
+      XPC_SERVICE_NAME: '0'
+      ZSH: /Users/alysivji/.oh-my-zsh
       _: /usr/bin/make
+      _P9K_SSH_TTY: ''
+      __CFBundleIdentifier: com.conductor.app
+      __CF_USER_TEXT_ENCODING: 0x1F6:0x0:0x0
       PYTEST_VERSION: 9.0.2
       PYTEST_CURRENT_TEST: tests/tools/test_ansible.py::TestRunAnsiblePlaybook::test_run_ansible_playbook_success (call)
-      ANSIBLE_LOCAL_TEMP: /home/ansible/devops-agent/.ansible/tmp
-      ANSIBLE_REMOTE_TEMP: /home/ansible/devops-agent/.ansible/tmp
-  duration: 1.979264259338379
-  returncode: 0
+      ANSIBLE_LOCAL_TEMP: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.ansible/tmp
+  duration: 0.9079141616821289
+  returncode: 2
   stdout: |2+
 
     PLAY [control] *****************************************************************
 
     TASK [Gathering Facts] *********************************************************
-    ok: [localhost]
+    fatal: [localhost]: FAILED! => {"ansible_facts": {}, "changed": false, "failed_modules": {"ansible.legacy.setup": {"ansible_facts": {"discovered_interpreter_python": "/Users/alysivji/.pyenv/shims/python3.12"}, "failed": true, "module_stderr": "sudo: a password is required\n", "module_stdout": "", "msg": "MODULE FAILURE\nSee stdout/stderr for the exact error", "rc": 1, "warnings": ["Platform darwin on host localhost is using the discovered Python interpreter at /Users/alysivji/.pyenv/shims/python3.12, but future installation of another Python interpreter could change the meaning of that path. See https://docs.ansible.com/ansible-core/2.17/reference_appendices/interpreter_discovery.html for more information."]}}, "msg": "The following modules failed to execute: ansible.legacy.setup\n"}
+
+    PLAY RECAP *********************************************************************
+    localhost                  : ok=0    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
+
+  stderr: ''
+- args:
+  - ansible-playbook
+  - ansible/playbooks/hello-local-test.yaml
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+    text: true
+    env:
+      APP_TYPE: production
+      APP_VERSION: 0.46.1
+      ASDF_DIR: /opt/homebrew/opt/asdf/libexec
+      BOOKMARKS_FILE: /Users/alysivji/.bookmarks
+      CODEX_CI: '1'
+      CODEX_INTERNAL_ORIGINATOR_OVERRIDE: codex_sdk_ts
+      CODEX_THREAD_ID: 019d7350-f19a-7ad1-93a9-a2d9d00ade55
+      CODEX_WORKING_DIR: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      COLORTERM: ''
+      COMMAND_MODE: unix2003
+      CONDUCTOR_BIN_DIR: /Users/alysivji/Library/Application Support/com.conductor.app/bin
+      CONDUCTOR_DEFAULT_BRANCH: main
+      CONDUCTOR_PORT: '55000'
+      CONDUCTOR_ROOT_PATH: /Users/alysivji/siv-dev/devops-agent
+      CONDUCTOR_WORKSPACE_NAME: stockholm
+      CONDUCTOR_WORKSPACE_PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      DISABLE_AUTO_UPDATE: 'true'
+      GH_PAGER: cat
+      GIT_PAGER: cat
+      GOENV_ROOT: /Users/alysivji/.goenv
+      GOENV_SHELL: zsh
+      GOPATH: /Users/alysivji/go/1.22.5
+      GOROOT: /Users/alysivji/.goenv/versions/1.22.5
+      HOME: /Users/alysivji
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      LESS: -R
+      LOGNAME: alysivji
+      LSCOLORS: Gxfxcxdxbxegedabagacad
+      MAKEFLAGS: ''
+      MAKELEVEL: '1'
+      MANPATH: '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/share/man:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/share/man:/Applications/Xcode.app/Contents/Developer/usr/share/man:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man:'
+      MFLAGS: ''
+      NO_COLOR: '1'
+      NVM_BIN: /Users/alysivji/.nvm/versions/node/v24.11.1/bin
+      NVM_CD_FLAGS: -q
+      NVM_DIR: /Users/alysivji/.nvm
+      NVM_INC: /Users/alysivji/.nvm/versions/node/v24.11.1/include/node
+      OLDPWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      P9K_SSH: '0'
+      PAGER: less
+      PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv/bin:/Users/alysivji/.codex/tmp/arg0/codex-arg054dMKF:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/Users/alysivji/.pyenv/shims:/Users/alysivji/.asdf/shims:/opt/homebrew/opt/asdf/libexec/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/usr/local/share/dotnet:~/.dotnet/tools:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/.goenv/shims:/Users/alysivji/Library/Application
+        Support/com.conductor.app/./bin:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/Library/Application Support/com.conductor.app/./bin
+      PWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
+      PYENV_SHELL: zsh
+      RBENV_SHELL: zsh
+      SHELL: /bin/zsh
+      SHLVL: '2'
+      SSH_AUTH_SOCK: /private/tmp/com.apple.launchd.SHYHZ0D5ee/Listeners
+      TERM: dumb
+      TMPDIR: /var/folders/ln/l1485pqj0b3292r83bk054nh0000gp/T/
+      USER: alysivji
+      USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
+      VIRTUAL_ENV: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv
+      XPC_FLAGS: '0x0'
+      XPC_SERVICE_NAME: '0'
+      ZSH: /Users/alysivji/.oh-my-zsh
+      _: /usr/bin/make
+      _P9K_SSH_TTY: ''
+      __CFBundleIdentifier: com.conductor.app
+      __CF_USER_TEXT_ENCODING: 0x1F6:0x0:0x0
+      PYTEST_VERSION: 9.0.2
+      PYTEST_CURRENT_TEST: tests/tools/test_ansible.py::TestRunAnsiblePlaybook::test_run_ansible_playbook_success (call)
+      ANSIBLE_LOCAL_TEMP: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.ansible/tmp
+  duration: 1.0324809551239014
+  returncode: 0
+  stdout: |2+
+
+    PLAY [control] *****************************************************************
 
     TASK [Ping] ********************************************************************
     ok: [localhost]
 
     PLAY RECAP *********************************************************************
-    localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+    localhost                  : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 
-  stderr: ''
+  stderr: |
+    [WARNING]: Platform darwin on host localhost is using the discovered Python
+    interpreter at /Users/alysivji/.pyenv/shims/python3.12, but future installation
+    of another Python interpreter could change the meaning of that path. See
+    https://docs.ansible.com/ansible-
+    core/2.17/reference_appendices/interpreter_discovery.html for more information.
 metadata:
   test_name: test_run_ansible_playbook_success
-  recorded_at: '2026-04-07T20:16:39.814112+00:00'
-  python_version: 3.13.5
-  platform: Linux-6.12.74+deb13+1-amd64
-  cassette_count: 1
+  recorded_at: '2026-04-09T20:06:11.226149+00:00'
+  python_version: 3.13.1
+  platform: Darwin-23.2.0
+  cassette_count: 3

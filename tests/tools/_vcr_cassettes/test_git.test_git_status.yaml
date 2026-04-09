@@ -6,11 +6,11 @@ interactions:
   kwargs:
     stdout: PIPE
     stderr: PIPE
-  duration: 0.003192424774169922
+  duration: 0.018020153045654297
   returncode: 0
   stdout: |
-    Initialized empty Git repository in /tmp/pytest-of-ansible/pytest-18/test_git_status0/repo/.git/
-  stderr: "hint: Using 'master' as the name for the initial branch. This default branch name\nhint: is subject to change. To configure the initial branch name to use in all\nhint: of your new repositories, which will suppress this warning, call:\nhint:\nhint: \tgit config --global init.defaultBranch <name>\nhint:\nhint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\nhint: 'development'. The just-created branch can be renamed via this command:\nhint:\nhint: \tgit branch -m <name>\n"
+    Initialized empty Git repository in /private/var/folders/ln/l1485pqj0b3292r83bk054nh0000gp/T/pytest-of-alysivji/pytest-67/test_git_status0/repo/.git/
+  stderr: ''
 - args:
   - git
   - config
@@ -19,7 +19,7 @@ interactions:
   kwargs:
     stdout: PIPE
     stderr: PIPE
-  duration: 0.001878976821899414
+  duration: 0.011693000793457031
   returncode: 0
   stdout: ''
   stderr: ''
@@ -31,7 +31,7 @@ interactions:
   kwargs:
     stdout: PIPE
     stderr: PIPE
-  duration: 0.0018122196197509766
+  duration: 0.011393070220947266
   returncode: 0
   stdout: ''
   stderr: ''
@@ -42,7 +42,7 @@ interactions:
   kwargs:
     stdout: PIPE
     stderr: PIPE
-  duration: 0.002175569534301758
+  duration: 0.0118408203125
   returncode: 0
   stdout: ''
   stderr: ''
@@ -55,10 +55,10 @@ interactions:
     stdout: PIPE
     stderr: PIPE
     text: true
-  duration: 0.005492448806762695
+  duration: 0.07811093330383301
   returncode: 0
   stdout: |
-    [master (root-commit) b5a475c] Initial commit
+    [main (root-commit) 840f2ed] Initial commit
      1 file changed, 1 insertion(+)
      create mode 100644 README.md
   stderr: ''
@@ -70,14 +70,14 @@ interactions:
     stdout: PIPE
     stderr: PIPE
     text: true
-  duration: 0.0024955272674560547
+  duration: 0.01247406005859375
   returncode: 0
   stdout: |2
      M README.md
   stderr: ''
 metadata:
   test_name: test_git_status
-  recorded_at: '2026-04-07T20:44:30.561586+00:00'
-  python_version: 3.13.5
-  platform: Linux-6.12.74+deb13+1-amd64
+  recorded_at: '2026-04-09T20:05:32.027610+00:00'
+  python_version: 3.13.1
+  platform: Darwin-23.2.0
   cassette_count: 6
