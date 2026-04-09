@@ -3,6 +3,8 @@
 ## Workflow
 
 - When opening a PR, fill out `.github/pull_request_template.md` completely. Do not leave the summary, validation, infra notes, or risks sections as placeholders.
+- Keep control flow top-down and obvious.
+- If the design starts to need more than ~2 helpers or ~1 new module, stop and ask first.
 
 ## Tools And Remote Boundaries
 
@@ -27,6 +29,8 @@
 
 ## Testing Guidance
 
+- Add or update automated tests only for deterministic, non-agent tools by default.
+- Do not add tests for agent behavior unless explicitly requested.
 - Do not make tests depend on a live remote system unless the test is explicitly intended as manual verification.
 - For subprocess-driven integrations, prefer recorded fixtures with `subprocess-vcr` so tests remain deterministic.
 - Pytest defaults to replay mode through `addopts`, so use `--subprocess-vcr=record` only when intentionally updating fixtures.
