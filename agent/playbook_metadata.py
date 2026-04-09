@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .tools import get_ansible_playbook_registry
 from .utils import build_agent, build_model
@@ -19,10 +19,23 @@ Repo constraints:
 
 
 class GeneratedPlaybookMetadata(BaseModel):
-    name: str
-    description: str
-    target: Literal["control", "cluster"]
-    tags: list[str]
+    """Structured metadata for a generated Ansible playbook."""
+
+    name: str = Field(description="Concise registry-friendly playbook name.")
+    description: str = Field(
+        description="Short summary of what the playbook does, consistent with the YAML."
+    )
+    target: Literal["control", "cluster"] = Field(
+        description="Inventory target where the playbook is intended to run."
+    )
+    tags: list[str] = Field(description="Short registry tags that classify the playbook's purpose.")
+    safe_to_run: bool = Field(
+        default=True,
+        description=(
+            "Whether the playbook appears safe to run without human review "
+            "because it does not include destructive actions."
+        ),
+    )
 
 
 def build_metadata_prompt(
@@ -48,12 +61,15 @@ Generated playbook YAML:
 Requirements:
 - Keep metadata consistent with the YAML
 - Use concise names and descriptions suitable for the playbook registry
+- Mark `safe_to_run` as true when the playbook does not appear to include destructive actions
+- Mark `safe_to_run` as false if the playbook appears risky or destructive
 
 Return:
 - name
 - description
 - target
 - tags
+- safe_to_run
 """
 
 

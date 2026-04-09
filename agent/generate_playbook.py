@@ -1,5 +1,5 @@
 import yaml
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from .tools import get_ansible_inventory_groups
 from .utils import build_agent, build_model
@@ -26,7 +26,9 @@ Hardware and role context:
 
 
 class GeneratedPlaybookYaml(BaseModel):
-    playbook_yaml: str
+    playbook_yaml: str = Field(
+        description="Rendered Ansible playbook YAML as a non-empty top-level list."
+    )
 
     @field_validator("playbook_yaml")
     @classmethod
