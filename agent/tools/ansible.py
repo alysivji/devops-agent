@@ -1,7 +1,10 @@
+import configparser
 import logging
 import os
 import pathlib
+import re
 import subprocess
+import unicodedata
 from typing import Final
 
 import yaml
@@ -12,12 +15,14 @@ logger = logging.getLogger(__name__)
 
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
 PLAYBOOKS_DIR: Final[pathlib.Path] = pathlib.Path("ansible/playbooks")
+INVENTORY_PATH: Final[pathlib.Path] = pathlib.Path("ansible/inventory.ini")
 
 
 class AnsiblePlaybookMetadata(BaseModel):
     name: str
     description: str
     target: str
+    requires_approval: bool
     tags: list[str] = []
 
 
@@ -70,8 +75,19 @@ def _parse_playbook_metadata(playbook_path: pathlib.Path) -> AnsiblePlaybookRegi
     return AnsiblePlaybookRegistryEntry(path=str(playbook_path), **validated.model_dump())
 
 
+def normalize_playbook_name(name: str) -> str:
+    """Convert a playbook name to a filesystem-safe slug."""
+    normalized = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    normalized = normalized.lower().strip()
+    normalized = re.sub(r"[^a-z0-9]+", "-", normalized)
+    normalized = normalized.strip("-")
+    if not normalized:
+        raise ValueError("playbook name must contain at least one alphanumeric character")
+    return normalized
+
+
 @tool
-def get_ansible_playbook_registry() -> list[dict[str, str | list[str]]]:
+def get_ansible_playbook_registry() -> list[dict[str, str | bool | list[str]]]:
     """Return the Ansible playbook registry with validated metadata.
 
     Returns:
@@ -83,6 +99,14 @@ def get_ansible_playbook_registry() -> list[dict[str, str | list[str]]]:
         if file.is_file() and file.suffix in [".yaml", ".yml"]
     ]
     return registry
+
+
+@tool
+def get_ansible_inventory_groups() -> list[str]:
+    """Return the supported top-level inventory groups from ansible/inventory.ini."""
+    parser = configparser.ConfigParser(allow_no_value=True)
+    parser.read(INVENTORY_PATH, encoding="utf-8")
+    return sorted(section for section in parser.sections() if ":" not in section)
 
 
 @tool

@@ -2,8 +2,6 @@
 
 ## Workflow
 
-- Rename the branch early with a name that matches the work. Use concrete wording such as `document-tooling-notes`, not generic names like `updates` or `fixes`.
-- Keep branch names short and task-specific.
 - When opening a PR, fill out `.github/pull_request_template.md` completely. Do not leave the summary, validation, infra notes, or risks sections as placeholders.
 
 ## Tools And Remote Boundaries
@@ -24,6 +22,7 @@
   - `uv run pytest --subprocess-vcr=record`
   - `uv run pytest -m git_http_integration`
 - Ansible playbooks live under `ansible/playbooks`, and the tool surface exposes a validated playbook registry rather than a plain filename list.
+- Checked-in playbooks under `ansible/playbooks` must keep the metadata header fields `name`, `description`, `target`, `requires_approval`, and `tags`, because the registry parser validates them.
 - The Ansible tool writes temp files under `.ansible/tmp` so runs do not depend on a system temp directory layout.
 
 ## Testing Guidance

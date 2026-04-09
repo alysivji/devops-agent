@@ -1,6 +1,10 @@
 import pytest
 
-from agent.tools import get_ansible_playbook_registry, run_ansible_playbook
+from agent.tools import (
+    get_ansible_inventory_groups,
+    get_ansible_playbook_registry,
+    run_ansible_playbook,
+)
 
 
 class TestRunAnsiblePlaybook:
@@ -22,17 +26,37 @@ class TestGetAnsiblePlaybookRegistry:
         assert len(registry) > 0
         assert registry == [
             {
+                "description": "Ping the cluster node group.",
+                "name": "hello-cluster",
+                "path": "ansible/playbooks/hello-cluster.yaml",
+                "requires_approval": True,
+                "tags": ["connectivity", "cluster"],
+                "target": "cluster",
+            },
+            {
                 "description": "Ping the control node group.",
                 "name": "hello-control",
                 "path": "ansible/playbooks/hello-control.yaml",
+                "requires_approval": True,
                 "tags": ["connectivity", "control"],
                 "target": "control",
             },
             {
-                "description": "Ping the worker node group.",
-                "name": "hello-workers",
-                "path": "ansible/playbooks/hello-workers.yaml",
-                "tags": ["connectivity", "workers"],
-                "target": "workers",
+                "description": (
+                    "Lists files in the root directory on both control and "
+                    "cluster nodes and displays the output."
+                ),
+                "name": "list_files",
+                "path": "ansible/playbooks/list-files.yaml",
+                "requires_approval": True,
+                "tags": ["file_management", "listing", "debugging"],
+                "target": "both",
             },
         ]
+
+
+class TestGetAnsibleInventoryGroups:
+    def test_get_ansible_inventory_groups(self):
+        groups = get_ansible_inventory_groups()
+
+        assert groups == ["cluster", "control"]
