@@ -30,6 +30,11 @@ class AnsiblePlaybookRegistryEntry(AnsiblePlaybookMetadata):
     path: str
 
 
+def _confirm_playbook_execution(entry: AnsiblePlaybookRegistryEntry) -> bool:
+    response = input(f"Run playbook '{entry.name}' at {entry.path}? [y/N]: ").strip().lower()
+    return response in {"y", "yes"}
+
+
 def _ansible_env() -> dict[str, str]:
     """Create a writable environment for Ansible temp files."""
     ANSIBLE_TMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -75,6 +80,14 @@ def _parse_playbook_metadata(playbook_path: pathlib.Path) -> AnsiblePlaybookRegi
     return AnsiblePlaybookRegistryEntry(path=str(playbook_path), **validated.model_dump())
 
 
+def _get_registry_entry_by_path(playbook_path: str) -> AnsiblePlaybookRegistryEntry:
+    for entry in get_ansible_playbook_registry():
+        path = entry.get("path")
+        if path == playbook_path:
+            return AnsiblePlaybookRegistryEntry.model_validate(entry)
+    raise ValueError(f"Playbook path is not in the registry: {playbook_path}")
+
+
 def normalize_playbook_name(name: str) -> str:
     """Convert a playbook name to a filesystem-safe slug."""
     normalized = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
@@ -111,20 +124,23 @@ def get_ansible_inventory_groups() -> list[str]:
 
 @tool
 def run_ansible_playbook(playbook_path: str) -> str:
-    """Run an Ansible playbook and return its standard output.
+    """Run a validated Ansible playbook and return its standard output.
 
     Args:
-        playbook_path: Relative or absolute path to the playbook file.
+        playbook_path: Relative path to a playbook file in the validated registry.
 
     Returns:
         The decoded stdout from the Ansible process.
 
     Raises:
-        FileNotFoundError: If the provided playbook path does not exist.
+        ValueError: If the provided playbook path is not in the validated registry.
+        PermissionError: If execution was not approved for a gated playbook.
         RuntimeError: If ansible-playbook exits with a non-zero status.
     """
-    if not pathlib.Path(playbook_path).exists():
-        raise FileNotFoundError(f"Playbook not found: {playbook_path}")
+    entry = _get_registry_entry_by_path(playbook_path)
+
+    if entry.requires_approval and not _confirm_playbook_execution(entry):
+        raise PermissionError(f"Execution not approved for playbook: {playbook_path}")
 
     command = ["ansible-playbook", playbook_path]
 
