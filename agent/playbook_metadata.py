@@ -43,13 +43,13 @@ class GeneratedPlaybookMetadata(BaseModel):
     )
 
 
-def build_metadata_prompt(playbook_yaml: str) -> str:
+def build_metadata_prompt(yaml: str) -> str:
     return f"""\
 Draft metadata for this Ansible playbook:
 
 Generated playbook YAML:
 ```yaml
-{playbook_yaml.strip()}
+{yaml.strip()}
 ```
 """
 
@@ -61,6 +61,6 @@ class PlaybookMetadataAgent:
             system_prompt=SYSTEM_PROMPT,
         )
 
-    def run(self, *, playbook_yaml: str) -> GeneratedPlaybookMetadata:
-        metadata_prompt = build_metadata_prompt(playbook_yaml)
+    def run(self, *, yaml: str) -> GeneratedPlaybookMetadata:
+        metadata_prompt = build_metadata_prompt(yaml)
         return self.agent.structured_output(GeneratedPlaybookMetadata, metadata_prompt)

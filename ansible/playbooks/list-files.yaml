@@ -1,0 +1,35 @@
+# name: list_files
+# description: Lists files in the root directory on both control and cluster nodes and displays the output.
+# target: both
+# safe: true
+# tags:
+#   - file_management
+#   - listing
+#   - debugging
+
+---
+- name: List files on control node
+  hosts: control
+  gather_facts: false
+  tasks:
+    - name: List files in root directory on control node
+      ansible.builtin.command: ls -la /
+      register: control_ls
+      changed_when: false
+
+    - name: Show files on control node
+      ansible.builtin.debug:
+        var: control_ls.stdout_lines
+
+- name: List files on cluster nodes
+  hosts: cluster
+  gather_facts: false
+  tasks:
+    - name: List files in root directory on cluster nodes
+      ansible.builtin.command: ls -la /
+      register: cluster_ls
+      changed_when: false
+
+    - name: Show files on cluster nodes
+      ansible.builtin.debug:
+        var: cluster_ls.stdout_lines

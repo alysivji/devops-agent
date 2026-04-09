@@ -26,11 +26,9 @@ Hardware and role context:
 
 
 class GeneratedPlaybookYaml(BaseModel):
-    playbook_yaml: str = Field(
-        description="Rendered Ansible playbook YAML as a non-empty top-level list."
-    )
+    yaml: str = Field(description="Rendered Ansible playbook YAML as a non-empty top-level list.")
 
-    @field_validator("playbook_yaml")
+    @field_validator("yaml")
     @classmethod
     def validate_playbook_yaml(cls, value: str) -> str:
         parsed = yaml.safe_load(value)
