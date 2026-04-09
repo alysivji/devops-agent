@@ -60,6 +60,10 @@ def create_git_branch(branch_name: str, base_ref: str = "origin/main") -> str:
     if not base_ref.strip():
         raise ValueError("base_ref must not be empty")
 
+    current_branch = _run_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
+    if current_branch == branch_name:
+        return f"Already on {branch_name}"
+
     _run_git_command(["checkout", "-b", branch_name, base_ref])
     return f"Created and switched to {branch_name} from {base_ref}"
 
