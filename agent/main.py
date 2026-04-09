@@ -25,7 +25,7 @@ def render_playbook_file(*, yaml: str, metadata: GeneratedPlaybookMetadata) -> s
         f"# name: {metadata.name}",
         f"# description: {metadata.description}",
         f"# target: {metadata.target}",
-        f"# safe: {str(metadata.safe_to_run).lower()}",
+        f"# requires_approval: {str(metadata.requires_approval).lower()}",
         "# tags:",
     ]
     lines.extend(f"#   - {tag}" for tag in metadata.tags)
@@ -43,7 +43,7 @@ def print_preview(
     print(f"  name: {metadata.name}")
     print(f"  description: {metadata.description}")
     print(f"  target: {metadata.target}")
-    print(f"  safe: {str(metadata.safe_to_run).lower()}")
+    print(f"  requires_approval: {str(metadata.requires_approval).lower()}")
     print("  tags:")
     for tag in metadata.tags:
         print(f"    - {tag}")

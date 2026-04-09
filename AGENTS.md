@@ -22,6 +22,7 @@
   - `uv run pytest --subprocess-vcr=record`
   - `uv run pytest -m git_http_integration`
 - Ansible playbooks live under `ansible/playbooks`, and the tool surface exposes a validated playbook registry rather than a plain filename list.
+- Checked-in playbooks under `ansible/playbooks` must keep the metadata header fields `name`, `description`, `target`, `requires_approval`, and `tags`, because the registry parser validates them.
 - The Ansible tool writes temp files under `.ansible/tmp` so runs do not depend on a system temp directory layout.
 
 ## Testing Guidance

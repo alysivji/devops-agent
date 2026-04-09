@@ -2,7 +2,7 @@
 
 Figuring out agentic workflows with a Turing Pi cluster.
 
-See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectations, branch naming, and PR writeups.
+See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectations, and PR writeups.
 
 ## Notes
 
@@ -34,12 +34,13 @@ See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectatio
 
 ## Human-In-The-Loop Playbook Generation
 
-The first generation workflow supports only two inventory targets:
+The first generation workflow supports these inventory targets:
 
 - `control` for local playbooks
 - `cluster` for remote playbooks over SSH
+- `both` for playbooks that include work on both host groups
 
-The agent now generates a hello-world connectivity playbook, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
+The agent now generates an Ansible playbook from a natural-language prompt, drafts metadata for the playbook header, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
 
 ### Draft metadata
 
@@ -48,10 +49,10 @@ Every playbook metadata header must include:
 - `name`
 - `description`
 - `target`
-- `safe`
+- `requires_approval`
 - `tags`
 
-`safe: true` is for non-destructive checks such as connectivity verification. `safe: false` adds stronger review warnings, but both values still require human approval before file creation.
+`requires_approval` records whether a human should approve execution before the playbook is run. Use `requires_approval: true` when the playbook should not be executed without explicit review.
 
 ### Model
 
@@ -63,7 +64,7 @@ Set `OPENAI_MODEL=gpt-5.4` by default for stronger reasoning and coding quality.
 uv run python -m agent.main "create a hello world playbook for local nodes"
 ```
 
-The generated review includes the proposed filename, target, safety classification, risk notes, and the full YAML before asking for approval.
+The generated review includes the proposed filename, metadata header fields, and the full YAML before asking for approval.
 
 ### Commands
 

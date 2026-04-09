@@ -22,7 +22,7 @@ class AnsiblePlaybookMetadata(BaseModel):
     name: str
     description: str
     target: str
-    safe: bool
+    requires_approval: bool
     tags: list[str] = []
 
 

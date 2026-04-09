@@ -15,8 +15,8 @@ Repo constraints:
 - Use concise registry-friendly names, descriptions, and tags.
 - Do not create files.
 - Use `target: both` when the playbook installs or configures things on both host groups.
-- Mark `safe_to_run` as true when the playbook does not appear to include destructive actions.
-- Mark `safe_to_run` as false if the playbook appears risky or destructive.
+- Set `requires_approval` based on whether a human should approve execution
+  before the playbook is run.
 """
 
 
@@ -34,12 +34,9 @@ class GeneratedPlaybookMetadata(BaseModel):
         )
     )
     tags: list[str] = Field(description="Short registry tags that classify the playbook's purpose.")
-    safe_to_run: bool = Field(
+    requires_approval: bool = Field(
         default=True,
-        description=(
-            "Whether the playbook appears safe to run without human review "
-            "because it does not include destructive actions."
-        ),
+        description=("Whether a human should approve execution before the playbook is run."),
     )
 
 

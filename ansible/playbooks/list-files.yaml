@@ -1,7 +1,7 @@
 # name: list_files
 # description: Lists files in the root directory on both control and cluster nodes and displays the output.
 # target: both
-# safe: true
+# requires_approval: true
 # tags:
 #   - file_management
 #   - listing

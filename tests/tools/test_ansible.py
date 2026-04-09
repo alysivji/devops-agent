@@ -29,7 +29,7 @@ class TestGetAnsiblePlaybookRegistry:
                 "description": "Ping the cluster node group.",
                 "name": "hello-cluster",
                 "path": "ansible/playbooks/hello-cluster.yaml",
-                "safe": True,
+                "requires_approval": True,
                 "tags": ["connectivity", "cluster"],
                 "target": "cluster",
             },
@@ -37,9 +37,20 @@ class TestGetAnsiblePlaybookRegistry:
                 "description": "Ping the control node group.",
                 "name": "hello-control",
                 "path": "ansible/playbooks/hello-control.yaml",
-                "safe": True,
+                "requires_approval": True,
                 "tags": ["connectivity", "control"],
                 "target": "control",
+            },
+            {
+                "description": (
+                    "Lists files in the root directory on both control and "
+                    "cluster nodes and displays the output."
+                ),
+                "name": "list_files",
+                "path": "ansible/playbooks/list-files.yaml",
+                "requires_approval": True,
+                "tags": ["file_management", "listing", "debugging"],
+                "target": "both",
             },
         ]
 
