@@ -1,6 +1,10 @@
 import pytest
 
-from agent.tools import get_ansible_playbook_registry, run_ansible_playbook
+from agent.tools import (
+    get_ansible_inventory_groups,
+    get_ansible_playbook_registry,
+    run_ansible_playbook,
+)
 
 
 class TestRunAnsiblePlaybook:
@@ -38,3 +42,10 @@ class TestGetAnsiblePlaybookRegistry:
                 "target": "control",
             },
         ]
+
+
+class TestGetAnsibleInventoryGroups:
+    def test_get_ansible_inventory_groups(self):
+        groups = get_ansible_inventory_groups()
+
+        assert groups == ["cluster", "control"]

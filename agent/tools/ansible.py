@@ -1,19 +1,23 @@
+import configparser
 import logging
 import os
 import pathlib
 import re
 import subprocess
 import unicodedata
-from typing import Final, Literal
+from typing import Final
 
 import yaml
 from pydantic import BaseModel, ValidationError
 from strands import tool
 
+from ..utils import validate_generated_playbook_yaml
+
 logger = logging.getLogger(__name__)
 
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
 PLAYBOOKS_DIR: Final[pathlib.Path] = pathlib.Path("ansible/playbooks")
+INVENTORY_PATH: Final[pathlib.Path] = pathlib.Path("ansible/inventory.ini")
 
 
 class AnsiblePlaybookMetadata(BaseModel):
@@ -26,17 +30,6 @@ class AnsiblePlaybookMetadata(BaseModel):
 
 class AnsiblePlaybookRegistryEntry(AnsiblePlaybookMetadata):
     path: str
-
-
-class GeneratedPlaybookDraft(BaseModel):
-    name: str
-    description: str
-    target: Literal["control", "cluster"]
-    safe: bool
-    tags: list[str]
-    reasoning_summary: str
-    risk_notes: list[str]
-    playbook_yaml: str
 
 
 def _ansible_env() -> dict[str, str]:
@@ -106,46 +99,26 @@ def render_metadata_header(metadata: AnsiblePlaybookMetadata) -> str:
     return "\n".join(f"# {line}" for line in dumped.splitlines())
 
 
-def validate_generated_playbook_yaml(draft: GeneratedPlaybookDraft) -> None:
-    """Ensure generated YAML metadata matches the structured draft."""
-    temp_path = pathlib.Path("<generated>")
-    metadata_lines: list[str] = []
-
-    for line in draft.playbook_yaml.splitlines():
-        if line.startswith("#"):
-            metadata_lines.append(line.removeprefix("#"))
-            continue
-        if metadata_lines:
-            break
-
-    if not metadata_lines:
-        raise ValueError("generated playbook YAML is missing the metadata header")
-
-    parsed = yaml.safe_load("\n".join(metadata_lines))
-    expected = AnsiblePlaybookMetadata(
-        name=draft.name,
-        description=draft.description,
-        target=draft.target,
-        safe=draft.safe,
-        tags=draft.tags,
-    ).model_dump()
-
-    if parsed != expected:
-        raise ValueError(
-            f"generated playbook YAML metadata does not match draft fields: {temp_path}"
-        )
+def render_playbook_document(metadata: AnsiblePlaybookMetadata, playbook_yaml: str) -> str:
+    """Combine the metadata header and YAML body into the stored playbook format."""
+    validate_generated_playbook_yaml(playbook_yaml)
+    return f"{render_metadata_header(metadata)}\n\n{playbook_yaml.strip()}"
 
 
 def write_playbook_file(
-    draft: GeneratedPlaybookDraft, directory: pathlib.Path = PLAYBOOKS_DIR
+    metadata: AnsiblePlaybookMetadata,
+    playbook_yaml: str,
+    directory: pathlib.Path = PLAYBOOKS_DIR,
 ) -> pathlib.Path:
     """Write an approved draft to disk, rejecting filename collisions."""
-    playbook_path = build_playbook_path(draft.name, directory)
+    playbook_path = build_playbook_path(metadata.name, directory)
     if playbook_path.exists():
         raise FileExistsError(f"Playbook already exists: {playbook_path}")
 
-    validate_generated_playbook_yaml(draft)
-    playbook_path.write_text(draft.playbook_yaml.strip() + "\n", encoding="utf-8")
+    playbook_path.write_text(
+        render_playbook_document(metadata, playbook_yaml) + "\n",
+        encoding="utf-8",
+    )
     return playbook_path
 
 
@@ -162,6 +135,14 @@ def get_ansible_playbook_registry() -> list[dict[str, str | bool | list[str]]]:
         if file.is_file() and file.suffix in [".yaml", ".yml"]
     ]
     return registry
+
+
+@tool
+def get_ansible_inventory_groups() -> list[str]:
+    """Return the supported top-level inventory groups from ansible/inventory.ini."""
+    parser = configparser.ConfigParser(allow_no_value=True)
+    parser.read(INVENTORY_PATH, encoding="utf-8")
+    return sorted(section for section in parser.sections() if ":" not in section)
 
 
 @tool

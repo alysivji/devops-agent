@@ -2,8 +2,6 @@
 
 ## Workflow
 
-- Rename the branch early with a name that matches the work. Use concrete wording such as `document-tooling-notes`, not generic names like `updates` or `fixes`.
-- Keep branch names short and task-specific.
 - When opening a PR, fill out `.github/pull_request_template.md` completely. Do not leave the summary, validation, infra notes, or risks sections as placeholders.
 
 ## Tools And Remote Boundaries

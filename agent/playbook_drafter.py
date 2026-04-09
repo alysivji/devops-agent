@@ -1,29 +1,18 @@
 from __future__ import annotations
 
-import configparser
-import pathlib
-from dataclasses import dataclass
-from typing import Protocol
+from pydantic import BaseModel
 
-from .tools import (
-    GeneratedPlaybookDraft,
-    build_playbook_path,
-    get_ansible_playbook_registry,
-    validate_generated_playbook_yaml,
-    write_playbook_file,
-)
-
-INVENTORY_PATH = pathlib.Path("ansible/inventory.ini")
-SUPPORTED_TARGETS = ("control", "cluster")
+from .tools import get_ansible_inventory_groups
+from .utils import build_agent, build_model, validate_generated_playbook_yaml
 
 SYSTEM_PROMPT = """
 Role:
 You draft Ansible playbooks for this repository.
 
 Repo constraints:
-- The only supported targets in v1 are the inventory groups `control` and `cluster`.
-- The first iteration only drafts a minimal hello-world connectivity playbook.
-- Do not create files or assume approval has been granted.
+- Return valid Ansible playbook YAML only.
+- Do not create files.
+- Do not include commentary outside the YAML returned in `playbook_yaml`.
 
 Supported targets:
 - `control`: local execution on the control node
@@ -31,161 +20,59 @@ Supported targets:
 
 Hardware and role context:
 - The `control` node is an Intel i5-6500T system with 16GB DDR4 RAM.
-- The `control` node is intended to host the control plane, observability sink, and related management services.
-- The `cluster` nodes are Raspberry Pi Compute Module 3+ systems with 1.2GHz CPUs, 1GB LPDDR2 SDRAM, and 32GB eMMC storage.
-- The `cluster` nodes are intended to run distributed workloads and containers, including Kubernetes workloads.
-
-Safety policy:
-- Use `safe: true` only for non-destructive checks such as Ansible ping/connectivity verification.
-- Use `safe: false` for actions that change system state, edit files, install
-  software, or restart services.
-
-Output schema:
-- Return a complete structured object matching the provided schema.
-- `playbook_yaml` must contain the commented metadata header followed by valid YAML.
-- Keep metadata and YAML fully consistent.
-
-Approval rule:
-- Always produce a draft only.
-- A human must explicitly approve before any file is created.
+- The `control` node hosts control plane and management services.
+- The `cluster` nodes are Raspberry Pi Compute Module 3+ systems.
+- The `cluster` nodes run distributed workloads and containers.
 """
-
-
-class StructuredDraftAgent(Protocol):
-    def structured_output(
-        self, output_model: type[GeneratedPlaybookDraft], prompt: str
-    ) -> GeneratedPlaybookDraft: ...
 
 
 class UnsupportedPlaybookRequest(ValueError):
     pass
 
 
-@dataclass(frozen=True)
-class PlaybookReview:
-    draft: GeneratedPlaybookDraft
-    inventory_groups: list[str]
-    existing_playbooks: list[dict[str, str | bool | list[str]]]
-    proposed_path: pathlib.Path
-    warning: str
+class GeneratedPlaybookYaml(BaseModel):
+    playbook_yaml: str
 
 
-def list_inventory_groups(inventory_path: pathlib.Path = INVENTORY_PATH) -> list[str]:
-    parser = configparser.ConfigParser(allow_no_value=True)
-    parser.read(inventory_path, encoding="utf-8")
-    return sorted(
-        section
-        for section in parser.sections()
-        if ":" not in section and section in SUPPORTED_TARGETS
-    )
+def classify_request(user_prompt: str) -> str:
+    normalized = user_prompt.lower()
 
+    control_terms = ("local", "localhost", "control")
+    cluster_terms = ("remote", "cluster", "worker", "workers")
 
-def classify_request(prompt: str) -> str:
-    normalized = prompt.lower()
-    if any(token in normalized for token in ("cluster", "worker", "workers", "remote")):
-        return "cluster"
-    if any(token in normalized for token in ("control", "local", "localhost")):
+    if any(term in normalized for term in control_terms):
         return "control"
+    if any(term in normalized for term in cluster_terms):
+        return "cluster"
+
     raise UnsupportedPlaybookRequest(
-        "Unsupported target request. Please specify either the control node or cluster nodes."
+        "Request must clearly target either the control node or cluster nodes."
     )
 
 
-def build_generation_prompt(
-    user_request: str,
-    *,
-    target: str,
-    inventory_groups: list[str],
-    existing_playbooks: list[dict[str, str | bool | list[str]]],
-) -> str:
+def build_generation_prompt(user_prompt: str, *, target: str) -> str:
     return f"""\
-Draft a hello-world Ansible playbook for this request:
-{user_request}
+Generate Ansible playbook YAML for this request:
+{user_prompt}
+
+Target inventory group: `{target}`
 
 Requirements:
-- Supported inventory groups in this repo: {", ".join(inventory_groups)}
-- Target the `{target}` group
-- Keep the playbook minimal and reversible
-- Safety should be `true` for this hello-world connectivity check
-- Existing playbook registry entries: {existing_playbooks}
-
-Return:
-- name
-- description
-- target
-- safe
-- tags
-- reasoning_summary
-- risk_notes
-- playbook_yaml
+- Return valid YAML only
+- Set `hosts` to `{target}`
 """
 
 
-def draft_playbook(
-    drafting_agent: StructuredDraftAgent,
-    user_request: str,
-    *,
-    playbooks_dir: pathlib.Path = pathlib.Path("ansible/playbooks"),
-    inventory_path: pathlib.Path = INVENTORY_PATH,
-) -> PlaybookReview:
-    target = classify_request(user_request)
-    inventory_groups = list_inventory_groups(inventory_path)
-    existing_playbooks = get_ansible_playbook_registry()
-    prompt = build_generation_prompt(
-        user_request,
-        target=target,
-        inventory_groups=inventory_groups,
-        existing_playbooks=existing_playbooks,
-    )
-    draft = drafting_agent.structured_output(GeneratedPlaybookDraft, prompt)
-    if draft.target != target:
-        raise ValueError(f"Draft target mismatch: expected {target}, got {draft.target}")
+class PlaybookDraftAgent:
+    def __init__(self) -> None:
+        self.agent = build_agent(
+            model=build_model(),
+            system_prompt=SYSTEM_PROMPT,
+            tools=[get_ansible_inventory_groups],
+        )
 
-    validate_generated_playbook_yaml(draft)
-    proposed_path = build_playbook_path(draft.name, playbooks_dir)
-    if proposed_path.exists():
-        raise FileExistsError(f"Playbook already exists: {proposed_path}")
-
-    warning = (
-        "This draft is marked unsafe and still requires explicit approval before creation."
-        if not draft.safe
-        else "This draft is a non-destructive connectivity check, but still requires approval."
-    )
-    return PlaybookReview(
-        draft=draft,
-        inventory_groups=inventory_groups,
-        existing_playbooks=existing_playbooks,
-        proposed_path=proposed_path,
-        warning=warning,
-    )
-
-
-def render_review(review: PlaybookReview) -> str:
-    draft = review.draft
-    risk_header = "Warning" if not draft.safe else "Safety"
-    risk_notes = "\n".join(f"- {note}" for note in draft.risk_notes) or "- None"
-    return "\n".join(
-        [
-            f"Proposed file: {review.proposed_path}",
-            f"Target group: {draft.target}",
-            f"Safety: {draft.safe}",
-            f"Summary: {draft.reasoning_summary}",
-            f"{risk_header}: {review.warning}",
-            "Risk notes:",
-            risk_notes,
-            "",
-            "Playbook YAML:",
-            draft.playbook_yaml.strip(),
-        ]
-    )
-
-
-def save_playbook(
-    draft: GeneratedPlaybookDraft,
-    *,
-    approved: bool,
-    playbooks_dir: pathlib.Path = pathlib.Path("ansible/playbooks"),
-) -> pathlib.Path | None:
-    if not approved:
-        return None
-    return write_playbook_file(draft, playbooks_dir)
+    def run(self, prompt: str, *, target: str) -> GeneratedPlaybookYaml:
+        playbook_prompt = build_generation_prompt(prompt, target=target)
+        draft = self.agent.structured_output(GeneratedPlaybookYaml, playbook_prompt)
+        validate_generated_playbook_yaml(draft.playbook_yaml)
+        return draft
