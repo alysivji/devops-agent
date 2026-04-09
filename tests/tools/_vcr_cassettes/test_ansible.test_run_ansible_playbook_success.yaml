@@ -7,7 +7,7 @@ interactions:
     stdout: PIPE
     stderr: -3
     text: true
-  duration: 0.025332927703857422
+  duration: 0.025439977645874023
   returncode: 0
   stdout: |
     en_NZ
@@ -216,160 +216,12 @@ interactions:
   stderr: null
 - args:
   - ansible-playbook
-  - ansible/playbooks/hello-control.yaml
-  kwargs:
-    stdout: PIPE
-    stderr: PIPE
-    text: true
-    env:
-      APP_TYPE: production
-      APP_VERSION: 0.46.1
-      ASDF_DIR: /opt/homebrew/opt/asdf/libexec
-      BOOKMARKS_FILE: /Users/alysivji/.bookmarks
-      CODEX_CI: '1'
-      CODEX_INTERNAL_ORIGINATOR_OVERRIDE: codex_sdk_ts
-      CODEX_THREAD_ID: 019d7350-f19a-7ad1-93a9-a2d9d00ade55
-      CODEX_WORKING_DIR: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      COLORTERM: ''
-      COMMAND_MODE: unix2003
-      CONDUCTOR_BIN_DIR: /Users/alysivji/Library/Application Support/com.conductor.app/bin
-      CONDUCTOR_DEFAULT_BRANCH: main
-      CONDUCTOR_PORT: '55000'
-      CONDUCTOR_ROOT_PATH: /Users/alysivji/siv-dev/devops-agent
-      CONDUCTOR_WORKSPACE_NAME: stockholm
-      CONDUCTOR_WORKSPACE_PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      DISABLE_AUTO_UPDATE: 'true'
-      GH_PAGER: cat
-      GIT_PAGER: cat
-      GOENV_ROOT: /Users/alysivji/.goenv
-      GOENV_SHELL: zsh
-      GOPATH: /Users/alysivji/go/1.22.5
-      GOROOT: /Users/alysivji/.goenv/versions/1.22.5
-      HOME: /Users/alysivji
-      HOMEBREW_NO_AUTO_UPDATE: '1'
-      LESS: -R
-      LOGNAME: alysivji
-      LSCOLORS: Gxfxcxdxbxegedabagacad
-      MAKEFLAGS: ''
-      MAKELEVEL: '1'
-      MANPATH: '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/share/man:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/share/man:/Applications/Xcode.app/Contents/Developer/usr/share/man:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man:'
-      MFLAGS: ''
-      NO_COLOR: '1'
-      NVM_BIN: /Users/alysivji/.nvm/versions/node/v24.11.1/bin
-      NVM_CD_FLAGS: -q
-      NVM_DIR: /Users/alysivji/.nvm
-      NVM_INC: /Users/alysivji/.nvm/versions/node/v24.11.1/include/node
-      OLDPWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      P9K_SSH: '0'
-      PAGER: less
-      PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv/bin:/Users/alysivji/.codex/tmp/arg0/codex-arg054dMKF:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/Users/alysivji/.pyenv/shims:/Users/alysivji/.asdf/shims:/opt/homebrew/opt/asdf/libexec/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/usr/local/share/dotnet:~/.dotnet/tools:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/.goenv/shims:/Users/alysivji/Library/Application
-        Support/com.conductor.app/./bin:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/Library/Application Support/com.conductor.app/./bin
-      PWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      PYENV_SHELL: zsh
-      RBENV_SHELL: zsh
-      SHELL: /bin/zsh
-      SHLVL: '2'
-      SSH_AUTH_SOCK: /private/tmp/com.apple.launchd.SHYHZ0D5ee/Listeners
-      TERM: dumb
-      TMPDIR: /var/folders/ln/l1485pqj0b3292r83bk054nh0000gp/T/
-      USER: alysivji
-      USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
-      VIRTUAL_ENV: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv
-      XPC_FLAGS: '0x0'
-      XPC_SERVICE_NAME: '0'
-      ZSH: /Users/alysivji/.oh-my-zsh
-      _: /usr/bin/make
-      _P9K_SSH_TTY: ''
-      __CFBundleIdentifier: com.conductor.app
-      __CF_USER_TEXT_ENCODING: 0x1F6:0x0:0x0
-      PYTEST_VERSION: 9.0.2
-      PYTEST_CURRENT_TEST: tests/tools/test_ansible.py::TestRunAnsiblePlaybook::test_run_ansible_playbook_success (call)
-      ANSIBLE_LOCAL_TEMP: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.ansible/tmp
-  duration: 0.9079141616821289
-  returncode: 2
-  stdout: |2+
-
-    PLAY [control] *****************************************************************
-
-    TASK [Gathering Facts] *********************************************************
-    fatal: [localhost]: FAILED! => {"ansible_facts": {}, "changed": false, "failed_modules": {"ansible.legacy.setup": {"ansible_facts": {"discovered_interpreter_python": "/Users/alysivji/.pyenv/shims/python3.12"}, "failed": true, "module_stderr": "sudo: a password is required\n", "module_stdout": "", "msg": "MODULE FAILURE\nSee stdout/stderr for the exact error", "rc": 1, "warnings": ["Platform darwin on host localhost is using the discovered Python interpreter at /Users/alysivji/.pyenv/shims/python3.12, but future installation of another Python interpreter could change the meaning of that path. See https://docs.ansible.com/ansible-core/2.17/reference_appendices/interpreter_discovery.html for more information."]}}, "msg": "The following modules failed to execute: ansible.legacy.setup\n"}
-
-    PLAY RECAP *********************************************************************
-    localhost                  : ok=0    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
-
-  stderr: ''
-- args:
-  - ansible-playbook
   - ansible/playbooks/hello-local-test.yaml
   kwargs:
     stdout: PIPE
     stderr: PIPE
     text: true
-    env:
-      APP_TYPE: production
-      APP_VERSION: 0.46.1
-      ASDF_DIR: /opt/homebrew/opt/asdf/libexec
-      BOOKMARKS_FILE: /Users/alysivji/.bookmarks
-      CODEX_CI: '1'
-      CODEX_INTERNAL_ORIGINATOR_OVERRIDE: codex_sdk_ts
-      CODEX_THREAD_ID: 019d7350-f19a-7ad1-93a9-a2d9d00ade55
-      CODEX_WORKING_DIR: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      COLORTERM: ''
-      COMMAND_MODE: unix2003
-      CONDUCTOR_BIN_DIR: /Users/alysivji/Library/Application Support/com.conductor.app/bin
-      CONDUCTOR_DEFAULT_BRANCH: main
-      CONDUCTOR_PORT: '55000'
-      CONDUCTOR_ROOT_PATH: /Users/alysivji/siv-dev/devops-agent
-      CONDUCTOR_WORKSPACE_NAME: stockholm
-      CONDUCTOR_WORKSPACE_PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      DISABLE_AUTO_UPDATE: 'true'
-      GH_PAGER: cat
-      GIT_PAGER: cat
-      GOENV_ROOT: /Users/alysivji/.goenv
-      GOENV_SHELL: zsh
-      GOPATH: /Users/alysivji/go/1.22.5
-      GOROOT: /Users/alysivji/.goenv/versions/1.22.5
-      HOME: /Users/alysivji
-      HOMEBREW_NO_AUTO_UPDATE: '1'
-      LESS: -R
-      LOGNAME: alysivji
-      LSCOLORS: Gxfxcxdxbxegedabagacad
-      MAKEFLAGS: ''
-      MAKELEVEL: '1'
-      MANPATH: '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/share/man:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/share/man:/Applications/Xcode.app/Contents/Developer/usr/share/man:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man:'
-      MFLAGS: ''
-      NO_COLOR: '1'
-      NVM_BIN: /Users/alysivji/.nvm/versions/node/v24.11.1/bin
-      NVM_CD_FLAGS: -q
-      NVM_DIR: /Users/alysivji/.nvm
-      NVM_INC: /Users/alysivji/.nvm/versions/node/v24.11.1/include/node
-      OLDPWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      P9K_SSH: '0'
-      PAGER: less
-      PATH: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv/bin:/Users/alysivji/.codex/tmp/arg0/codex-arg054dMKF:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/Users/alysivji/.pyenv/shims:/Users/alysivji/.asdf/shims:/opt/homebrew/opt/asdf/libexec/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/usr/local/share/dotnet:~/.dotnet/tools:/opt/homebrew/share/google-cloud-sdk/bin:/Users/alysivji/.yarn/bin:/Users/alysivji/.config/yarn/global/node_modules/.bin:/Users/alysivji/.nvm/versions/node/v24.11.1/bin:/Users/alysivji/.rbenv/shims:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/.goenv/shims:/Users/alysivji/Library/Application
-        Support/com.conductor.app/./bin:/opt/homebrew/bin:/Users/alysivji/bin:/Users/alysivji/.local/bin:/Users/alysivji/Library/Application Support/com.conductor.app/./bin
-      PWD: /Users/alysivji/conductor/workspaces/devops-agent/stockholm
-      PYENV_SHELL: zsh
-      RBENV_SHELL: zsh
-      SHELL: /bin/zsh
-      SHLVL: '2'
-      SSH_AUTH_SOCK: /private/tmp/com.apple.launchd.SHYHZ0D5ee/Listeners
-      TERM: dumb
-      TMPDIR: /var/folders/ln/l1485pqj0b3292r83bk054nh0000gp/T/
-      USER: alysivji
-      USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
-      VIRTUAL_ENV: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.venv
-      XPC_FLAGS: '0x0'
-      XPC_SERVICE_NAME: '0'
-      ZSH: /Users/alysivji/.oh-my-zsh
-      _: /usr/bin/make
-      _P9K_SSH_TTY: ''
-      __CFBundleIdentifier: com.conductor.app
-      __CF_USER_TEXT_ENCODING: 0x1F6:0x0:0x0
-      PYTEST_VERSION: 9.0.2
-      PYTEST_CURRENT_TEST: tests/tools/test_ansible.py::TestRunAnsiblePlaybook::test_run_ansible_playbook_success (call)
-      ANSIBLE_LOCAL_TEMP: /Users/alysivji/conductor/workspaces/devops-agent/stockholm/.ansible/tmp
-  duration: 1.0324809551239014
+  duration: 1.1077139377593994
   returncode: 0
   stdout: |2+
 
@@ -389,7 +241,7 @@ interactions:
     core/2.17/reference_appendices/interpreter_discovery.html for more information.
 metadata:
   test_name: test_run_ansible_playbook_success
-  recorded_at: '2026-04-09T20:06:11.226149+00:00'
+  recorded_at: '2026-04-09T20:58:18.588819+00:00'
   python_version: 3.13.1
   platform: Darwin-23.2.0
-  cassette_count: 3
+  cassette_count: 2
