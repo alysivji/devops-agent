@@ -7,12 +7,15 @@ from strands.models.openai import OpenAIModel
 from .config import OPENAI_API_KEY
 
 
-def build_model(*, model_id: str | None = None) -> OpenAIModel:
+def build_model(
+    *, model_id: str | None = None, params: dict[str, Any] | None = None
+) -> OpenAIModel:
     return OpenAIModel(
         client_args={
             "api_key": OPENAI_API_KEY,
         },
         model_id=model_id or "gpt-5.4",
+        params=params,
     )
 
 

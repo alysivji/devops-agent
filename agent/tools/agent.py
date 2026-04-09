@@ -1,12 +1,20 @@
 import re
 from pathlib import Path
 
+from pydantic import BaseModel
 from strands import tool
 
 from ..generate_playbook import GeneratePlaybookAgent
 from ..playbook_metadata import GeneratedPlaybookMetadata, PlaybookMetadataAgent
 
 PLAYBOOKS_DIR = Path("ansible/playbooks")
+
+
+class CreateAnsiblePlaybookResult(BaseModel):
+    path: Path
+    metadata: GeneratedPlaybookMetadata
+    rendered_playbook: str
+    written: bool
 
 
 @tool
@@ -20,23 +28,55 @@ def create_ansible_playbook(query: str) -> Path | None:
     Returns:
         The path to the written playbook under ansible/playbooks, or None if declined
     """
-    generated_playbook = GeneratePlaybookAgent().run(query)
-    generated_metadata = PlaybookMetadataAgent().run(yaml=generated_playbook.yaml)
-    playbook_path = build_playbook_path(generated_metadata.name)
-
-    rendered_playbook = render_playbook_file(
-        yaml=generated_playbook.yaml,
-        metadata=generated_metadata,
-    )
-    print(rendered_playbook)
-
-    if not confirm_write(playbook_path):
-        print("Playbook not written.")
+    result = CreateAnsiblePlaybookWorkflow().run(query)
+    if not result.written:
         return None
+    return result.path
 
-    playbook_path.write_text(rendered_playbook)
-    print(f"Wrote playbook to {playbook_path}.")
-    return playbook_path
+
+class CreateAnsiblePlaybookWorkflow:
+    def __init__(
+        self,
+        *,
+        generator: GeneratePlaybookAgent | None = None,
+        metadata_agent: PlaybookMetadataAgent | None = None,
+    ) -> None:
+        self.generator = generator or GeneratePlaybookAgent()
+        self.metadata_agent = metadata_agent or PlaybookMetadataAgent()
+
+    def run(self, query: str) -> CreateAnsiblePlaybookResult:
+        generated_playbook = self.generator.run(query)
+        generated_metadata = self.metadata_agent.run(yaml=generated_playbook.yaml)
+        playbook_path = build_playbook_path(generated_metadata.name)
+        rendered_playbook = render_playbook_file(
+            yaml=generated_playbook.yaml,
+            metadata=generated_metadata,
+        )
+
+        print_preview(
+            path=playbook_path,
+            metadata=generated_metadata,
+            rendered_playbook=rendered_playbook,
+        )
+
+        written = confirm_write(playbook_path)
+        if not written:
+            print("Playbook not written.")
+            return CreateAnsiblePlaybookResult(
+                path=playbook_path,
+                metadata=generated_metadata,
+                rendered_playbook=rendered_playbook,
+                written=False,
+            )
+
+        playbook_path.write_text(rendered_playbook, encoding="utf-8")
+        print(f"Wrote playbook to {playbook_path}.")
+        return CreateAnsiblePlaybookResult(
+            path=playbook_path,
+            metadata=generated_metadata,
+            rendered_playbook=rendered_playbook,
+            written=True,
+        )
 
 
 def build_playbook_path(name: str) -> Path:

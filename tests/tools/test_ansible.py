@@ -9,11 +9,12 @@ from agent.tools import (
 
 class TestRunAnsiblePlaybook:
     def test_run_ansible_playbook_not_found(self):
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(ValueError):
             run_ansible_playbook("playbooks/test_playbook.yml")
 
     @pytest.mark.subprocess_vcr
-    def test_run_ansible_playbook_success(self):
+    def test_run_ansible_playbook_success(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr("builtins.input", lambda _: "y")
         result = run_ansible_playbook("ansible/playbooks/hello-control.yaml")
         assert "PLAY RECAP" in result
 
