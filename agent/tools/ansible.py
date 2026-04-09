@@ -1,8 +1,10 @@
 import logging
 import os
 import pathlib
+import re
 import subprocess
-from typing import Final
+import unicodedata
+from typing import Final, Literal
 
 import yaml
 from pydantic import BaseModel, ValidationError
@@ -18,11 +20,23 @@ class AnsiblePlaybookMetadata(BaseModel):
     name: str
     description: str
     target: str
+    safe: bool
     tags: list[str] = []
 
 
 class AnsiblePlaybookRegistryEntry(AnsiblePlaybookMetadata):
     path: str
+
+
+class GeneratedPlaybookDraft(BaseModel):
+    name: str
+    description: str
+    target: Literal["control", "cluster"]
+    safe: bool
+    tags: list[str]
+    reasoning_summary: str
+    risk_notes: list[str]
+    playbook_yaml: str
 
 
 def _ansible_env() -> dict[str, str]:
@@ -70,8 +84,73 @@ def _parse_playbook_metadata(playbook_path: pathlib.Path) -> AnsiblePlaybookRegi
     return AnsiblePlaybookRegistryEntry(path=str(playbook_path), **validated.model_dump())
 
 
+def normalize_playbook_name(name: str) -> str:
+    """Convert a playbook name to a filesystem-safe slug."""
+    normalized = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    normalized = normalized.lower().strip()
+    normalized = re.sub(r"[^a-z0-9]+", "-", normalized)
+    normalized = normalized.strip("-")
+    if not normalized:
+        raise ValueError("playbook name must contain at least one alphanumeric character")
+    return normalized
+
+
+def build_playbook_path(name: str, directory: pathlib.Path = PLAYBOOKS_DIR) -> pathlib.Path:
+    """Resolve a playbook name to a canonical file path."""
+    return directory / f"{normalize_playbook_name(name)}.yaml"
+
+
+def render_metadata_header(metadata: AnsiblePlaybookMetadata) -> str:
+    """Render the commented YAML metadata header used by the playbook registry."""
+    dumped = yaml.safe_dump(metadata.model_dump(), sort_keys=False).strip()
+    return "\n".join(f"# {line}" for line in dumped.splitlines())
+
+
+def validate_generated_playbook_yaml(draft: GeneratedPlaybookDraft) -> None:
+    """Ensure generated YAML metadata matches the structured draft."""
+    temp_path = pathlib.Path("<generated>")
+    metadata_lines: list[str] = []
+
+    for line in draft.playbook_yaml.splitlines():
+        if line.startswith("#"):
+            metadata_lines.append(line.removeprefix("#"))
+            continue
+        if metadata_lines:
+            break
+
+    if not metadata_lines:
+        raise ValueError("generated playbook YAML is missing the metadata header")
+
+    parsed = yaml.safe_load("\n".join(metadata_lines))
+    expected = AnsiblePlaybookMetadata(
+        name=draft.name,
+        description=draft.description,
+        target=draft.target,
+        safe=draft.safe,
+        tags=draft.tags,
+    ).model_dump()
+
+    if parsed != expected:
+        raise ValueError(
+            f"generated playbook YAML metadata does not match draft fields: {temp_path}"
+        )
+
+
+def write_playbook_file(
+    draft: GeneratedPlaybookDraft, directory: pathlib.Path = PLAYBOOKS_DIR
+) -> pathlib.Path:
+    """Write an approved draft to disk, rejecting filename collisions."""
+    playbook_path = build_playbook_path(draft.name, directory)
+    if playbook_path.exists():
+        raise FileExistsError(f"Playbook already exists: {playbook_path}")
+
+    validate_generated_playbook_yaml(draft)
+    playbook_path.write_text(draft.playbook_yaml.strip() + "\n", encoding="utf-8")
+    return playbook_path
+
+
 @tool
-def get_ansible_playbook_registry() -> list[dict[str, str | list[str]]]:
+def get_ansible_playbook_registry() -> list[dict[str, str | bool | list[str]]]:
     """Return the Ansible playbook registry with validated metadata.
 
     Returns:

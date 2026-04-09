@@ -22,17 +22,19 @@ class TestGetAnsiblePlaybookRegistry:
         assert len(registry) > 0
         assert registry == [
             {
+                "description": "Ping the cluster node group.",
+                "name": "hello-cluster",
+                "path": "ansible/playbooks/hello-cluster.yaml",
+                "safe": True,
+                "tags": ["connectivity", "cluster"],
+                "target": "cluster",
+            },
+            {
                 "description": "Ping the control node group.",
                 "name": "hello-control",
                 "path": "ansible/playbooks/hello-control.yaml",
+                "safe": True,
                 "tags": ["connectivity", "control"],
                 "target": "control",
-            },
-            {
-                "description": "Ping the worker node group.",
-                "name": "hello-workers",
-                "path": "ansible/playbooks/hello-workers.yaml",
-                "tags": ["connectivity", "workers"],
-                "target": "workers",
             },
         ]

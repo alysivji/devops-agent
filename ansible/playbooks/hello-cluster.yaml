@@ -1,0 +1,13 @@
+# name: hello-cluster
+# description: Ping the cluster node group.
+# target: cluster
+# safe: true
+# tags:
+#   - connectivity
+#   - cluster
+
+- hosts: cluster
+  become: yes
+  tasks:
+    - name: Ping
+      ping:
