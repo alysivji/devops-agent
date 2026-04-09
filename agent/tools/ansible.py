@@ -5,6 +5,7 @@ import pathlib
 import re
 import subprocess
 import unicodedata
+from functools import lru_cache
 from typing import Final
 
 import yaml
@@ -39,16 +40,44 @@ def _ansible_env() -> dict[str, str]:
     """Create a writable environment for Ansible temp files."""
     ANSIBLE_TMP_DIR.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ)
-    tmp_dir = str(ANSIBLE_TMP_DIR.resolve())
-    env["ANSIBLE_LOCAL_TEMP"] = tmp_dir
-    env["ANSIBLE_REMOTE_TEMP"] = tmp_dir
-    env["LC_ALL"] = "en_US.UTF-8"
-    env["LANG"] = "en_US.UTF-8"
+    env["ANSIBLE_LOCAL_TEMP"] = str(ANSIBLE_TMP_DIR.resolve())
+    _remove_unsupported_locale_vars(env)
     return env
+
+
+@lru_cache(maxsize=1)
+def _available_locales() -> set[str]:
+    """Return locales available on this host for subprocess validation."""
+    try:
+        result = subprocess.run(
+            ["locale", "-a"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return set()
+
+    return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+
+
+def _remove_unsupported_locale_vars(env: dict[str, str]) -> None:
+    """Drop locale env vars whose values are not available on this host."""
+    available = _available_locales()
+    if not available:
+        return
+
+    for key in ("LC_ALL", "LANG", "LC_CTYPE"):
+        value = env.get(key)
+        if value and value not in available:
+            env.pop(key, None)
 
 
 def _decode_output(output: str | bytes) -> str:
     """Normalize subprocess output across real runs and recorded replays."""
+    if output is None:
+        return ""
     if isinstance(output, bytes):
         return output.decode("utf-8")
     return output
@@ -146,11 +175,12 @@ def get_ansible_inventory_groups() -> list[str]:
 
 
 @tool
-def run_ansible_playbook(playbook_path: str) -> str:
+def run_ansible_playbook(playbook_path: str, verbose: bool = False) -> str:
     """Run a validated Ansible playbook and return its standard output.
 
     Args:
         playbook_path: Relative path to a playbook file in the validated registry.
+        verbose: Whether to enable verbose output.
 
     Returns:
         The decoded stdout from the Ansible process.
@@ -166,6 +196,8 @@ def run_ansible_playbook(playbook_path: str) -> str:
         raise PermissionError(f"Execution not approved for playbook: {playbook_path}")
 
     command = ["ansible-playbook", playbook_path]
+    if verbose:
+        command.append("-vv")
 
     try:
         result = subprocess.run(
@@ -177,6 +209,11 @@ def run_ansible_playbook(playbook_path: str) -> str:
             text=True,
         )
         return _decode_output(result.stdout)
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as exc:
         logger.exception("Ansible playbook execution failed")
-        raise RuntimeError("Ansible playbook execution failed")
+        stdout = _decode_output(exc.stdout).strip()
+        stderr = _decode_output(exc.stderr).strip()
+        details = "\n".join(part for part in (stderr, stdout) if part)
+        if details:
+            raise RuntimeError(f"Ansible playbook execution failed:\n{details}") from exc
+        raise RuntimeError("Ansible playbook execution failed") from exc

@@ -38,3 +38,6 @@ check: ## run local CI checks
 	uv run pre-commit run --all-files
 	uv run mypy
 	uv run pytest --subprocess-vcr=record
+
+shell: ## open an ipython shell with the dependency environment loaded
+	uv run ipython --ipython-dir=.ipython
