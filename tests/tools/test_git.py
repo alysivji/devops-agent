@@ -1,6 +1,9 @@
+import os
 import subprocess
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -13,38 +16,48 @@ from agent.tools import (
 )
 
 
+@contextmanager
+def _chdir(path: Path) -> Iterator[None]:
+    current_dir = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(current_dir)
+
+
 @pytest.fixture
-def git_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def git_repo(tmp_path: Path) -> Path:
     repo_path = tmp_path / "repo"
     repo_path.mkdir()
-    monkeypatch.chdir(repo_path)
 
-    subprocess.run(["git", "init"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    subprocess.run(
-        ["git", "config", "user.name", "DevOps Agent Tests"],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    subprocess.run(
-        ["git", "config", "user.email", "devops-agent-tests@example.com"],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+    with _chdir(repo_path):
+        subprocess.run(["git", "init"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(
+            ["git", "config", "user.name", "DevOps Agent Tests"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "devops-agent-tests@example.com"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
 
-    tracked_file = repo_path / "README.md"
-    tracked_file.write_text("# Temp Repo\n", encoding="utf-8")
-    subprocess.run(
-        ["git", "add", "README.md"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    subprocess.run(
-        ["git", "commit", "-m", "Initial commit"],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+        tracked_file = repo_path / "README.md"
+        tracked_file.write_text("# Temp Repo\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "add", "README.md"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
 
     return repo_path
 
@@ -90,47 +103,143 @@ class TestCreateGitCommit:
 
 
 class TestGitPush:
-    @patch("agent.tools.git.subprocess.run")
-    def test_git_push_uses_current_branch_when_branch_not_provided(self, mock_run: Mock):
-        mock_run.side_effect = [
-            Mock(stdout="main\n", stderr=""),
-            Mock(stdout="", stderr=""),
-        ]
+    @pytest.mark.git_http_integration
+    def test_git_push_uses_current_branch_when_branch_not_provided(
+        self,
+        git_working_repo_with_remote: Path,
+        git_http_mock_server,
+    ):
+        received_refs_log = git_http_mock_server.root / "origin-received-refs.log"
+        git_http_mock_server.install_post_receive_hook("origin", received_refs_log)
 
-        result = git_push()
-
-        assert result == "Pushed main to origin"
-        assert mock_run.call_args_list == [
-            call(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        with _chdir(git_working_repo_with_remote):
+            subprocess.run(
+                ["git", "checkout", "-b", "feature/http-push"],
                 check=True,
-                stdout=-1,
-                stderr=-1,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-            ),
-            call(
-                ["git", "push", "origin", "main"],
+            )
+            (git_working_repo_with_remote / "README.md").write_text(
+                "# Temp Repo\nupdated via http\n", encoding="utf-8"
+            )
+            subprocess.run(
+                ["git", "commit", "-am", "Push over HTTP"],
                 check=True,
-                stdout=-1,
-                stderr=-1,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-            ),
-        ]
+            )
 
-    @patch("agent.tools.git.subprocess.run")
-    def test_git_push_uses_explicit_remote_and_branch(self, mock_run: Mock):
-        mock_run.return_value = Mock(stdout="", stderr="")
+            result = git_push()
+        received_refs = received_refs_log.read_text(encoding="utf-8").strip()
 
-        result = git_push(remote="upstream", branch="feature/test")
+        assert result == "Pushed feature/http-push to origin"
+        assert received_refs.endswith("refs/heads/feature/http-push")
 
-        assert result == "Pushed feature/test to upstream"
-        mock_run.assert_called_once_with(
-            ["git", "push", "upstream", "feature/test"],
-            check=True,
-            stdout=-1,
-            stderr=-1,
-            text=True,
-        )
+    @pytest.mark.git_http_integration
+    def test_git_push_uses_explicit_remote_and_branch(
+        self,
+        git_working_repo_with_remote: Path,
+        git_http_mock_server,
+    ):
+        received_refs_log = git_http_mock_server.root / "origin-explicit-received-refs.log"
+        git_http_mock_server.install_post_receive_hook("origin", received_refs_log)
+
+        with _chdir(git_working_repo_with_remote):
+            subprocess.run(
+                ["git", "checkout", "-b", "feature/explicit-http"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            new_file = git_working_repo_with_remote / "playbook.yml"
+            new_file.write_text("---\n- hosts: all\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", "playbook.yml"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "commit", "-m", "Explicit branch push"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            result = git_push(remote="origin", branch="feature/explicit-http")
+        received_refs = received_refs_log.read_text(encoding="utf-8").strip()
+
+        assert result == "Pushed feature/explicit-http to origin"
+        assert received_refs.endswith("refs/heads/feature/explicit-http")
+
+    @pytest.mark.git_http_integration
+    def test_git_push_surfaces_missing_remote_repo_failure(
+        self,
+        tmp_path: Path,
+        git_http_mock_server,
+    ):
+        repo_path = tmp_path / "working-repo"
+        repo_path.mkdir()
+
+        with _chdir(repo_path):
+            subprocess.run(
+                ["git", "init"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "DevOps Agent Tests"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.email", "devops-agent-tests@example.com"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            (repo_path / "README.md").write_text("# Temp Repo\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", "README.md"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "commit", "-m", "Initial commit"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "checkout", "-b", "feature/missing-http"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "remote", "add", "origin", git_http_mock_server.repo_url("missing-remote")],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            with pytest.raises(RuntimeError, match="not found|repository|404"):
+                git_push()
 
     @pytest.mark.parametrize("remote", ["", "   "])
     def test_git_push_rejects_empty_remote(self, remote: str):
