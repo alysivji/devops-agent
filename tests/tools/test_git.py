@@ -63,7 +63,6 @@ def git_repo(tmp_path: Path) -> Path:
 
 
 class TestGitStatus:
-    @pytest.mark.subprocess_vcr
     def test_git_status(self, git_repo: Path):
         (git_repo / "README.md").write_text("# Temp Repo\nupdated\n", encoding="utf-8")
 
@@ -74,7 +73,6 @@ class TestGitStatus:
 
 
 class TestListGitCommits:
-    @pytest.mark.subprocess_vcr
     def test_list_git_commits(self, git_repo: Path):
         with _chdir(git_repo):
             result = list_git_commits(limit=5)
@@ -87,7 +85,6 @@ class TestListGitCommits:
 
 
 class TestCreateGitCommit:
-    @pytest.mark.subprocess_vcr
     def test_create_git_commit_with_staging(self, git_repo: Path):
         (git_repo / "playbook.yml").write_text("---\n- hosts: all\n", encoding="utf-8")
 
@@ -254,7 +251,6 @@ class TestGitPush:
 
 
 class TestCreateGitBranch:
-    @pytest.mark.subprocess_vcr
     def test_create_git_branch_from_local_base_branch(self, git_repo: Path):
         with _chdir(git_repo):
             subprocess.run(

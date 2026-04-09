@@ -31,8 +31,9 @@
 - Add or update automated tests only for deterministic, non-agent tools by default.
 - Do not add tests for agent behavior unless explicitly requested.
 - Do not make tests depend on a live remote system unless the test is explicitly intended as manual verification.
-- For subprocess-driven integrations, prefer recorded fixtures with `subprocess-vcr` so tests remain deterministic.
-- Pytest defaults to replay mode through `addopts`, and `make test` records fixtures intentionally.
+- Prefer real local environments for deterministic tool tests when the setup is lightweight and self-contained, such as temp repos or local mock servers.
+- Use `subprocess-vcr` when the realistic local setup is heavier or more fragile, such as Ansible subprocess coverage that depends on local tool installation and host configuration.
+- Pytest defaults to replay mode through `addopts`, and `make test` records fixtures intentionally for the subprocess-vcr-backed cases.
 - Use the `git_http_integration` marker for Git flows that need a realistic remote without hitting an external host.
 - Keep unit tests focused on command construction, argument validation, and error handling for remote-capable tools.
 - If a remote workflow cannot be covered in automated tests, add a short manual verification note to the PR description.
