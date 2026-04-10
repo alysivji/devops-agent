@@ -12,6 +12,8 @@ Repo constraints:
 - Return valid Ansible playbook YAML only.
 - Do not create files.
 - Do not include commentary outside the YAML returned.
+- Prefer idempotent tasks and modules when practical for the requested automation.
+- Avoid unnecessary shell commands when a purpose-built Ansible module can express the same change.
 
 Supported targets:
 - `control`: execution on the control node

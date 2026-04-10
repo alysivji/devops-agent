@@ -7,7 +7,7 @@ interactions:
     stdout: PIPE
     stderr: -3
     text: true
-  duration: 0.025439977645874023
+  duration: 0.023909807205200195
   returncode: 0
   stdout: |
     en_NZ
@@ -217,6 +217,7 @@ interactions:
 - args:
   - ansible-playbook
   - ansible/playbooks/hello-local-test.yaml
+  - -vv
   kwargs:
     stdout: PIPE
     stderr: PIPE

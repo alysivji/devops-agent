@@ -21,7 +21,7 @@ class TestRunAnsiblePlaybook:
 
         assert "PLAY RECAP" in result
 
-    def test_run_ansible_playbook_verbose(self, monkeypatch: pytest.MonkeyPatch):
+    def test_run_ansible_playbook_uses_verbose_output(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr("builtins.input", lambda _: "y")
 
         recorded: dict[str, object] = {}
@@ -38,7 +38,7 @@ class TestRunAnsiblePlaybook:
 
         monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
 
-        cast(Any, run_ansible_playbook)("ansible/playbooks/hello-control.yaml", True)
+        cast(Any, run_ansible_playbook)("ansible/playbooks/hello-control.yaml")
 
         assert recorded["args"] == (
             ["ansible-playbook", "ansible/playbooks/hello-control.yaml", "-vv"],

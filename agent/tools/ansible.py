@@ -152,12 +152,11 @@ def get_ansible_playbook_registry() -> list[dict[str, str | bool | list[str]]]:
 
 
 @tool
-def run_ansible_playbook(playbook_path: str, verbose: bool = False) -> str:
+def run_ansible_playbook(playbook_path: str) -> str:
     """Run a validated Ansible playbook and return its standard output.
 
     Args:
         playbook_path: Relative path to a playbook file in the validated registry.
-        verbose: Whether to enable verbose output.
 
     Returns:
         The decoded stdout from the Ansible process.
@@ -172,9 +171,7 @@ def run_ansible_playbook(playbook_path: str, verbose: bool = False) -> str:
     if entry.requires_approval and not _confirm_playbook_execution(entry):
         raise PermissionError(f"Execution not approved for playbook: {playbook_path}")
 
-    command = ["ansible-playbook", playbook_path]
-    if verbose:
-        command.append("-vv")
+    command = ["ansible-playbook", playbook_path, "-vv"]
 
     try:
         result = subprocess.run(
