@@ -1,11 +1,13 @@
 import re
 from pathlib import Path
 
+import yaml
 from pydantic import BaseModel
 from strands import tool
 
 from .generate_playbook import GeneratePlaybookAgent
 from .playbook_metadata import GeneratedPlaybookMetadata, PlaybookMetadataAgent
+from .run_history import record_event
 
 PLAYBOOKS_DIR = Path("ansible/playbooks")
 
@@ -45,8 +47,36 @@ class CreateAnsiblePlaybookWorkflow:
         self.metadata_agent = metadata_agent or PlaybookMetadataAgent()
 
     def run(self, query: str) -> CreateAnsiblePlaybookResult:
+        record_event(
+            kind="playbook_generation_started",
+            status="started",
+            what="Started generating a new playbook.",
+            why="The registry did not contain a suitable existing playbook for the request.",
+            details={"query": query},
+        )
         generated_playbook = self.generator.run(query)
+        playbook_summary = summarize_generated_playbook(generated_playbook.yaml)
+        record_event(
+            kind="playbook_yaml_generated",
+            status="completed",
+            what="Generated playbook YAML.",
+            why="Draft the requested automation before reviewing metadata and filename.",
+            details=playbook_summary,
+        )
         generated_metadata = self.metadata_agent.run(yaml=generated_playbook.yaml)
+        record_event(
+            kind="playbook_metadata_generated",
+            status="completed",
+            what="Generated playbook metadata.",
+            why="Summarize the new playbook with registry-friendly fields before any write.",
+            details={
+                "name": generated_metadata.name,
+                "description": generated_metadata.description,
+                "target": generated_metadata.target,
+                "requires_approval": generated_metadata.requires_approval,
+                "tags": generated_metadata.tags,
+            },
+        )
         playbook_path = build_playbook_path(generated_metadata.name)
         rendered_playbook = render_playbook_file(
             yaml=generated_playbook.yaml,
@@ -58,10 +88,27 @@ class CreateAnsiblePlaybookWorkflow:
             metadata=generated_metadata,
             rendered_playbook=rendered_playbook,
         )
+        record_event(
+            kind="playbook_preview_presented",
+            status="completed",
+            what="Presented the generated playbook preview.",
+            why="Show the path, metadata, and YAML before asking for write approval.",
+            details={"path": str(playbook_path), **playbook_summary},
+        )
 
         written = confirm_write(playbook_path)
         if not written:
             print("Playbook not written.")
+            record_event(
+                kind="playbook_write_declined",
+                status="declined",
+                what="Playbook write was declined.",
+                why=(
+                    "The workflow requires explicit confirmation before "
+                    "creating a new playbook file."
+                ),
+                details={"path": str(playbook_path), "approved": False},
+            )
             return CreateAnsiblePlaybookResult(
                 path=playbook_path,
                 metadata=generated_metadata,
@@ -69,8 +116,25 @@ class CreateAnsiblePlaybookWorkflow:
                 written=False,
             )
 
+        record_event(
+            kind="playbook_write_approved",
+            status="approved",
+            what="Playbook write was approved.",
+            why="The generated playbook is ready to be written under ansible/playbooks.",
+            details={"path": str(playbook_path), "approved": True},
+        )
         playbook_path.write_text(rendered_playbook, encoding="utf-8")
         print(f"Wrote playbook to {playbook_path}.")
+        record_event(
+            kind="playbook_written",
+            status="completed",
+            what="Wrote the generated playbook file.",
+            why=(
+                "Persist the approved playbook so it can be validated and "
+                "executed through the registry."
+            ),
+            details={"path": str(playbook_path)},
+        )
         return CreateAnsiblePlaybookResult(
             path=playbook_path,
             metadata=generated_metadata,
@@ -120,3 +184,22 @@ def print_preview(
         print(f"    - {tag}")
     print()
     print(rendered_playbook)
+
+
+def summarize_generated_playbook(yaml_text: str) -> dict[str, str | int | list[str]]:
+    parsed = yaml.safe_load(yaml_text)
+    hosts: list[str] = []
+    task_count = 0
+
+    if isinstance(parsed, list):
+        for play in parsed:
+            if not isinstance(play, dict):
+                continue
+            hosts_value = play.get("hosts")
+            if isinstance(hosts_value, str):
+                hosts.append(hosts_value)
+            tasks = play.get("tasks")
+            if isinstance(tasks, list):
+                task_count += len(tasks)
+
+    return {"hosts": hosts, "task_count": task_count}
