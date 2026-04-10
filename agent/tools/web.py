@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import TypedDict
 
 from ddgs import DDGS
 from strands import tool
@@ -10,8 +11,14 @@ MAX_SEARCH_RESULTS = 10
 RESULT_PREVIEW_LENGTH = 200
 
 
+class WebSearchResult(TypedDict):
+    title: str
+    url: str
+    snippet: str
+
+
 @tool
-def search_web(query: str, max_results: int = 5) -> list[dict[str, str]]:
+def search_web(query: str, max_results: int = 5) -> list[WebSearchResult]:
     """Search the web and return compact result snippets."""
     normalized_query = query.strip()
     if not normalized_query:
@@ -127,7 +134,7 @@ def http_get(
     return text
 
 
-def _normalize_search_result(item: object) -> dict[str, str]:
+def _normalize_search_result(item: object) -> WebSearchResult:
     if not isinstance(item, Mapping):
         raise RuntimeError("web search returned unusable results")
 
