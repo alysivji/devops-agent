@@ -3,7 +3,6 @@ import subprocess
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import Mock, call, patch
 
 import pytest
 
@@ -273,74 +272,71 @@ class TestCreateGitBranch:
         assert result == "Created and switched to feature/test from local-base"
         assert current_branch == "feature/test"
 
-    @patch("agent.tools.git.subprocess.run")
-    def test_create_git_branch_noops_when_already_on_branch(self, mock_run: Mock):
-        mock_run.return_value = Mock(stdout="feature/test\n", stderr="")
+    def test_create_git_branch_noops_when_already_on_branch(self, git_repo: Path):
+        with _chdir(git_repo):
+            subprocess.run(
+                ["git", "checkout", "-b", "feature/test"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
 
-        result = create_git_branch("feature/test")
+            result = create_git_branch("feature/test")
+            current_branch = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            ).stdout.strip()
 
         assert result == "Already on feature/test"
-        mock_run.assert_called_once_with(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            check=True,
-            stdout=-1,
-            stderr=-1,
-            text=True,
-        )
+        assert current_branch == "feature/test"
 
-    @patch("agent.tools.git.subprocess.run")
-    def test_create_git_branch_uses_default_base_ref(self, mock_run: Mock):
-        mock_run.side_effect = [
-            Mock(stdout="main\n", stderr=""),
-            Mock(stdout="", stderr=""),
-        ]
+    def test_create_git_branch_uses_default_base_ref(self, git_repo: Path):
+        with _chdir(git_repo):
+            subprocess.run(
+                ["git", "branch", "origin/main"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
 
-        result = create_git_branch("feature/test")
+            result = create_git_branch("feature/test")
+            current_branch = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            ).stdout.strip()
 
         assert result == "Created and switched to feature/test from origin/main"
-        assert mock_run.call_args_list == [
-            call(
+        assert current_branch == "feature/test"
+
+    def test_create_git_branch_uses_explicit_base_ref(self, git_repo: Path):
+        with _chdir(git_repo):
+            subprocess.run(
+                ["git", "branch", "origin/release"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            result = create_git_branch("feature/test", base_ref="origin/release")
+            current_branch = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 check=True,
-                stdout=-1,
-                stderr=-1,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-            ),
-            call(
-                ["git", "checkout", "-b", "feature/test", "origin/main"],
-                check=True,
-                stdout=-1,
-                stderr=-1,
-                text=True,
-            ),
-        ]
-
-    @patch("agent.tools.git.subprocess.run")
-    def test_create_git_branch_uses_explicit_base_ref(self, mock_run: Mock):
-        mock_run.side_effect = [
-            Mock(stdout="main\n", stderr=""),
-            Mock(stdout="", stderr=""),
-        ]
-
-        result = create_git_branch("feature/test", base_ref="origin/release")
+            ).stdout.strip()
 
         assert result == "Created and switched to feature/test from origin/release"
-        assert mock_run.call_args_list == [
-            call(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-                check=True,
-                stdout=-1,
-                stderr=-1,
-                text=True,
-            ),
-            call(
-                ["git", "checkout", "-b", "feature/test", "origin/release"],
-                check=True,
-                stdout=-1,
-                stderr=-1,
-                text=True,
-            ),
-        ]
+        assert current_branch == "feature/test"
 
     @pytest.mark.parametrize("branch_name", ["", "   "])
     def test_create_git_branch_rejects_empty_branch_name(self, branch_name: str):
