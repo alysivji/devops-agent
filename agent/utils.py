@@ -11,7 +11,7 @@ def build_model(
     *, model_id: str | None = None, params: dict[str, Any] | None = None
 ) -> OpenAIModel:
     model_config: dict[str, Any] = {
-        "model_id": model_id or "gpt-5.4",
+        "model_id": model_id,
     }
     if params is not None:
         model_config["params"] = params
