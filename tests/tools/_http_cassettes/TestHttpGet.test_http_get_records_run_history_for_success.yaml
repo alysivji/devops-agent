@@ -1,0 +1,1284 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.33.1
+    method: GET
+    uri: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+  response:
+    body:
+      string: ''
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Age:
+      - '870'
+      CF-Cache-Status:
+      - HIT
+      CF-Ray:
+      - 9e9f93ff3e72c9f2-ORD
+      Cache-Control:
+      - max-age=1200
+      Connection:
+      - keep-alive
+      Content-Language:
+      - en
+      Content-Length:
+      - '0'
+      Content-Type:
+      - text/html; charset=utf-8
+      Date:
+      - Fri, 10 Apr 2026 06:08:38 GMT
+      Location:
+      - https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/apt_module.html
+      Server:
+      - cloudflare
+      Vary:
+      - Accept-Language, Accept-Encoding
+      access-control-allow-methods:
+      - HEAD, OPTIONS, GET
+      alt-svc:
+      - h3=":443"; ma=86400
+      cdn-cache-control:
+      - public
+      cross-origin-opener-policy:
+      - same-origin
+      referrer-policy:
+      - no-referrer-when-downgrade
+      x-backend:
+      - web-i-08c828b887f8de0a5
+      x-content-type-options:
+      - nosniff
+      x-rtd-domain:
+      - docs.ansible.com
+      x-rtd-force-addons:
+      - 'true'
+      x-rtd-project:
+      - ansible
+      x-rtd-project-method:
+      - custom_domain
+      x-rtd-redirect:
+      - user
+      x-rtd-resolver-filename:
+      - /ansible/latest/collections/ansible/builtin/apt_module.html
+      x-rtd-version:
+      - latest
+      x-rtd-version-method:
+      - path
+      x-served:
+      - Proxito-404
+    status:
+      code: 301
+      message: Moved Permanently
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.33.1
+    method: GET
+    uri: https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/apt_module.html
+  response:
+    body:
+      string: "\n\n<!DOCTYPE html>\n<html class=\"writer-html5\" lang=\"en\" data-content_root=\"../../../\">\n<head>\n
+        \ <meta charset=\"utf-8\" /><meta name=\"generator\" content=\"Docutils 0.18.1:
+        http://docutils.sourceforge.net/\" />\n<meta content=\"2.23.0\" name=\"antsibull-docs\"
+        />\n\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"
+        />\n  <title>ansible.builtin.apt module \u2013 Manages apt-packages &mdash;
+        Ansible Community Documentation</title>\n      <link rel=\"stylesheet\" type=\"text/css\"
+        href=\"../../../_static/pygments.css?v=41de9001\" />\n      <link rel=\"stylesheet\"
+        type=\"text/css\" href=\"../../../_static/css/ansible.css?v=b54c304f\" />\n
+        \     <link rel=\"stylesheet\" type=\"text/css\" href=\"../../../_static/antsibull-minimal.css\"
+        />\n      <link rel=\"stylesheet\" type=\"text/css\" href=\"../../../_static/copybutton.css?v=76b2166b\"
+        />\n      <link rel=\"stylesheet\" type=\"text/css\" href=\"../../../_static/css/rtd-ethical-ads.css?v=289b023e\"
+        />\n\n  \n    <link rel=\"shortcut icon\" href=\"../../../_static/images/Ansible-Mark-RGB_Black.png\"/>\n
+        \   <link rel=\"canonical\" href=\"https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/apt_module.html\"/>\n
+        \     <script src=\"../../../_static/jquery.js?v=5d32c60e\"></script>\n      <script
+        src=\"../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c\"></script>\n
+        \     <script src=\"../../../_static/documentation_options.js?v=466ea2d0\"></script>\n
+        \     <script src=\"../../../_static/doctools.js?v=888ff710\"></script>\n
+        \     <script src=\"../../../_static/sphinx_highlight.js?v=dc90522c\"></script>\n
+        \     <script src=\"../../../_static/clipboard.min.js?v=a7894cd8\"></script>\n
+        \     <script src=\"../../../_static/copybutton.js?v=f281be69\"></script>\n
+        \   <script src=\"../../../_static/js/theme.js\"></script>\n    <link rel=\"index\"
+        title=\"Index\" href=\"../../../genindex.html\" />\n    <link rel=\"search\"
+        title=\"Search\" href=\"../../../search.html\" />\n    <link rel=\"next\"
+        title=\"ansible.builtin.apt_key module \u2013 Add or remove an apt key\" href=\"apt_key_module.html\"
+        />\n    <link rel=\"prev\" title=\"ansible.builtin.add_host module \u2013
+        Add a host (and alternatively a group) to the ansible-playbook in-memory inventory\"
+        href=\"add_host_module.html\" /><!-- extra head elements for Ansible beyond
+        RTD Sphinx Theme -->\n<script src=\"https://www.redhat.com/dtm.js\"></script>\n\n\n<!--
+        Google Tag Manager Data Layer -->\n<script>\n dataLayer = [];\n</script>\n<!--
+        End Google Tag Manager Data Layer -->\n\n\n<script async type=\"text/javascript\"
+        src=\"/_/static/javascript/readthedocs-addons.js\"></script><meta name=\"readthedocs-project-slug\"
+        content=\"package-doc-builds\" /><meta name=\"readthedocs-version-slug\" content=\"latest\"
+        /><meta name=\"readthedocs-resolver-filename\" content=\"/collections/ansible/builtin/apt_module.html\"
+        /><meta name=\"readthedocs-http-status\" content=\"200\" /></head>\n\n<body
+        class=\"wy-body-for-nav\"><!-- extra body elements for Ansible beyond RTD
+        Sphinx Theme -->\n<!-- Google Tag Manager -->\n<noscript><iframe src=\"https://www.googletagmanager.com/ns.html?id=GTM-PSB293\"
+        height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript>\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-PSB293');</script>\n<!-- End
+        Google Tag Manager -->\n\n<div class=\"DocSite-globalNav ansibleNav\">\n  <ul>\n
+        \   <li><a href=\"https://www.ansible.com/blog\" target=\"_blank\">Blog</a></li>\n
+        \   <li><a href=\"https://forum.ansible.com/\" target=\"_blank\">Ansible community
+        forum</a></li>\n    <li><a href=\"https://docs.ansible.com/\" target=\"_blank\">Documentation</a></li>\n
+        \ </ul>\n</div>\n\n<a class=\"DocSite-nav\" href=\"/\" style=\"padding-bottom:
+        30px;\">\n\n  <img class=\"DocSiteNav-logo\"\n    src=\"../../../_static/images/Ansible-Mark-RGB_White.png\"\n
+        \   alt=\"Ansible Logo\">\n  <div class=\"DocSiteNav-title\">Ansible Community
+        Documentation</div>\n</a>\n  <div class=\"wy-grid-for-nav\">\n    <nav data-toggle=\"wy-nav-shift\"
+        class=\"wy-nav-side\">\n      <div class=\"wy-side-scroll\">\n        <div
+        class=\"wy-side-nav-search\" >\n\n          \n          \n          <a href=\"../../../index.html\"
+        class=\"icon icon-home\">\n            Ansible\n          </a>\n<div role=\"search\">\n
+        \ <form id=\"rtd-search-form\" class=\"wy-form\" action=\"../../../search.html\"
+        method=\"get\">\n    <label class=\"sr-only\" for=\"q\">Search docs:</label>\n
+        \   <input type=\"text\" class=\"st-default-search-input\" id=\"q\" name=\"q\"
+        placeholder=\"Search docs\" />\n    <input type=\"hidden\" name=\"check_keywords\"
+        value=\"yes\" />\n    <input type=\"hidden\" name=\"area\" value=\"default\"
+        />\n  </form>\n</div>\n        </div><div class=\"wy-menu wy-menu-vertical\"
+        data-spy=\"affix\" role=\"navigation\" aria-label=\"Navigation menu\">\n  \n
+        \             <p class=\"caption\" role=\"heading\"><span class=\"caption-text\">Ansible
+        getting started</span></p>\n<ul>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../getting_started/index.html\">Getting started with
+        Ansible</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../getting_started_ee/index.html\">Getting started with Execution
+        Environments</a></li>\n</ul>\n<p class=\"caption\" role=\"heading\"><span
+        class=\"caption-text\">Installation, Upgrade &amp; Configuration</span></p>\n<ul>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../installation_guide/index.html\">Installation
+        Guide</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../porting_guides/porting_guides.html\">Ansible
+        Porting Guides</a></li>\n</ul>\n<p class=\"caption\" role=\"heading\"><span
+        class=\"caption-text\">Using Ansible</span></p>\n<ul>\n<li class=\"toctree-l1\"><a
+        class=\"reference internal\" href=\"../../../inventory_guide/index.html\">Building
+        Ansible inventories</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../command_guide/index.html\">Using Ansible command
+        line tools</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../playbook_guide/index.html\">Using Ansible playbooks</a></li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../vault_guide/index.html\">Protecting
+        sensitive data with Ansible vault</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../module_plugin_guide/index.html\">Using Ansible
+        modules and plugins</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../collections_guide/index.html\">Using Ansible collections</a></li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../os_guide/index.html\">Using
+        Ansible on Windows, BSD, and z/OS UNIX</a></li>\n<li class=\"toctree-l1\"><a
+        class=\"reference internal\" href=\"../../../tips_tricks/index.html\">Ansible
+        tips and tricks</a></li>\n</ul>\n<p class=\"caption\" role=\"heading\"><span
+        class=\"caption-text\">Contributing to Ansible</span></p>\n<ul>\n<li class=\"toctree-l1\"><a
+        class=\"reference internal\" href=\"../../../community/index.html\">Ansible
+        Community Guide</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../community/contributions_collections.html\">Ansible Collections
+        Contributor Guide</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../community/contributions.html\">ansible-core Contributors
+        Guide</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../community/advanced_index.html\">Advanced
+        Contributor Guide</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../dev_guide/style_guide/index.html\">Ansible documentation
+        style guide</a></li>\n</ul>\n<p class=\"caption\" role=\"heading\"><span class=\"caption-text\">Extending
+        Ansible</span></p>\n<ul>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../dev_guide/index.html\">Developer Guide</a></li>\n</ul>\n<p
+        class=\"caption\" role=\"heading\"><span class=\"caption-text\">Common Ansible
+        Scenarios</span></p>\n<ul>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../scenario_guides/cloud_guides.html\">Legacy Public
+        Cloud Guides</a></li>\n</ul>\n<p class=\"caption\" role=\"heading\"><span
+        class=\"caption-text\">Network Automation</span></p>\n<ul>\n<li class=\"toctree-l1\"><a
+        class=\"reference internal\" href=\"../../../network/getting_started/index.html\">Network
+        Getting Started</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../network/user_guide/index.html\">Network Advanced Topics</a></li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../network/dev_guide/index.html\">Network
+        Developer Guide</a></li>\n</ul>\n<p class=\"caption\" role=\"heading\"><span
+        class=\"caption-text\">Ansible Galaxy</span></p>\n<ul>\n<li class=\"toctree-l1\"><a
+        class=\"reference internal\" href=\"../../../galaxy/user_guide.html\">Galaxy
+        User Guide</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../galaxy/dev_guide.html\">Galaxy Developer Guide</a></li>\n</ul>\n<p
+        class=\"caption\" role=\"heading\"><span class=\"caption-text\">Reference
+        &amp; Appendices</span></p>\n<ul class=\"current\">\n<li class=\"toctree-l1
+        current\"><a class=\"reference internal\" href=\"../../index.html\">Collection
+        Index</a><ul class=\"current\">\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../amazon/index.html\">Collections in the Amazon Namespace</a></li>\n<li
+        class=\"toctree-l2 current\"><a class=\"reference internal\" href=\"../index.html\">Collections
+        in the Ansible Namespace</a><ul class=\"current\">\n<li class=\"toctree-l3
+        current\"><a class=\"reference internal\" href=\"index.html\">Ansible.Builtin</a><ul
+        class=\"current\">\n<li class=\"toctree-l4\"><a class=\"reference internal\"
+        href=\"index.html#description\">Description</a></li>\n<li class=\"toctree-l4\"><a
+        class=\"reference internal\" href=\"index.html#communication\">Communication</a></li>\n<li
+        class=\"toctree-l4 current\"><a class=\"reference internal\" href=\"index.html#plugin-index\">Plugin
+        Index</a></li>\n</ul>\n</li>\n<li class=\"toctree-l3\"><a class=\"reference
+        internal\" href=\"../netcommon/index.html\">Ansible.Netcommon</a></li>\n<li
+        class=\"toctree-l3\"><a class=\"reference internal\" href=\"../posix/index.html\">Ansible.Posix</a></li>\n<li
+        class=\"toctree-l3\"><a class=\"reference internal\" href=\"../utils/index.html\">Ansible.Utils</a></li>\n<li
+        class=\"toctree-l3\"><a class=\"reference internal\" href=\"../windows/index.html\">Ansible.Windows</a></li>\n</ul>\n</li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../arista/index.html\">Collections
+        in the Arista Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../awx/index.html\">Collections in the Awx Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../azure/index.html\">Collections
+        in the Azure Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../check_point/index.html\">Collections in the Check_point
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../chocolatey/index.html\">Collections in the Chocolatey Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../cisco/index.html\">Collections
+        in the Cisco Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../cloud/index.html\">Collections in the Cloud Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../cloudscale_ch/index.html\">Collections
+        in the Cloudscale_ch Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../community/index.html\">Collections in the Community
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../containers/index.html\">Collections in the Containers Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../cyberark/index.html\">Collections
+        in the Cyberark Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../dellemc/index.html\">Collections in the Dellemc Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../f5networks/index.html\">Collections
+        in the F5networks Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../fortinet/index.html\">Collections in the Fortinet
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../frr/index.html\">Collections in the Frr Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../gluster/index.html\">Collections
+        in the Gluster Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../google/index.html\">Collections in the Google Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../grafana/index.html\">Collections
+        in the Grafana Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../graphiant/index.html\">Collections in the Graphiant
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../hetzner/index.html\">Collections in the Hetzner Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../hitachivantara/index.html\">Collections
+        in the Hitachivantara Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../hpe/index.html\">Collections in the Hpe Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../ibm/index.html\">Collections
+        in the Ibm Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../ieisystem/index.html\">Collections in the Ieisystem
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../infinidat/index.html\">Collections in the Infinidat Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../infoblox/index.html\">Collections
+        in the Infoblox Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../inspur/index.html\">Collections in the Inspur Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../junipernetworks/index.html\">Collections
+        in the Junipernetworks Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../kaytus/index.html\">Collections in the Kaytus Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../kubernetes/index.html\">Collections
+        in the Kubernetes Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../kubevirt/index.html\">Collections in the Kubevirt
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../lowlydba/index.html\">Collections in the Lowlydba Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../mellanox/index.html\">Collections
+        in the Mellanox Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../microsoft/index.html\">Collections in the Microsoft
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../netapp/index.html\">Collections in the Netapp Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../netapp_eseries/index.html\">Collections
+        in the Netapp_eseries Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../netbox/index.html\">Collections in the Netbox Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../ngine_io/index.html\">Collections
+        in the Ngine_io Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../openstack/index.html\">Collections in the Openstack
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../openvswitch/index.html\">Collections in the Openvswitch Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../ovirt/index.html\">Collections
+        in the Ovirt Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../pcg/index.html\">Collections in the Pcg Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../purestorage/index.html\">Collections
+        in the Purestorage Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../ravendb/index.html\">Collections in the Ravendb Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../sensu/index.html\">Collections
+        in the Sensu Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../servicenow/index.html\">Collections in the Servicenow
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../splunk/index.html\">Collections in the Splunk Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../t_systems_mms/index.html\">Collections
+        in the T_systems_mms Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../telekom_mms/index.html\">Collections in the Telekom_mms
+        Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference internal\"
+        href=\"../../theforeman/index.html\">Collections in the Theforeman Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../vmware/index.html\">Collections
+        in the Vmware Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../vultr/index.html\">Collections in the Vultr Namespace</a></li>\n<li
+        class=\"toctree-l2\"><a class=\"reference internal\" href=\"../../vyos/index.html\">Collections
+        in the Vyos Namespace</a></li>\n<li class=\"toctree-l2\"><a class=\"reference
+        internal\" href=\"../../wti/index.html\">Collections in the Wti Namespace</a></li>\n</ul>\n</li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../all_plugins.html\">Indexes
+        of all modules and plugins</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../reference_appendices/playbooks_keywords.html\">Playbook
+        Keywords</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../reference_appendices/common_return_values.html\">Return Values</a></li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../reference_appendices/config.html\">Ansible
+        Configuration Settings</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../reference_appendices/general_precedence.html\">Controlling
+        how Ansible behaves: precedence rules</a></li>\n<li class=\"toctree-l1\"><a
+        class=\"reference internal\" href=\"../../../reference_appendices/YAMLSyntax.html\">YAML
+        Syntax</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../reference_appendices/python_3_support.html\">Python 3 Support</a></li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../reference_appendices/interpreter_discovery.html\">Interpreter
+        Discovery</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../reference_appendices/release_and_maintenance.html\">Releases
+        and maintenance</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../reference_appendices/test_strategies.html\">Testing Strategies</a></li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../dev_guide/testing/sanity/index.html\">Sanity
+        Tests</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../reference_appendices/faq.html\">Frequently
+        Asked Questions</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../reference_appendices/glossary.html\">Glossary</a></li>\n<li
+        class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../reference_appendices/module_utils.html\">Ansible
+        Reference: Module Utilities</a></li>\n<li class=\"toctree-l1\"><a class=\"reference
+        internal\" href=\"../../../reference_appendices/special_variables.html\">Special
+        Variables</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../reference_appendices/tower.html\">Red Hat Ansible Automation
+        Platform</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../reference_appendices/automationhub.html\">Ansible Automation
+        Hub</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"../../../reference_appendices/logging.html\">Logging
+        Ansible output</a></li>\n</ul>\n<p class=\"caption\" role=\"heading\"><span
+        class=\"caption-text\">Roadmaps</span></p>\n<ul>\n<li class=\"toctree-l1\"><a
+        class=\"reference internal\" href=\"../../../roadmap/ansible_roadmap_index.html\">Ansible
+        Roadmap</a></li>\n<li class=\"toctree-l1\"><a class=\"reference internal\"
+        href=\"../../../roadmap/ansible_core_roadmap_index.html\">ansible-core Roadmaps</a></li>\n</ul>\n\n\n
+        \       </div>\n      </div>\n    </nav>\n\n    <section data-toggle=\"wy-nav-shift\"
+        class=\"wy-nav-content-wrap\"><nav class=\"wy-nav-top\" aria-label=\"Mobile
+        navigation menu\" >\n          <i data-toggle=\"wy-nav-top\" class=\"fa fa-bars\"></i>\n
+        \         <a href=\"../../../index.html\">Ansible</a>\n      </nav>\n\n      <div
+        class=\"wy-nav-content\">\n        <div class=\"rst-content\">\n          <div
+        role=\"navigation\" aria-label=\"Page navigation\">\n  <ul class=\"wy-breadcrumbs\">\n
+        \     <li><a href=\"../../../index.html\" class=\"icon icon-home\" aria-label=\"Home\"></a></li>\n
+        \         <li class=\"breadcrumb-item\"><a href=\"../../index.html\">Collection
+        Index</a></li>\n          <li class=\"breadcrumb-item\"><a href=\"../index.html\">Collections
+        in the Ansible Namespace</a></li>\n          <li class=\"breadcrumb-item\"><a
+        href=\"index.html\">Ansible.Builtin</a></li>\n      <li class=\"breadcrumb-item
+        active\">ansible.builtin.apt module \u2013 Manages apt-packages</li>\n  <li
+        class=\"wy-breadcrumbs-aside\">\n          <!-- User defined GitHub URL -->\n
+        \         <a href=\"https://github.com/ansible/ansible/edit/devel/lib/ansible/modules/apt.py?description=%23%23%23%23%23%20SUMMARY%0A%3C!\u2014%20Your%20description%20here%20\u2013%3E%0A%0A%0A%23%23%23%23%23%20ISSUE%20TYPE%0A-%20Docs%20Pull%20Request%0A%0A%2Blabel:%20docsite_pr\"
+        class=\"fa fa-github\"> Edit on GitHub</a>\n  </li>\n  </ul>\n  <hr/>\n</div>\n
+        \         <div role=\"main\" class=\"document\" itemscope=\"itemscope\" itemtype=\"http://schema.org/Article\">\n
+        \ <script>\n    function startsWith(str, needle) {\n      return str.slice(0,
+        needle.length) == needle\n    }\n    function startsWithOneOf(str, needles)
+        {\n      return needles.some(function (needle) {\n        return startsWith(str,
+        needle);\n      });\n    }\n    var banner = '';\n      /*use extra_banner
+        for when we want something extra, like a survey or Community Day notice */\n
+        \     var extra_banner = '';\n    \n      var extra_banner =\n      '<div
+        id=\"latest_extra_banner_id\" class=\"admonition important\">' +\n        '<p
+        style=\"padding-bottom: 1.2rem;text-align: center;\">' +\n        'Join us
+        at <a href=\"https://www.redhat.com/en/summit?sc_id=RHCTE0250000464461\" target=\"_blank\">Red
+        Hat Summit in Atlanta</a> to learn about Ansible Automation Platform | May
+        11-14, 2026' +\n        '</p>' +\n      '</div>';\n    \n    // Create a banner
+        if we're not on the official docs site\n    if (location.host == \"docs.testing.ansible.com\")
+        {\n      document.write('<div id=\"testing_banner_id\" class=\"admonition
+        important\">' +\n                     '<p>This is the testing site for Ansible
+        Documentation. Unless you are reviewing pre-production changes, please visit
+        the <a href=\"https://docs.ansible.com/projects/ansible/latest/\">official
+        documentation website</a>.</p> <p></p>' +\n                     '</div>');\n
+        \   }\n    \n      // Create a banner\n      current_url_path = window.location.pathname;\n\n
+        \     var important = false;\n      var msg = '<p>';\n      if (startsWith(current_url_path,
+        \"/projects/ansible-core/\")) {\n        msg += 'You are reading documentation
+        for Ansible Core, which contains no plugins except for those in ansible.builtin.
+        For documentation of the Ansible package, go to <a href=\"https://docs.ansible.com/projects/ansible/latest/\">the
+        latest documentation</a>.';\n        /* temp - add extra warning about core-2.19.
+        Included in core 2.19 and later releases */\n        msg += '<br><p><strong>Important:</strong>
+        The ansible-core 2.19 release has made <b>significant templating changes that
+        might require you to update playbooks and roles</b>. The templating changes
+        enable reporting of numerous problematic behaviors that went undetected in
+        previous releases, with wide-ranging positive effects on security, performance,
+        and user experience. You should validate your content to ensure compatibility
+        with these templating changes before upgrading to ansible-core 2.19. See the
+        <a href=\"https://docs.ansible.com/projects/ansible/devel/porting_guides/porting_guide_12.html\">porting
+        guide</a> to understand where you may need to update your playbooks and roles.';\n
+        \     } else if (startsWithOneOf(current_url_path, [\"/projects/ansible/latest/\",
+        \"/projects/ansible/13/\"])) {\n        /* temp extra banner to advertise
+        something */\n        banner += extra_banner;\n\n        msg += 'This is the
+        <b>latest</b> (stable) Ansible community documentation. For Red Hat Ansible
+        Automation Platform subscriptions, see <a href=\"https://access.redhat.com/support/policy/updates/ansible-automation-platform\">Life
+        Cycle</a> for version details.';\n        /* temp - add extra warning about
+        core-2.19. Included in latest package release docs */\n \n        msg += '<br><p><strong>Important:</strong>
+        The ansible-core 2.19/Ansible 12 release has made <b>significant templating
+        changes that might require you to update playbooks and roles</b>. The templating
+        changes enable reporting of numerous problematic behaviors that went undetected
+        in previous releases, with wide-ranging positive effects on security, performance,
+        and user experience. You should validate your content to ensure compatibility
+        with these templating changes before upgrading to ansible-core 2.19 or Ansible
+        12. See the <a href=\"https://docs.ansible.com/projects/ansible/devel/porting_guides/porting_guide_12.html\">porting
+        guide</a> to understand where you may need to update your playbooks and roles.';\n\n
+        \     } else if (startsWith(current_url_path, \"/projects/ansible/2.9/\"))
+        {\n        msg += 'You are reading the latest Red Hat released version of
+        the Ansible documentation. Community users can use this version, or select
+        <b>latest</b> from the version selector to the left for the most recent community
+        version.';\n      } else if (startsWith(current_url_path, \"/projects/ansible/devel/\"))
+        {\n        /* temp extra banner to advertise something */\n        banner
+        += extra_banner;\n\n        msg += 'You are reading the <b>devel</b> version
+        of the Ansible documentation - this version is not guaranteed stable. Use
+        the version selection to the left if you want the <b>latest</b> (stable) released
+        version.';\n        /* temp - add extra warning about core-2.19.Added to latest
+        and devel docs */\n        msg += '<br><p><strong>Important:</strong> The
+        ansible-core 2.19/Ansible 12 release has made <b>significant templating changes
+        that might require you to update playbooks and roles</b>. The templating changes
+        enable reporting of numerous problematic behaviors that went undetected in
+        previous releases, with wide-ranging positive effects on security, performance,
+        and user experience. You should validate your content to ensure compatibility
+        with these templating changes before upgrading to ansible-core 2.19 or Ansible
+        12. See the <a href=\"https://docs.ansible.com/projects/ansible/devel/porting_guides/porting_guide_12.html\">porting
+        guide</a> to understand where you may need to update your playbooks and roles.';\n
+        \     } else {\n        msg += 'You are reading an older version of the Ansible
+        documentation. Use the version selection to the left if you want the <b>latest</b>
+        (stable) released version.';\n        /* temp extra banner to advertise something
+        - this is for testing*/\n        banner += extra_banner;\n\n      }\n      msg
+        += '</p>';\n\n      banner += '<div id=\"banner_id\" class=\"admonition ';\n
+        \     banner += important ? 'important' : 'caution';\n      banner += '\">';\n
+        \     banner += important ? '<br>' : '';\n      banner += msg;\n      banner
+        += important ? '<br>' : '';\n      banner += '</div>';\n      document.write(banner);\n
+        \   \n  </script>\n\n\n  \n           <div itemprop=\"articleBody\">\n             \n
+        \ <span class=\"target\" id=\"ansible-collections-ansible-builtin-apt-module\"></span><span
+        class=\"target\" id=\"apt-module\"></span><section id=\"ansible-builtin-apt-module-manages-apt-packages\">\n<h1>ansible.builtin.apt
+        module \u2013 Manages apt-packages<a class=\"headerlink\" href=\"#ansible-builtin-apt-module-manages-apt-packages\"
+        title=\"Link to this heading\">\uF0C1</a></h1>\n<div class=\"admonition note\">\n<p
+        class=\"admonition-title\">Note</p>\n<p>This module    is part of <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">ansible-core</span></code> and included
+        in all Ansible\ninstallations. In most cases, you can use the short\nmodule
+        name\n<code class=\"code docutils literal notranslate\"><span class=\"pre\">apt</span></code>
+        even without specifying the <a class=\"reference internal\" href=\"../../../collections_guide/collections_using_playbooks.html#collections-keyword\"><span
+        class=\"std std-ref\">collections keyword</span></a>.\nHowever, we recommend
+        you use the <a class=\"reference internal\" href=\"../../../reference_appendices/glossary.html#term-Fully-Qualified-Collection-Name-FQCN\"><span
+        class=\"xref std std-term\">Fully Qualified Collection Name (FQCN)</span></a>
+        <code class=\"code docutils literal notranslate\"><span class=\"pre\">ansible.builtin.apt</span></code>
+        for easy linking to the\nmodule    documentation and to avoid conflicting
+        with other collections that may have\nthe same module name.</p>\n</div>\n<nav
+        class=\"contents local\" id=\"contents\">\n<ul class=\"simple\">\n<li><p><a
+        class=\"reference internal\" href=\"#synopsis\" id=\"id7\">Synopsis</a></p></li>\n<li><p><a
+        class=\"reference internal\" href=\"#requirements\" id=\"id8\">Requirements</a></p></li>\n<li><p><a
+        class=\"reference internal\" href=\"#parameters\" id=\"id9\">Parameters</a></p></li>\n<li><p><a
+        class=\"reference internal\" href=\"#attributes\" id=\"id10\">Attributes</a></p></li>\n<li><p><a
+        class=\"reference internal\" href=\"#notes\" id=\"id11\">Notes</a></p></li>\n<li><p><a
+        class=\"reference internal\" href=\"#examples\" id=\"id12\">Examples</a></p></li>\n<li><p><a
+        class=\"reference internal\" href=\"#return-values\" id=\"id13\">Return Values</a></p></li>\n</ul>\n</nav>\n<section
+        id=\"synopsis\">\n<h2><a class=\"toc-backref\" href=\"#id7\" role=\"doc-backlink\">Synopsis</a><a
+        class=\"headerlink\" href=\"#synopsis\" title=\"Link to this heading\">\uF0C1</a></h2>\n<ul
+        class=\"simple\">\n<li><p>Manages <em>apt</em> packages (such as for Debian/Ubuntu).</p></li>\n</ul>\n</section>\n<section
+        id=\"requirements\">\n<span id=\"ansible-collections-ansible-builtin-apt-module-requirements\"></span><h2><a
+        class=\"toc-backref\" href=\"#id8\" role=\"doc-backlink\">Requirements</a><a
+        class=\"headerlink\" href=\"#requirements\" title=\"Link to this heading\">\uF0C1</a></h2>\n<p>The
+        below requirements are needed on the host that executes this module.</p>\n<ul
+        class=\"simple\">\n<li><p>python3-apt</p></li>\n<li><p>aptitude (before 2.4)</p></li>\n</ul>\n</section>\n<section
+        id=\"parameters\">\n<h2><a class=\"toc-backref\" href=\"#id9\" role=\"doc-backlink\">Parameters</a><a
+        class=\"headerlink\" href=\"#parameters\" title=\"Link to this heading\">\uF0C1</a></h2>\n<table
+        class=\"longtable ansible-option-table docutils align-default\" style=\"width:
+        100%\">\n<thead>\n<tr class=\"row-odd\"><th class=\"head\"><p>Parameter</p></th>\n<th
+        class=\"head\"><p>Comments</p></th>\n</tr>\n</thead>\n<tbody>\n<tr class=\"row-even\"><td><div
+        class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\" id=\"parameter-allow_change_held_packages\"></div><p
+        class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-allow-change-held-packages\"><strong>allow_change_held_packages</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-allow_change_held_packages\"
+        title=\"Permalink to this option\"></a><p class=\"ansible-option-type-line\"><span
+        class=\"ansible-option-type\">boolean</span></p>\n<p><em class=\"ansible-option-versionadded\">added
+        in ansible-core 2.13</em></p>\n</div></td>\n<td><div class=\"ansible-option-cell\"><p>Allows
+        changing the version of a package which is on the apt hold list.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-default-bold docutils literal notranslate\"><strong><span
+        class=\"pre\">false</span></strong></code> <span class=\"ansible-option-choices-default-mark\">\u2190
+        (default)</span></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-allow_downgrade\"></div>\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-allow-downgrade\"></div>\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-allow_downgrades\"></div>\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-allow-downgrades\"></div><p class=\"ansible-option-title\"
+        id=\"id2\"><span id=\"id1\"></span><span id=\"ansible-collections-ansible-builtin-apt-module-parameter-allow-downgrades\"></span><span
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-allow-downgrade\"></span><strong>allow_downgrade</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-allow_downgrade\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-aliases\">aliases:
+        allow-downgrade, allow_downgrades, allow-downgrades</span></p>\n<p class=\"ansible-option-type-line\"><span
+        class=\"ansible-option-type\">boolean</span></p>\n<p><em class=\"ansible-option-versionadded\">added
+        in ansible-core 2.12</em></p>\n</div></td>\n<td><div class=\"ansible-option-cell\"><p>Corresponds
+        to the <code class=\"docutils literal notranslate\"><span class=\"pre\">--allow-downgrades</span></code>
+        option for <em>apt</em>.</p>\n<p>This option enables the named package and
+        version to replace an already installed higher version of that package.</p>\n<p>Note
+        that setting <code class=\"ansible-option-value docutils literal notranslate\"><a
+        class=\"reference internal\" href=\"#id1\"><span class=\"std std-ref\"><span
+        class=\"pre\">allow_downgrade=true</span></span></a></code> can make this
+        module behave in a non-idempotent way.</p>\n<p>(The task could end up with
+        a set of packages that does not match the complete list of specified packages
+        to install).</p>\n<p><code class=\"ansible-option docutils literal notranslate\"><strong><a
+        class=\"reference internal\" href=\"#id1\"><span class=\"std std-ref\"><span
+        class=\"pre\">allow_downgrade</span></span></a></strong></code> is only supported
+        by <code class=\"docutils literal notranslate\"><span class=\"pre\">apt</span></code>
+        and will be ignored if <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">aptitude</span></code> is detected or specified.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-default-bold docutils literal notranslate\"><strong><span
+        class=\"pre\">false</span></strong></code> <span class=\"ansible-option-choices-default-mark\">\u2190
+        (default)</span></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-allow_unauthenticated\"></div>\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-allow-unauthenticated\"></div><p class=\"ansible-option-title\"
+        id=\"id3\"><span id=\"ansible-collections-ansible-builtin-apt-module-parameter-allow-unauthenticated\"></span><strong>allow_unauthenticated</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-allow_unauthenticated\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-aliases\">aliases:
+        allow-unauthenticated</span></p>\n<p class=\"ansible-option-type-line\"><span
+        class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div class=\"ansible-option-cell\"><p>Ignore
+        if packages cannot be authenticated. This is useful for bootstrapping environments
+        that manage their own apt-key setup.</p>\n<p><code class=\"ansible-option
+        docutils literal notranslate\"><strong><a class=\"reference internal\" href=\"#id3\"><span
+        class=\"std std-ref\"><span class=\"pre\">allow_unauthenticated</span></span></a></strong></code>
+        is only supported with <code class=\"ansible-option docutils literal notranslate\"><strong><a
+        class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-state\"><span
+        class=\"std std-ref\"><span class=\"pre\">state</span></span></a></strong></code>:
+        <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">install</span></code>/<code
+        class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">present</span></code>.</p>\n<p
+        class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-default-bold docutils
+        literal notranslate\"><strong><span class=\"pre\">false</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-auto_install_module_deps\"></div><p class=\"ansible-option-title\"
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-auto-install-module-deps\"><strong>auto_install_module_deps</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-auto_install_module_deps\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n<p><em
+        class=\"ansible-option-versionadded\">added in ansible-core 2.19</em></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Automatically install dependencies required
+        to run this module.</p>\n<p class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-choices-entry docutils
+        literal notranslate\"><span class=\"pre\">false</span></code></p></li>\n<li><p><code
+        class=\"ansible-option-default-bold docutils literal notranslate\"><strong><span
+        class=\"pre\">true</span></strong></code> <span class=\"ansible-option-choices-default-mark\">\u2190
+        (default)</span></p></li>\n</ul>\n</div></td>\n</tr>\n<tr class=\"row-even\"><td><div
+        class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\" id=\"parameter-autoclean\"></div><p
+        class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-autoclean\"><strong>autoclean</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-autoclean\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>If <code class=\"ansible-value docutils literal
+        notranslate\"><span class=\"pre\">true</span></code>, cleans the local repository
+        of retrieved package files that can no longer be downloaded.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-default-bold docutils literal notranslate\"><strong><span
+        class=\"pre\">false</span></strong></code> <span class=\"ansible-option-choices-default-mark\">\u2190
+        (default)</span></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-autoremove\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-autoremove\"><strong>autoremove</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-autoremove\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>If <code class=\"ansible-value docutils literal
+        notranslate\"><span class=\"pre\">true</span></code>, remove unused dependency
+        packages for all module states except <code class=\"ansible-value docutils
+        literal notranslate\"><span class=\"pre\">build-dep</span></code>. It can
+        also be used as the only option.</p>\n<p>Previous to version 2.4, <code class=\"ansible-option
+        docutils literal notranslate\"><strong><a class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-autoclean\"><span
+        class=\"std std-ref\"><span class=\"pre\">autoclean</span></span></a></strong></code>
+        was also an alias for <code class=\"ansible-option docutils literal notranslate\"><strong><a
+        class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-autoremove\"><span
+        class=\"std std-ref\"><span class=\"pre\">autoremove</span></span></a></strong></code>,
+        now it is its own separate command. See documentation for further information.</p>\n<p
+        class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-default-bold docutils
+        literal notranslate\"><strong><span class=\"pre\">false</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-cache_valid_time\"></div><p class=\"ansible-option-title\"
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-cache-valid-time\"><strong>cache_valid_time</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-cache_valid_time\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">integer</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Update the apt cache if it is older than
+        the <code class=\"ansible-option docutils literal notranslate\"><strong><a
+        class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-cache-valid-time\"><span
+        class=\"std std-ref\"><span class=\"pre\">cache_valid_time</span></span></a></strong></code>.
+        This option is set in seconds.</p>\n<p>As of Ansible 2.4, if explicitly set,
+        this sets <code class=\"ansible-option-value docutils literal notranslate\"><a
+        class=\"reference internal\" href=\"#id6\"><span class=\"std std-ref\"><span
+        class=\"pre\">update_cache=yes</span></span></a></code>.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-default-bold\">Default:</strong> <code class=\"ansible-option-default
+        docutils literal notranslate\"><span class=\"pre\">0</span></code></p>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-clean\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-clean\"><strong>clean</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-clean\" title=\"Permalink to
+        this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n<p><em
+        class=\"ansible-option-versionadded\">added in ansible-core 2.13</em></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Run the equivalent of <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">apt-get</span> <span class=\"pre\">clean</span></code>
+        to clear out the local repository of retrieved package files. It removes everything
+        but the lock file from <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">/var/cache/apt/archives/</span></code> and <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">/var/cache/apt/archives/partial/</span></code>.</p>\n<p>Can
+        be run as part of the package installation (clean runs before install) or
+        as a separate step.</p>\n<p class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-default-bold docutils
+        literal notranslate\"><strong><span class=\"pre\">false</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-deb\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-deb\"><strong>deb</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-deb\" title=\"Permalink to this
+        option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">path</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Path to a .deb package on the remote machine.</p>\n<p>If
+        <code class=\"docutils literal notranslate\"><span class=\"pre\">://</span></code>
+        in the path, ansible will attempt to download deb before installing. (Version
+        added 2.1)</p>\n<p>Requires the <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">xz-utils</span></code> package to extract the control file of
+        the deb package to install.</p>\n</div></td>\n</tr>\n<tr class=\"row-odd\"><td><div
+        class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\" id=\"parameter-default_release\"></div>\n<div
+        class=\"ansibleOptionAnchor\" id=\"parameter-default-release\"></div><p class=\"ansible-option-title\"
+        id=\"id4\"><span id=\"ansible-collections-ansible-builtin-apt-module-parameter-default-release\"></span><strong>default_release</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-default_release\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-aliases\">aliases:
+        default-release</span></p>\n<p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">string</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Corresponds to the <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">-t</span></code> option for <em>apt</em>
+        and sets pin priorities.</p>\n</div></td>\n</tr>\n<tr class=\"row-even\"><td><div
+        class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\" id=\"parameter-dpkg_options\"></div><p
+        class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-dpkg-options\"><strong>dpkg_options</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-dpkg_options\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">string</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Add <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">dpkg</span></code> options to <code class=\"docutils literal
+        notranslate\"><span class=\"pre\">apt</span></code> command. Defaults to <code
+        class=\"docutils literal notranslate\"><span class=\"pre\">-o</span> <span
+        class=\"pre\">&quot;Dpkg::Options::=--force-confdef&quot;</span> <span class=\"pre\">-o</span>
+        <span class=\"pre\">&quot;Dpkg::Options::=--force-confold&quot;</span></code>.</p>\n<p>Options
+        should be supplied as comma separated list.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-default-bold\">Default:</strong> <code class=\"ansible-option-default
+        docutils literal notranslate\"><span class=\"pre\">&quot;force-confdef,force-confold&quot;</span></code></p>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-fail_on_autoremove\"></div><p class=\"ansible-option-title\"
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-fail-on-autoremove\"><strong>fail_on_autoremove</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-fail_on_autoremove\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n<p><em
+        class=\"ansible-option-versionadded\">added in ansible-core 2.11</em></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Corresponds to the <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">--no-remove</span></code> option
+        for <code class=\"docutils literal notranslate\"><span class=\"pre\">apt</span></code>.</p>\n<p>If
+        <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">true</span></code>,
+        it is ensured that no packages will be removed or the task will fail.</p>\n<p><code
+        class=\"ansible-option docutils literal notranslate\"><strong><a class=\"reference
+        internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-fail-on-autoremove\"><span
+        class=\"std std-ref\"><span class=\"pre\">fail_on_autoremove</span></span></a></strong></code>
+        is only supported with <code class=\"ansible-option docutils literal notranslate\"><strong><a
+        class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-state\"><span
+        class=\"std std-ref\"><span class=\"pre\">state</span></span></a></strong></code>
+        except <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">absent</span></code>.</p>\n<p><code
+        class=\"ansible-option docutils literal notranslate\"><strong><a class=\"reference
+        internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-fail-on-autoremove\"><span
+        class=\"std std-ref\"><span class=\"pre\">fail_on_autoremove</span></span></a></strong></code>
+        is only supported by <code class=\"docutils literal notranslate\"><span class=\"pre\">apt</span></code>
+        and will be ignored if <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">aptitude</span></code> is detected or specified.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-default-bold docutils literal notranslate\"><strong><span
+        class=\"pre\">false</span></strong></code> <span class=\"ansible-option-choices-default-mark\">\u2190
+        (default)</span></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-force\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-force\"><strong>force</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-force\" title=\"Permalink to
+        this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Corresponds to the <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">--force-yes</span></code> to <code
+        class=\"docutils literal notranslate\"><span class=\"pre\">apt-get</span></code>
+        and implies <code class=\"ansible-option-value docutils literal notranslate\"><a
+        class=\"reference internal\" href=\"#id3\"><span class=\"std std-ref\"><span
+        class=\"pre\">allow_unauthenticated=yes</span></span></a></code> and <code
+        class=\"ansible-option-value docutils literal notranslate\"><a class=\"reference
+        internal\" href=\"#id1\"><span class=\"std std-ref\"><span class=\"pre\">allow_downgrade=yes</span></span></a></code>.</p>\n<p>This
+        option will disable checking both the packages\u2019 signatures and the certificates
+        of the web servers they are downloaded from.</p>\n<p>This option *is not*
+        the equivalent of passing the <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">-f</span></code> flag to <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">apt-get</span></code> on the command line.</p>\n<p>**This is
+        a destructive operation with the potential to destroy your system, and it
+        should almost never be used.** Please also see <code class=\"docutils literal
+        notranslate\"><span class=\"pre\">man</span> <span class=\"pre\">apt-get</span></code>
+        for more information.</p>\n<p class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-default-bold docutils
+        literal notranslate\"><strong><span class=\"pre\">false</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-force_apt_get\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-force-apt-get\"><strong>force_apt_get</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-force_apt_get\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Force usage of apt-get instead of aptitude.</p>\n<p
+        class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-default-bold docutils
+        literal notranslate\"><strong><span class=\"pre\">false</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-install_recommends\"></div>\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-install-recommends\"></div><p class=\"ansible-option-title\"
+        id=\"id5\"><span id=\"ansible-collections-ansible-builtin-apt-module-parameter-install-recommends\"></span><strong>install_recommends</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-install_recommends\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-aliases\">aliases:
+        install-recommends</span></p>\n<p class=\"ansible-option-type-line\"><span
+        class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div class=\"ansible-option-cell\"><p>Corresponds
+        to the <code class=\"docutils literal notranslate\"><span class=\"pre\">--no-install-recommends</span></code>
+        option for <code class=\"docutils literal notranslate\"><span class=\"pre\">apt</span></code>.
+        <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">true</span></code>
+        installs recommended packages. <code class=\"ansible-value docutils literal
+        notranslate\"><span class=\"pre\">false</span></code> does not install recommended
+        packages. By default, Ansible will use the same defaults as the operating
+        system. Suggested packages are never installed.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">false</span></code></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-lock_timeout\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-lock-timeout\"><strong>lock_timeout</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-lock_timeout\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">integer</span></p>\n<p><em
+        class=\"ansible-option-versionadded\">added in ansible-core 2.12</em></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>How many seconds will this action wait to
+        acquire a lock on the apt db.</p>\n<p>Sometimes there is a transitory lock
+        and this will retry at least until timeout is hit.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-default-bold\">Default:</strong> <code class=\"ansible-option-default
+        docutils literal notranslate\"><span class=\"pre\">60</span></code></p>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-name\"></div>\n<div class=\"ansibleOptionAnchor\" id=\"parameter-package\"></div>\n<div
+        class=\"ansibleOptionAnchor\" id=\"parameter-pkg\"></div><p class=\"ansible-option-title\"
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-pkg\"><span
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-package\"></span><span
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-name\"></span><strong>name</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-name\" title=\"Permalink to
+        this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-aliases\">aliases:
+        package, pkg</span></p>\n<p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">list</span>
+        / <span class=\"ansible-option-elements\">elements=string</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>A list of package names, like <code class=\"ansible-value
+        docutils literal notranslate\"><span class=\"pre\">foo</span></code>, or package
+        specifier with version, like <code class=\"ansible-value docutils literal
+        notranslate\"><span class=\"pre\">foo=1.0</span></code> or <code class=\"ansible-value
+        docutils literal notranslate\"><span class=\"pre\">foo&gt;=1.0</span></code>.
+        Name wildcards (fnmatch) like <code class=\"ansible-value docutils literal
+        notranslate\"><span class=\"pre\">apt*</span></code> and version wildcards
+        like <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">foo=1.0*</span></code>
+        are also supported.</p>\n<p>Do not use single or double quotes around the
+        version when referring to the package name with a specific version, such as
+        <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">foo=1.0</span></code>
+        or <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">foo&gt;=1.0</span></code>.</p>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-only_upgrade\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-only-upgrade\"><strong>only_upgrade</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-only_upgrade\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Only upgrade a package if it is already installed.</p>\n<p
+        class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-default-bold docutils
+        literal notranslate\"><strong><span class=\"pre\">false</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-policy_rc_d\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-policy-rc-d\"><strong>policy_rc_d</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-policy_rc_d\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">integer</span></p>\n<p><em
+        class=\"ansible-option-versionadded\">added in Ansible 2.8</em></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Force the exit code of <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">/usr/sbin/policy-rc.d</span></code>.</p>\n<p>For
+        example, if <code class=\"ansible-option-value docutils literal notranslate\"><a
+        class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-policy-rc-d\"><span
+        class=\"std std-ref\"><span class=\"pre\">policy_rc_d=101</span></span></a></code>
+        the installed package will not trigger a service start.</p>\n<p>If <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">/usr/sbin/policy-rc.d</span></code>
+        already exists, it is backed up and restored after the package installation.</p>\n<p>If
+        <code class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">null</span></code>,
+        the <code class=\"docutils literal notranslate\"><span class=\"pre\">/usr/sbin/policy-rc.d</span></code>
+        is not created/changed.</p>\n</div></td>\n</tr>\n<tr class=\"row-odd\"><td><div
+        class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\" id=\"parameter-purge\"></div><p
+        class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-purge\"><strong>purge</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-purge\" title=\"Permalink to
+        this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Will force purging of configuration files
+        if <code class=\"ansible-option-value docutils literal notranslate\"><a class=\"reference
+        internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-state\"><span
+        class=\"std std-ref\"><span class=\"pre\">state=absent</span></span></a></code>
+        or <code class=\"ansible-option-value docutils literal notranslate\"><a class=\"reference
+        internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-autoremove\"><span
+        class=\"std std-ref\"><span class=\"pre\">autoremove=yes</span></span></a></code>.</p>\n<p
+        class=\"ansible-option-line\"><strong class=\"ansible-option-choices\">Choices:</strong></p>\n<ul
+        class=\"simple\">\n<li><p><code class=\"ansible-option-default-bold docutils
+        literal notranslate\"><strong><span class=\"pre\">false</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-state\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-state\"><strong>state</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-state\" title=\"Permalink to
+        this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">string</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Indicates the desired package state. <code
+        class=\"ansible-value docutils literal notranslate\"><span class=\"pre\">latest</span></code>
+        ensures that the latest version is installed. <code class=\"ansible-value
+        docutils literal notranslate\"><span class=\"pre\">build-dep</span></code>
+        ensures the package build dependencies are installed. <code class=\"ansible-value
+        docutils literal notranslate\"><span class=\"pre\">fixed</span></code> attempt
+        to correct a system with broken dependencies in place.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">&quot;absent&quot;</span></code></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">&quot;build-dep&quot;</span></code></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">&quot;latest&quot;</span></code></p></li>\n<li><p><code class=\"ansible-option-default-bold
+        docutils literal notranslate\"><strong><span class=\"pre\">&quot;present&quot;</span></strong></code>
+        <span class=\"ansible-option-choices-default-mark\">\u2190 (default)</span></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">&quot;fixed&quot;</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-update_cache\"></div>\n<div class=\"ansibleOptionAnchor\" id=\"parameter-update-cache\"></div><p
+        class=\"ansible-option-title\" id=\"id6\"><span id=\"ansible-collections-ansible-builtin-apt-module-parameter-update-cache\"></span><strong>update_cache</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-update_cache\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-aliases\">aliases:
+        update-cache</span></p>\n<p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Run the equivalent of <code class=\"docutils
+        literal notranslate\"><span class=\"pre\">apt-get</span> <span class=\"pre\">update</span></code>
+        before the operation. Can be run as part of the package installation or as
+        a separate step.</p>\n<p>Default is not to update the cache.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">false</span></code></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">true</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-update_cache_retries\"></div><p class=\"ansible-option-title\"
+        id=\"ansible-collections-ansible-builtin-apt-module-parameter-update-cache-retries\"><strong>update_cache_retries</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-update_cache_retries\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">integer</span></p>\n<p><em
+        class=\"ansible-option-versionadded\">added in ansible-base 2.10</em></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Amount of retries if the cache update fails.
+        Also see <code class=\"ansible-option docutils literal notranslate\"><strong><a
+        class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-update-cache-retry-max-delay\"><span
+        class=\"std std-ref\"><span class=\"pre\">update_cache_retry_max_delay</span></span></a></strong></code>.</p>\n<p
+        class=\"ansible-option-line\"><strong class=\"ansible-option-default-bold\">Default:</strong>
+        <code class=\"ansible-option-default docutils literal notranslate\"><span
+        class=\"pre\">5</span></code></p>\n</div></td>\n</tr>\n<tr class=\"row-odd\"><td><div
+        class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\" id=\"parameter-update_cache_retry_max_delay\"></div><p
+        class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-update-cache-retry-max-delay\"><strong>update_cache_retry_max_delay</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-update_cache_retry_max_delay\"
+        title=\"Permalink to this option\"></a><p class=\"ansible-option-type-line\"><span
+        class=\"ansible-option-type\">integer</span></p>\n<p><em class=\"ansible-option-versionadded\">added
+        in ansible-base 2.10</em></p>\n</div></td>\n<td><div class=\"ansible-option-cell\"><p>Use
+        an exponential backoff delay for each retry (see <code class=\"ansible-option
+        docutils literal notranslate\"><strong><a class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-update-cache-retries\"><span
+        class=\"std std-ref\"><span class=\"pre\">update_cache_retries</span></span></a></strong></code>)
+        up to this max delay in seconds.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-default-bold\">Default:</strong> <code class=\"ansible-option-default
+        docutils literal notranslate\"><span class=\"pre\">12</span></code></p>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"parameter-upgrade\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-parameter-upgrade\"><strong>upgrade</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#parameter-upgrade\" title=\"Permalink
+        to this option\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">string</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>If yes or safe, performs an aptitude safe-upgrade.</p>\n<p>If
+        full, performs an aptitude full-upgrade.</p>\n<p>If dist, performs an apt-get
+        dist-upgrade.</p>\n<p>Note: This does not upgrade a specific package, use
+        state=latest for that.</p>\n<p>Note: Since 2.4, apt-get is used as a fall-back
+        if aptitude is not present.</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-choices\">Choices:</strong></p>\n<ul class=\"simple\">\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">&quot;dist&quot;</span></code></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">&quot;full&quot;</span></code></p></li>\n<li><p><code
+        class=\"ansible-option-default-bold docutils literal notranslate\"><strong><span
+        class=\"pre\">&quot;no&quot;</span></strong></code> <span class=\"ansible-option-choices-default-mark\">\u2190
+        (default)</span></p></li>\n<li><p><code class=\"ansible-option-choices-entry
+        docutils literal notranslate\"><span class=\"pre\">&quot;safe&quot;</span></code></p></li>\n<li><p><code
+        class=\"ansible-option-choices-entry docutils literal notranslate\"><span
+        class=\"pre\">&quot;yes&quot;</span></code></p></li>\n</ul>\n</div></td>\n</tr>\n</tbody>\n</table>\n</section>\n<section
+        id=\"attributes\">\n<h2><a class=\"toc-backref\" href=\"#id10\" role=\"doc-backlink\">Attributes</a><a
+        class=\"headerlink\" href=\"#attributes\" title=\"Link to this heading\">\uF0C1</a></h2>\n<table
+        class=\"longtable ansible-option-table docutils align-default\" style=\"width:
+        100%\">\n<thead>\n<tr class=\"row-odd\"><th class=\"head\"><p>Attribute</p></th>\n<th
+        class=\"head\"><p>Support</p></th>\n<th class=\"head\"><p>Description</p></th>\n</tr>\n</thead>\n<tbody>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"attribute-check_mode\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-attribute-check-mode\"><strong>check_mode</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#attribute-check_mode\" title=\"Permalink
+        to this attribute\"></a></div></td>\n<td><div class=\"ansible-option-cell\"><p><strong
+        class=\"ansible-attribute-support-label\">Support: </strong><strong class=\"ansible-attribute-support-full\">full</strong></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Can run in check_mode and return changed
+        status prediction without modifying target, if not supported the action will
+        be skipped.</p>\n</div></td>\n</tr>\n<tr class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div
+        class=\"ansibleOptionAnchor\" id=\"attribute-diff_mode\"></div><p class=\"ansible-option-title\"
+        id=\"ansible-collections-ansible-builtin-apt-module-attribute-diff-mode\"><strong>diff_mode</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#attribute-diff_mode\" title=\"Permalink
+        to this attribute\"></a></div></td>\n<td><div class=\"ansible-option-cell\"><p><strong
+        class=\"ansible-attribute-support-label\">Support: </strong><strong class=\"ansible-attribute-support-full\">full</strong></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Will return details on what has changed (or
+        possibly needs changing in check_mode), when in diff mode</p>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"attribute-platform\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-attribute-platform\"><strong>platform</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#attribute-platform\" title=\"Permalink
+        to this attribute\"></a></div></td>\n<td><div class=\"ansible-option-cell\"><p><strong
+        class=\"ansible-attribute-support-property\">Platform:</strong>\_<strong class=\"ansible-attribute-support-full\">debian</strong></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>Target OS/families that can be operated against</p>\n</div></td>\n</tr>\n</tbody>\n</table>\n</section>\n<section
+        id=\"notes\">\n<h2><a class=\"toc-backref\" href=\"#id11\" role=\"doc-backlink\">Notes</a><a
+        class=\"headerlink\" href=\"#notes\" title=\"Link to this heading\">\uF0C1</a></h2>\n<div
+        class=\"admonition note\">\n<p class=\"admonition-title\">Note</p>\n<ul class=\"simple\">\n<li><p>Three
+        of the upgrade modes (<code class=\"ansible-value docutils literal notranslate\"><span
+        class=\"pre\">full</span></code>, <code class=\"ansible-value docutils literal
+        notranslate\"><span class=\"pre\">safe</span></code> and its alias <code class=\"ansible-value
+        docutils literal notranslate\"><span class=\"pre\">true</span></code>) required
+        <code class=\"docutils literal notranslate\"><span class=\"pre\">aptitude</span></code>
+        up to 2.3, since 2.4 <code class=\"docutils literal notranslate\"><span class=\"pre\">apt-get</span></code>
+        is used as a fall-back.</p></li>\n<li><p>In most cases, packages installed
+        with <em>apt</em> will start newly installed services by default. Most distributions
+        have mechanisms to avoid this. For example when installing Postgresql-9.5
+        in Debian 9, creating an executable shell script (/usr/sbin/policy-rc.d) that
+        throws a return code of 101 will stop Postgresql 9.5 starting up after install.
+        Remove the file or its execute permission afterward.</p></li>\n<li><p>The
+        <code class=\"docutils literal notranslate\"><span class=\"pre\">apt-get</span></code>
+        commandline supports implicit regex matches here but we do not because it
+        can let typos through easier (If you typo <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">foo</span></code> as <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">fo</span></code> apt-get would install packages that have \u201Cfo\u201D
+        in their name with a warning and a prompt for the user. Since there are no
+        warnings and prompts before installing, we disallow this. Use an explicit
+        fnmatch pattern if you want wildcarding).</p></li>\n<li><p>When used with
+        a <code class=\"docutils literal notranslate\"><span class=\"pre\">loop:</span></code>
+        each package will be processed individually, it is much more efficient to
+        pass the list directly to the <code class=\"ansible-option docutils literal
+        notranslate\"><strong><a class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-name\"><span
+        class=\"std std-ref\"><span class=\"pre\">name</span></span></a></strong></code>
+        option.</p></li>\n<li><p>When <code class=\"ansible-option docutils literal
+        notranslate\"><strong><a class=\"reference internal\" href=\"#id4\"><span
+        class=\"std std-ref\"><span class=\"pre\">default_release</span></span></a></strong></code>
+        is used, an implicit priority of 990 is used. This is the same behavior as
+        <code class=\"docutils literal notranslate\"><span class=\"pre\">apt-get</span>
+        <span class=\"pre\">-t</span></code>.</p></li>\n<li><p>When an exact version
+        is specified, an implicit priority of 1001 is used.</p></li>\n<li><p>If the
+        interpreter can\u2019t import <code class=\"docutils literal notranslate\"><span
+        class=\"pre\">python3-apt</span></code> the module will check for it in system-owned
+        interpreters as well. If the dependency can\u2019t be found, depending on
+        the value of <code class=\"ansible-option docutils literal notranslate\"><strong><a
+        class=\"reference internal\" href=\"#ansible-collections-ansible-builtin-apt-module-parameter-auto-install-module-deps\"><span
+        class=\"std std-ref\"><span class=\"pre\">auto_install_module_deps</span></span></a></strong></code>
+        the module will attempt to install it. If the dependency is found or installed,
+        the module will be respawned under the correct interpreter.</p></li>\n</ul>\n</div>\n</section>\n<section
+        id=\"examples\">\n<h2><a class=\"toc-backref\" href=\"#id12\" role=\"doc-backlink\">Examples</a><a
+        class=\"headerlink\" href=\"#examples\" title=\"Link to this heading\">\uF0C1</a></h2>\n<div
+        class=\"highlight-yaml+jinja notranslate\"><div class=\"highlight\"><pre><span></span><span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        apache httpd (state=present is optional)</span>\n<span class=\"w\">  </span><span
+        class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span class=\"w\">
+        \   </span><span class=\"nt\">name</span><span class=\"p\">:</span><span class=\"w\">
+        </span><span class=\"l l-Scalar l-Scalar-Plain\">apache2</span>\n<span class=\"w\">
+        \   </span><span class=\"nt\">state</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">present</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Update
+        repositories cache and install &quot;foo&quot; package</span>\n<span class=\"w\">
+        \ </span><span class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">name</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">foo</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">update_cache</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Remove
+        &quot;foo&quot; package</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">foo</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">state</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">absent</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        the package &quot;foo&quot;</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">foo</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        a list of packages</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">pkg</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"p p-Indicator\">-</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">foo</span>\n<span
+        class=\"w\">    </span><span class=\"p p-Indicator\">-</span><span class=\"w\">
+        </span><span class=\"l l-Scalar l-Scalar-Plain\">foo-tools</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        the version &#39;1.00&#39; of package &quot;foo&quot;</span>\n<span class=\"w\">
+        \ </span><span class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">name</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">foo=1.00</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Update
+        the repository cache and update package &quot;nginx&quot; to latest version
+        using default release squeeze-backport</span>\n<span class=\"w\">  </span><span
+        class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span class=\"w\">
+        \   </span><span class=\"nt\">name</span><span class=\"p\">:</span><span class=\"w\">
+        </span><span class=\"l l-Scalar l-Scalar-Plain\">nginx</span>\n<span class=\"w\">
+        \   </span><span class=\"nt\">state</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">latest</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">default_release</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">squeeze-backports</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">update_cache</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        the version &#39;1.18.0&#39; of package &quot;nginx&quot; and allow potential
+        downgrades</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">nginx=1.18.0</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">state</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">present</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">allow_downgrade</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        zfsutils-linux with ensuring conflicted packages (e.g. zfs-fuse) will not
+        be removed.</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">zfsutils-linux</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">state</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">latest</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">fail_on_autoremove</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        latest version of &quot;openjdk-6-jdk&quot; ignoring &quot;install-recommends&quot;</span>\n<span
+        class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">name</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">openjdk-6-jdk</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">state</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">latest</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">install_recommends</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">no</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Update
+        all packages to their latest version</span>\n<span class=\"w\">  </span><span
+        class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span class=\"w\">
+        \   </span><span class=\"nt\">name</span><span class=\"p\">:</span><span class=\"w\">
+        </span><span class=\"s\">&quot;*&quot;</span>\n<span class=\"w\">    </span><span
+        class=\"nt\">state</span><span class=\"p\">:</span><span class=\"w\"> </span><span
+        class=\"l l-Scalar l-Scalar-Plain\">latest</span>\n\n<span class=\"p p-Indicator\">-</span><span
+        class=\"w\"> </span><span class=\"nt\">name</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Upgrade the
+        OS (apt-get dist-upgrade)</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">upgrade</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">dist</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Run
+        the equivalent of &quot;apt-get update&quot; as a separate step</span>\n<span
+        class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">update_cache</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Only
+        run &quot;update_cache=yes&quot; if the last one is more than 3600 seconds
+        ago</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">update_cache</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">cache_valid_time</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">3600</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Pass
+        options to dpkg on run</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">upgrade</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">dist</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">update_cache</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">dpkg_options</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"s\">&#39;force-confold,force-confdef&#39;</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        a .deb package</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">deb</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">/tmp/mypackage.deb</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        the build dependencies for package &quot;foo&quot;</span>\n<span class=\"w\">
+        \ </span><span class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">pkg</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">foo</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">state</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">build-dep</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Install
+        a .deb package from the internet</span>\n<span class=\"w\">  </span><span
+        class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span class=\"w\">
+        \   </span><span class=\"nt\">deb</span><span class=\"p\">:</span><span class=\"w\">
+        </span><span class=\"l l-Scalar l-Scalar-Plain\">https://example.com/python-ppq_0.1-1_all.deb</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Remove
+        useless packages from the cache</span>\n<span class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span
+        class=\"p\">:</span>\n<span class=\"w\">    </span><span class=\"nt\">autoclean</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Remove
+        dependencies that are no longer required</span>\n<span class=\"w\">  </span><span
+        class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span class=\"w\">
+        \   </span><span class=\"nt\">autoremove</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Remove
+        dependencies that are no longer required and purge their configuration files</span>\n<span
+        class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">autoremove</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">purge</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">true</span>\n\n<span
+        class=\"p p-Indicator\">-</span><span class=\"w\"> </span><span class=\"nt\">name</span><span
+        class=\"p\">:</span><span class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">Run
+        the equivalent of &quot;apt-get clean&quot; as a separate step</span>\n<span
+        class=\"w\">  </span><span class=\"nt\">ansible.builtin.apt</span><span class=\"p\">:</span>\n<span
+        class=\"w\">    </span><span class=\"nt\">clean</span><span class=\"p\">:</span><span
+        class=\"w\"> </span><span class=\"l l-Scalar l-Scalar-Plain\">yes</span>\n</pre></div>\n</div>\n</section>\n<section
+        id=\"return-values\">\n<h2><a class=\"toc-backref\" href=\"#id13\" role=\"doc-backlink\">Return
+        Values</a><a class=\"headerlink\" href=\"#return-values\" title=\"Link to
+        this heading\">\uF0C1</a></h2>\n<p>Common return values are documented <a
+        class=\"reference internal\" href=\"../../../reference_appendices/common_return_values.html#common-return-values\"><span
+        class=\"std std-ref\">here</span></a>, the following are the fields unique
+        to this module:</p>\n<table class=\"longtable ansible-option-table docutils
+        align-default\" style=\"width: 100%\">\n<thead>\n<tr class=\"row-odd\"><th
+        class=\"head\"><p>Key</p></th>\n<th class=\"head\"><p>Description</p></th>\n</tr>\n</thead>\n<tbody>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"return-cache_update_time\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-return-cache-update-time\"><strong>cache_update_time</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#return-cache_update_time\" title=\"Permalink
+        to this return value\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">integer</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>time of the last cache update (0 if unknown)</p>\n<p
+        class=\"ansible-option-line\"><strong class=\"ansible-option-returned-bold\">Returned:</strong>
+        success, in some cases</p>\n<p class=\"ansible-option-line ansible-option-sample\"><strong
+        class=\"ansible-option-sample-bold\">Sample:</strong> <code class=\"ansible-option-sample
+        docutils literal notranslate\"><span class=\"pre\">1425828348000</span></code></p>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"return-cache_updated\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-return-cache-updated\"><strong>cache_updated</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#return-cache_updated\" title=\"Permalink
+        to this return value\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">boolean</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>if the cache was updated or not</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-returned-bold\">Returned:</strong> success, in some
+        cases</p>\n<p class=\"ansible-option-line ansible-option-sample\"><strong
+        class=\"ansible-option-sample-bold\">Sample:</strong> <code class=\"ansible-option-sample
+        docutils literal notranslate\"><span class=\"pre\">true</span></code></p>\n</div></td>\n</tr>\n<tr
+        class=\"row-even\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"return-stderr\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-return-stderr\"><strong>stderr</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#return-stderr\" title=\"Permalink to this
+        return value\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">string</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>error output from apt</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-returned-bold\">Returned:</strong> success, when needed</p>\n<p
+        class=\"ansible-option-line ansible-option-sample\"><strong class=\"ansible-option-sample-bold\">Sample:</strong>
+        <code class=\"ansible-option-sample docutils literal notranslate\"><span class=\"pre\">&quot;AH00558:</span>
+        <span class=\"pre\">apache2:</span> <span class=\"pre\">Could</span> <span
+        class=\"pre\">not</span> <span class=\"pre\">reliably</span> <span class=\"pre\">determine</span>
+        <span class=\"pre\">the</span> <span class=\"pre\">server's</span> <span class=\"pre\">fully</span>
+        <span class=\"pre\">qualified</span> <span class=\"pre\">domain</span> <span
+        class=\"pre\">name,</span> <span class=\"pre\">using</span> <span class=\"pre\">127.0.1.1.</span>
+        <span class=\"pre\">Set</span> <span class=\"pre\">the</span> <span class=\"pre\">'ServerName'</span>
+        <span class=\"pre\">directive</span> <span class=\"pre\">globally</span> <span
+        class=\"pre\">to</span> <span class=\"pre\">...&quot;</span></code></p>\n</div></td>\n</tr>\n<tr
+        class=\"row-odd\"><td><div class=\"ansible-option-cell\">\n<div class=\"ansibleOptionAnchor\"
+        id=\"return-stdout\"></div><p class=\"ansible-option-title\" id=\"ansible-collections-ansible-builtin-apt-module-return-stdout\"><strong>stdout</strong></p>\n<a
+        class=\"ansibleOptionLink\" href=\"#return-stdout\" title=\"Permalink to this
+        return value\"></a><p class=\"ansible-option-type-line\"><span class=\"ansible-option-type\">string</span></p>\n</div></td>\n<td><div
+        class=\"ansible-option-cell\"><p>output from apt</p>\n<p class=\"ansible-option-line\"><strong
+        class=\"ansible-option-returned-bold\">Returned:</strong> success, when needed</p>\n<p
+        class=\"ansible-option-line ansible-option-sample\"><strong class=\"ansible-option-sample-bold\">Sample:</strong>
+        <code class=\"ansible-option-sample docutils literal notranslate\"><span class=\"pre\">&quot;Reading</span>
+        <span class=\"pre\">package</span> <span class=\"pre\">lists...\\nBuilding</span>
+        <span class=\"pre\">dependency</span> <span class=\"pre\">tree...\\nReading</span>
+        <span class=\"pre\">state</span> <span class=\"pre\">information...\\nThe</span>
+        <span class=\"pre\">following</span> <span class=\"pre\">extra</span> <span
+        class=\"pre\">packages</span> <span class=\"pre\">will</span> <span class=\"pre\">be</span>
+        <span class=\"pre\">installed:\\n</span>&#160; <span class=\"pre\">apache2-bin</span>
+        <span class=\"pre\">...&quot;</span></code></p>\n</div></td>\n</tr>\n</tbody>\n</table>\n<section
+        id=\"authors\">\n<h3>Authors<a class=\"headerlink\" href=\"#authors\" title=\"Link
+        to this heading\">\uF0C1</a></h3>\n<ul class=\"simple\">\n<li><p>Matthew Williams
+        (&#64;mgwilliams)</p></li>\n</ul>\n</section>\n<section id=\"collection-links\">\n<h3>Collection
+        links<a class=\"headerlink\" href=\"#collection-links\" title=\"Link to this
+        heading\">\uF0C1</a></h3>\n<ul class=\"ansible-links\">\n<li><span><a aria-role=\"button\"
+        class=\"ansible-link reference external\" href=\"https://github.com/ansible/ansible/issues\"
+        rel=\"noopener external\" target=\"_blank\">Issue Tracker</a></span></li>\n<li><span><a
+        aria-role=\"button\" class=\"ansible-link reference external\" href=\"https://github.com/ansible/ansible\"
+        rel=\"noopener external\" target=\"_blank\">Repository (Sources)</a></span></li>\n<li><span><a
+        class=\"reference internal\" href=\"index.html#communication-for-ansible-builtin\"><span
+        class=\"std std-ref\">Communication</span></a></span></li>\n</ul>\n</section>\n</section>\n</section>\n\n\n
+        \          </div>\n          </div>\n          \n\n<footer><div class=\"rst-footer-buttons\"
+        role=\"navigation\" aria-label=\"Footer\">\n        <a href=\"add_host_module.html\"
+        class=\"btn btn-neutral float-left\" title=\"ansible.builtin.add_host module
+        \u2013 Add a host (and alternatively a group) to the ansible-playbook in-memory
+        inventory\" accesskey=\"p\" rel=\"prev\"><span class=\"fa fa-arrow-circle-left\"
+        aria-hidden=\"true\"></span> Previous</a>\n        <a href=\"apt_key_module.html\"
+        class=\"btn btn-neutral float-right\" title=\"ansible.builtin.apt_key module
+        \u2013 Add or remove an apt key\" accesskey=\"n\" rel=\"next\">Next <span
+        class=\"fa fa-arrow-circle-right\" aria-hidden=\"true\"></span></a>\n    </div>\n\n
+        \ <hr/>\n\n  <div role=\"contentinfo\">\n    <p>&#169; Copyright Ansible project
+        contributors.\n      <span class=\"lastupdated\">Last updated on Apr 06, 2026.\n
+        \     </span></p>\n  </div>\n\n  \n   \n\n</footer>\n        </div>\n      </div>\n
+        \   </section>\n  </div>\n  <script>\n      jQuery(function () {\n          SphinxRtdTheme.Navigation.enable(true);\n
+        \     });\n  </script><!-- extra footer elements for Ansible beyond RTD Sphinx
+        Theme -->\n<!-- begin analytics -->\n<script>\nvar _hsq = _hsq || [];\n_hsq.push([\"setContentType\",
+        \"standard-page\"]);\n      (function(d,s,i,r) {\n      if (d.getElementById(i)){return;}\n
+        \     var n = d.createElement(s),e = document.getElementsByTagName(s)[0];\n
+        \     n.id=i;n.src = 'https://js.hs-analytics.net/analytics/'+(Math.ceil(new
+        Date()/r)*r)+'/330046.js';\n      e.parentNode.insertBefore(n, e);\n      })(document,
+        \"script\", \"hs-analytics\",300000);\n</script>\n<!-- end analytics -->\n<script>\nif
+        ((\"undefined\" !== typeof _satellite) && (\"function\" === typeof _satellite.pageBottom))
+        {\n  _satellite.pageBottom();\n}\n</script>\n\n</body>\n</html>"
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Age:
+      - '1180'
+      CF-Cache-Status:
+      - HIT
+      CF-Ray:
+      - 9e9f93ffc830e137-ORD
+      Cache-Control:
+      - max-age=1200
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - text/html; charset=utf-8
+      Date:
+      - Fri, 10 Apr 2026 06:08:38 GMT
+      ETag:
+      - '"5da4682905ecdd87d5d9822785943474"'
+      Last-Modified:
+      - Mon, 06 Apr 2026 07:21:13 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      access-control-allow-methods:
+      - HEAD, OPTIONS, GET
+      alt-svc:
+      - h3=":443"; ma=86400
+      cdn-cache-control:
+      - public
+      cross-origin-opener-policy:
+      - same-origin
+      referrer-policy:
+      - no-referrer-when-downgrade
+      x-amz-id-2:
+      - 8In9OWrWtExgrWsio+Ouab+/bZGWzjIPwEMF3LQypSKBbV0QL1J/NUGlud2x1qn08+BOVFZb2aXsMwb4YwSgLN6OyoZVFiPk
+      x-amz-meta-mtime:
+      - '1775460060.86604241'
+      x-amz-request-id:
+      - WEFBVKM43Y0VKQ3B
+      x-amz-server-side-encryption:
+      - AES256
+      x-backend:
+      - web-i-06a712b285411dd04
+      x-content-type-options:
+      - nosniff
+      x-rtd-domain:
+      - docs.ansible.com
+      x-rtd-force-addons:
+      - 'true'
+      x-rtd-path:
+      - /proxito/html/package-doc-builds/latest/collections/ansible/builtin/apt_module.html
+      x-rtd-project:
+      - package-doc-builds
+      x-rtd-project-method:
+      - custom_domain
+      x-rtd-resolver-filename:
+      - /collections/ansible/builtin/apt_module.html
+      x-rtd-version:
+      - latest
+      x-rtd-version-method:
+      - path
+      x-served:
+      - Nginx-Proxito-Sendfile
+    status:
+      code: 200
+      message: OK
+version: 1

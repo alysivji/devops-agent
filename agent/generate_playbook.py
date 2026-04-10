@@ -2,7 +2,7 @@ import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from .run_history import record_event
-from .tools import get_ansible_inventory_groups
+from .tools import get_ansible_inventory_groups, http_get, search_web
 from .utils import build_agent, build_model
 
 SYSTEM_PROMPT = """
@@ -25,6 +25,13 @@ Hardware and role context:
 - The `control` node hosts control plane and management services.
 - The `cluster` nodes are Raspberry Pi Compute Module 3+ systems.
 - The `cluster` nodes run distributed workloads and containers.
+
+Research guidance:
+- Use `search_web` when the request depends on package names, module syntax,
+  distro-specific steps, or current documentation.
+- Prefer official vendor or upstream documentation when deciding what to read.
+- Use `http_get` only to read documentation or examples.
+- Never use HTTP for mutating actions.
 """
 
 
@@ -45,8 +52,7 @@ class GeneratePlaybookAgent:
         self.agent = build_agent(
             model=build_model(model_id="gpt-5.4"),
             system_prompt=SYSTEM_PROMPT,
-            # TODO add web search and http request tools for getting info
-            tools=[get_ansible_inventory_groups],
+            tools=[get_ansible_inventory_groups, search_web, http_get],
         )
 
     def run(self, prompt: str) -> GeneratedPlaybookYaml:

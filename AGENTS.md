@@ -13,6 +13,7 @@
 - Prefer local inspection first. Read code, inventory, config, playbooks, and tests before running a remote action.
 - Document the remote dependency in the PR description when a change depends on credentials, network access, or external systems.
 - If a tool has both local and remote modes, make the local path the default in development and tests.
+- Prefer `TypedDict` for structured tool return objects when the result should serialize as JSON through the Strands `@tool` wrapper. `TypedDict` keeps the runtime shape as plain dict/list data, while `list[BaseModel]` can fall back to Python repr text instead of JSON.
 
 ## Setup Expectations
 
@@ -33,7 +34,10 @@
 - Do not make tests depend on a live remote system unless the test is explicitly intended as manual verification.
 - Prefer real local environments for deterministic tool tests when the setup is lightweight and self-contained, such as temp repos or local mock servers.
 - Use `subprocess-vcr` when the realistic local setup is heavier or more fragile, such as Ansible subprocess coverage that depends on local tool installation and host configuration.
+- Use `pytest-vcr` for HTTP-based tool tests when the client library is compatible with VCR interception and the upstream endpoint is stable enough for recorded replay.
+- If the HTTP client is not VCR-interceptable, keep the networked wrapper deterministic with local unit tests at the library boundary instead of forcing live HTTP into the suite.
 - Pytest defaults to replay mode through `addopts`, and `make test` records fixtures intentionally for the subprocess-vcr-backed cases.
 - Use the `git_http_integration` marker for Git flows that need a realistic remote without hitting an external host.
-- Keep unit tests focused on command construction, argument validation, and error handling for remote-capable tools.
+- Keep unit tests focused on command construction, argument validation, serialization shape, and error handling for remote-capable tools.
+- When adding structured tool outputs, add typing that reflects the actual serialized shape exposed to the model runtime.
 - If a remote workflow cannot be covered in automated tests, add a short manual verification note to the PR description.

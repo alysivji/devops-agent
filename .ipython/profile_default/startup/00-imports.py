@@ -11,13 +11,16 @@ from agent.tools import (  # noqa: F401
     get_ansible_playbook_registry,
     git_push,
     git_status,
+    http_get,
     list_git_commits,
     run_ansible_playbook,
+    search_web,
 )
 
 print("Loaded agents: OrchestratorAgent, GeneratePlaybookAgent, PlaybookMetadataAgent")
 print(
     "Loaded tools: create_ansible_playbook, get_ansible_inventory_groups, "
-    "get_ansible_playbook_registry, run_ansible_playbook, git_status, "
-    "list_git_commits, create_git_commit, create_git_branch, git_push"
+    "get_ansible_playbook_registry, run_ansible_playbook, search_web, "
+    "http_get, git_status, list_git_commits, create_git_commit, "
+    "create_git_branch, git_push"
 )

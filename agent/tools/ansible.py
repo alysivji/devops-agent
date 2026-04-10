@@ -7,7 +7,7 @@ import subprocess
 import time
 import unicodedata
 from functools import lru_cache
-from typing import Final
+from typing import Final, Literal, TypedDict
 
 import yaml
 from pydantic import BaseModel, ValidationError
@@ -25,13 +25,35 @@ INVENTORY_PATH: Final[pathlib.Path] = pathlib.Path("ansible/inventory.ini")
 class AnsiblePlaybookMetadata(BaseModel):
     name: str
     description: str
-    target: str
+    target: Literal["control", "cluster", "both"]
     requires_approval: bool
     tags: list[str] = []
 
 
 class AnsiblePlaybookRegistryEntry(AnsiblePlaybookMetadata):
     path: str
+
+
+class AnsiblePlaybookRegistryEntryDict(TypedDict):
+    name: str
+    description: str
+    target: Literal["control", "cluster", "both"]
+    requires_approval: bool
+    tags: list[str]
+    path: str
+
+
+def _serialize_registry_entry(
+    entry: AnsiblePlaybookRegistryEntry,
+) -> AnsiblePlaybookRegistryEntryDict:
+    return {
+        "name": entry.name,
+        "description": entry.description,
+        "target": entry.target,
+        "requires_approval": entry.requires_approval,
+        "tags": entry.tags,
+        "path": entry.path,
+    }
 
 
 def _confirm_playbook_execution(entry: AnsiblePlaybookRegistryEntry) -> bool:
@@ -114,7 +136,7 @@ def _parse_playbook_metadata(playbook_path: pathlib.Path) -> AnsiblePlaybookRegi
 
 def _get_registry_entry_by_path(playbook_path: str) -> AnsiblePlaybookRegistryEntry:
     for entry in get_ansible_playbook_registry():
-        path = entry.get("path")
+        path = entry["path"]
         if path == playbook_path:
             return AnsiblePlaybookRegistryEntry.model_validate(entry)
     raise ValueError(f"Playbook path is not in the registry: {playbook_path}")
@@ -148,14 +170,14 @@ def get_ansible_inventory_groups() -> list[str]:
 
 
 @tool
-def get_ansible_playbook_registry() -> list[dict[str, str | bool | list[str]]]:
+def get_ansible_playbook_registry() -> list[AnsiblePlaybookRegistryEntryDict]:
     """Return the Ansible playbook registry with validated metadata.
 
     Returns:
         A list of playbook metadata dictionaries, including the playbook path.
     """
     registry = [
-        _parse_playbook_metadata(file).model_dump()
+        _serialize_registry_entry(_parse_playbook_metadata(file))
         for file in sorted(PLAYBOOKS_DIR.iterdir())
         if file.is_file() and file.suffix in [".yaml", ".yml"]
     ]
