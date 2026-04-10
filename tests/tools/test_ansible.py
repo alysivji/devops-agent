@@ -182,6 +182,14 @@ class TestGetAnsiblePlaybookRegistry:
         assert len(registry) > 0
         assert registry == [
             {
+                "description": "Retrieve and display the current time on all servers",
+                "name": "display_current_time",
+                "path": "ansible/playbooks/display-current-time.yaml",
+                "requires_approval": False,
+                "tags": ["time", "debug", "info"],
+                "target": "both",
+            },
+            {
                 "description": "Ping the cluster node group.",
                 "name": "hello-cluster",
                 "path": "ansible/playbooks/hello-cluster.yaml",
