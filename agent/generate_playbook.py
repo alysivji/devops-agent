@@ -1,6 +1,7 @@
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
+from .run_history import record_event
 from .tools import get_ansible_inventory_groups
 from .utils import build_agent, build_model
 
@@ -49,5 +50,50 @@ class GeneratePlaybookAgent:
         )
 
     def run(self, prompt: str) -> GeneratedPlaybookYaml:
-        generated_playbook = self.agent.structured_output(GeneratedPlaybookYaml, prompt)
+        record_event(
+            kind="structured_playbook_generation_started",
+            status="started",
+            what="Started structured playbook generation.",
+            why="Translate the user request into valid Ansible YAML before any file write.",
+            details={"prompt": prompt},
+        )
+        try:
+            generated_playbook = self.agent.structured_output(GeneratedPlaybookYaml, prompt)
+        except Exception as exc:
+            record_event(
+                kind="structured_playbook_generation_failed",
+                status="failed",
+                what="Structured playbook generation failed.",
+                why="The model did not return valid playbook YAML for this request.",
+                details={"error": str(exc), "exception_type": exc.__class__.__name__},
+            )
+            raise
+
+        summary = summarize_generated_yaml(generated_playbook.yaml)
+        record_event(
+            kind="structured_playbook_generation_completed",
+            status="completed",
+            what="Structured playbook generation completed.",
+            why="The generated YAML passed validation as a non-empty playbook list.",
+            details=summary,
+        )
         return generated_playbook
+
+
+def summarize_generated_yaml(yaml_text: str) -> dict[str, int | list[str]]:
+    parsed = yaml.safe_load(yaml_text)
+    hosts: list[str] = []
+    task_count = 0
+
+    if isinstance(parsed, list):
+        for play in parsed:
+            if not isinstance(play, dict):
+                continue
+            hosts_value = play.get("hosts")
+            if isinstance(hosts_value, str):
+                hosts.append(hosts_value)
+            tasks = play.get("tasks")
+            if isinstance(tasks, list):
+                task_count += len(tasks)
+
+    return {"hosts": hosts, "task_count": task_count}

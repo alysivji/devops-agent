@@ -3,6 +3,7 @@ from typing import Any, cast
 
 import pytest
 
+from agent.run_history import RunHistory, reset_active_run_history, set_active_run_history
 from agent.tools import (
     get_ansible_inventory_groups,
     get_ansible_playbook_registry,
@@ -46,9 +47,16 @@ class TestRunAnsiblePlaybook:
 
     def test_run_ansible_playbook_requires_approval(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr("builtins.input", lambda _: "n")
+        run_history = RunHistory(prompt="run hello-control")
+        token = set_active_run_history(run_history)
 
-        with pytest.raises(PermissionError, match="Execution not approved"):
-            run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+        try:
+            with pytest.raises(PermissionError, match="Execution not approved"):
+                run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+        finally:
+            reset_active_run_history(token)
+
+        assert run_history.session.events[-1].kind == "playbook_execution_declined"
 
     def test_run_ansible_playbook_failure_includes_stderr(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr("builtins.input", lambda _: "y")
@@ -115,6 +123,56 @@ class TestRunAnsiblePlaybook:
         assert "LANG" not in env
         assert "LC_CTYPE" not in env
 
+    def test_run_ansible_playbook_success_records_run_history(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        run_history = RunHistory(prompt="run hello-control")
+        token = set_active_run_history(run_history)
+
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(
+                args=args[0],
+                returncode=0,
+                stdout="PLAY RECAP\ncontrol : ok=1 changed=0 failed=0\n",
+                stderr="",
+            )
+
+        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+
+        try:
+            run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+        finally:
+            reset_active_run_history(token)
+
+        event_kinds = [event.kind for event in run_history.session.events]
+        assert "playbook_execution_succeeded" in event_kinds
+
+    def test_run_ansible_playbook_failure_records_run_history(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        run_history = RunHistory(prompt="run hello-control")
+        token = set_active_run_history(run_history)
+
+        def fake_run(*args, **kwargs):
+            raise subprocess.CalledProcessError(
+                returncode=4,
+                cmd=args[0],
+                output="host unreachable",
+                stderr="inventory parse failed",
+            )
+
+        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+
+        try:
+            with pytest.raises(RuntimeError, match=r"inventory parse failed\s+host unreachable"):
+                run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+        finally:
+            reset_active_run_history(token)
+
+        assert run_history.session.events[-1].kind == "playbook_execution_failed"
+
 
 class TestGetAnsiblePlaybookRegistry:
     def test_get_ansible_playbook_registry(self):
@@ -159,6 +217,17 @@ class TestGetAnsiblePlaybookRegistry:
                 "target": "both",
             },
         ]
+
+    def test_get_ansible_playbook_registry_records_run_history(self) -> None:
+        run_history = RunHistory(prompt="inspect registry")
+        token = set_active_run_history(run_history)
+
+        try:
+            get_ansible_playbook_registry()
+        finally:
+            reset_active_run_history(token)
+
+        assert run_history.session.events[-1].kind == "playbook_registry_read"
 
 
 class TestGetAnsibleInventoryGroups:

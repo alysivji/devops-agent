@@ -66,6 +66,29 @@ uv run python -m agent.main "create a hello world playbook for local nodes"
 
 The generated review includes the proposed filename, metadata header fields, and the full YAML before asking for approval.
 
+## Run History
+
+CLI runs capture a machine-readable run history by default and append each completed session to `docs/autonomous-devops-run-history.jsonl`.
+
+Run history includes:
+
+- the initial prompt
+- major decisions and operational why text
+- tool usage summaries
+- approval and decline outcomes
+- success and failure summaries
+
+Run history does not include:
+
+- hidden reasoning
+- full raw model transcripts
+- full rendered playbook YAML bodies in the history artifact
+- unredacted values for fields that look like secrets, tokens, passwords, or keys
+
+Disable run history by setting `DEVOPS_AGENT_RUN_HISTORY_ENABLED=false`.
+
+Human-readable talk generation is intentionally deferred. This first pass writes only the JSONL artifact.
+
 ### Commands
 
 ```bash

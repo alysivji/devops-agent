@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from .run_history import record_event
 from .utils import build_agent, build_model
 
 SYSTEM_PROMPT = """
@@ -58,4 +59,32 @@ class PlaybookMetadataAgent:
 
     def run(self, *, yaml: str) -> GeneratedPlaybookMetadata:
         metadata_prompt = build_metadata_prompt(yaml)
-        return self.agent.structured_output(GeneratedPlaybookMetadata, metadata_prompt)
+        record_event(
+            kind="playbook_metadata_generation_started",
+            status="started",
+            what="Started structured metadata generation.",
+            why=(
+                "Draft registry metadata that matches the generated playbook before any file write."
+            ),
+            details={},
+        )
+        try:
+            metadata = self.agent.structured_output(GeneratedPlaybookMetadata, metadata_prompt)
+        except Exception as exc:
+            record_event(
+                kind="playbook_metadata_generation_failed",
+                status="failed",
+                what="Structured metadata generation failed.",
+                why="The model did not return valid metadata for the generated playbook.",
+                details={"error": str(exc), "exception_type": exc.__class__.__name__},
+            )
+            raise
+
+        record_event(
+            kind="playbook_metadata_generation_completed",
+            status="completed",
+            what="Structured metadata generation completed.",
+            why="The playbook now has name, description, target, tags, and approval metadata.",
+            details=metadata.model_dump(),
+        )
+        return metadata
