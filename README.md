@@ -74,10 +74,10 @@ uv sync --frozen --all-groups
 npm install
 
 # run tests
-uv run pytest
+make test
 
 # run only Git HTTP integration tests
-uv run pytest -m git_http_integration
+make test-git-http
 
 # create key for cluster nodes
 ssh-keygen -t ed25519
@@ -101,5 +101,13 @@ uv tool install ansible-core --with ansible
 
 ## Testing
 
+Prefer real local test environments when they are cheap to stand up. In this repo,
+the Git tool tests run against temp repositories and the local HTTP mock server
+instead of recorded subprocess fixtures.
+
+Use `subprocess-vcr` for subprocess-heavy paths that are harder to make portable
+across developer machines. The Ansible execution coverage currently follows that
+pattern, and `make test` records those fixtures while pytest replays them by default.
+
 Git HTTP integration tests use `git-http-mock-server`, which shells out to the system `git`
-installation. Run `npm install` before executing `uv run pytest -m git_http_integration`.
+installation. Run `npm install` before executing `make test-git-http`.

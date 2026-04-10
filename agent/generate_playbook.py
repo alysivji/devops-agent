@@ -12,6 +12,8 @@ Repo constraints:
 - Return valid Ansible playbook YAML only.
 - Do not create files.
 - Do not include commentary outside the YAML returned.
+- Prefer idempotent tasks and modules when practical for the requested automation.
+- Avoid unnecessary shell commands when a purpose-built Ansible module can express the same change.
 
 Supported targets:
 - `control`: execution on the control node
@@ -40,7 +42,7 @@ class GeneratedPlaybookYaml(BaseModel):
 class GeneratePlaybookAgent:
     def __init__(self) -> None:
         self.agent = build_agent(
-            model=build_model(),
+            model=build_model(model_id="gpt-5.4"),
             system_prompt=SYSTEM_PROMPT,
             # TODO add web search and http request tools for getting info
             tools=[get_ansible_inventory_groups],

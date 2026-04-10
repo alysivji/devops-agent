@@ -9,8 +9,23 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from subprocess_vcr.filters import BaseFilter
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+class DropSubprocessEnvFilter(BaseFilter):
+    def before_record(self, interaction: dict[str, object]) -> dict[str, object]:
+        kwargs = interaction.get("kwargs")
+        if isinstance(kwargs, dict):
+            kwargs.pop("env", None)
+        return interaction
+
+    def before_playback(self, interaction: dict[str, object]) -> dict[str, object]:
+        kwargs = interaction.get("kwargs")
+        if isinstance(kwargs, dict):
+            kwargs.pop("env", None)
+        return interaction
 
 
 def _run_git(args: list[str], cwd: Path) -> str:
@@ -178,3 +193,8 @@ def git_working_repo_with_remote(
         )
 
     return repo_path
+
+
+@pytest.fixture(scope="session")
+def subprocess_vcr_config() -> dict[str, list[BaseFilter]]:
+    return {"filters": [DropSubprocessEnvFilter()]}
