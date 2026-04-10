@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "setup": "./scripts/setup-dev.sh",
+    "run": "make test"
+  },
+  "runScriptMode": "nonconcurrent"
+}
