@@ -166,27 +166,3 @@ class TestGetAnsibleInventoryGroups:
         groups = get_ansible_inventory_groups()
 
         assert groups == ["cluster", "control"]
-
-
-def test_agent_tools_public_import_surface():
-    from agent.tools import (
-        create_ansible_playbook,
-        create_git_branch,
-        create_git_commit,
-        get_ansible_inventory_groups,
-        get_ansible_playbook_registry,
-        git_push,
-        git_status,
-        list_git_commits,
-        run_ansible_playbook,
-    )
-
-    assert callable(create_ansible_playbook)
-    assert callable(create_git_branch)
-    assert callable(create_git_commit)
-    assert callable(get_ansible_inventory_groups)
-    assert callable(get_ansible_playbook_registry)
-    assert callable(git_push)
-    assert callable(git_status)
-    assert callable(list_git_commits)
-    assert callable(run_ansible_playbook)

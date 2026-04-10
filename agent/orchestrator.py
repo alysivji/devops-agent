@@ -30,9 +30,7 @@ class OrchestratorAgent:
     def __init__(self, *, thinking: ThinkingLevel = "medium") -> None:
         _ = thinking
         self.agent = build_agent(
-            # The current Strands OpenAI adapter uses chat.completions for tool calls.
-            # GPT-5 reasoning settings are rejected on that endpoint when tools are enabled.
-            model=build_model(),
+            model=build_model(model_id="gpt-5.4"),
             system_prompt=MAIN_SYSTEM_PROMPT,
             tools=[
                 get_ansible_playbook_registry,

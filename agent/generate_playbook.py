@@ -40,7 +40,7 @@ class GeneratedPlaybookYaml(BaseModel):
 class GeneratePlaybookAgent:
     def __init__(self) -> None:
         self.agent = build_agent(
-            model=build_model(),
+            model=build_model(model_id="gpt-5.4"),
             system_prompt=SYSTEM_PROMPT,
             # TODO add web search and http request tools for getting info
             tools=[get_ansible_inventory_groups],

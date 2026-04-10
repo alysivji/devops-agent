@@ -1,4 +1,3 @@
-from ..create_ansible_playbook import create_ansible_playbook
 from .ansible import (
     get_ansible_inventory_groups,
     get_ansible_playbook_registry,
@@ -13,7 +12,6 @@ from .git import (
 )
 
 __all__ = [
-    "create_ansible_playbook",
     "create_git_branch",
     "create_git_commit",
     "get_ansible_inventory_groups",
