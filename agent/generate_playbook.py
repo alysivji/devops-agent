@@ -1,8 +1,9 @@
 import yaml
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from .run_history import record_event
 from .tools import get_ansible_inventory_groups, http_get, search_web
+from .tools.ansible import check_ansible_playbook_syntax
 from .utils import build_agent, build_model
 
 SYSTEM_PROMPT = """
@@ -43,7 +44,8 @@ class GeneratedPlaybookYaml(BaseModel):
     def validate_playbook_yaml(cls, value: str) -> str:
         parsed = yaml.safe_load(value)
         if not isinstance(parsed, list) or not parsed:
-            raise ValidationError("generated playbook YAML must be a non-empty YAML list")
+            raise ValueError("generated playbook YAML must be a non-empty YAML list")
+        check_ansible_playbook_syntax(value)
         return value
 
 

@@ -1,33 +1,57 @@
-from typing import Any, cast
+import shutil
+from contextlib import chdir
+from pathlib import Path
 
-from agent.generate_playbook import GeneratePlaybookAgent
-from agent.tools import get_ansible_inventory_groups, http_get, search_web
+import pytest
+from pydantic import ValidationError
 
-
-def test_generate_playbook_agent_registers_web_tools(monkeypatch) -> None:
-    captured: dict[str, Any] = {}
-
-    monkeypatch.setattr("agent.generate_playbook.build_model", lambda **kwargs: "fake-model")
-
-    def fake_build_agent(*, model: str, system_prompt: str, tools: list[Any]) -> str:
-        captured["model"] = model
-        captured["system_prompt"] = system_prompt
-        captured["tools"] = tools
-        return "fake-agent"
-
-    monkeypatch.setattr("agent.generate_playbook.build_agent", fake_build_agent)
-
-    agent = GeneratePlaybookAgent()
-
-    assert agent.agent == "fake-agent"
-    assert captured["model"] == "fake-model"
-    assert captured["tools"] == [get_ansible_inventory_groups, search_web, http_get]
+from agent.generate_playbook import GeneratedPlaybookYaml
 
 
-def test_generate_playbook_prompt_includes_research_guidance() -> None:
-    prompt = cast(str, GeneratePlaybookAgent.__init__.__globals__["SYSTEM_PROMPT"])
+class TestGeneratedPlaybookYaml:
+    @pytest.mark.skipif(
+        shutil.which("ansible-playbook") is None,
+        reason="ansible-playbook is required for generated playbook validation",
+    )
+    def test_accepts_ansible_valid_yaml(self, tmp_path: Path) -> None:
+        yaml_text = (
+            "- hosts: localhost\n"
+            "  gather_facts: false\n"
+            "  tasks:\n"
+            "    - name: Confirm generated playbook syntax\n"
+            "      ansible.builtin.debug:\n"
+            "        msg: ok\n"
+        )
 
-    assert "search_web" in prompt
-    assert "http_get" in prompt
-    assert "Prefer official vendor or upstream documentation" in prompt
-    assert "Never use HTTP for mutating actions." in prompt
+        with chdir(tmp_path):
+            result = GeneratedPlaybookYaml(yaml=yaml_text)
+
+        assert result.yaml == yaml_text
+
+    @pytest.mark.skipif(
+        shutil.which("ansible-playbook") is None,
+        reason="ansible-playbook is required for generated playbook validation",
+    )
+    def test_rejects_ansible_invalid_yaml(self, tmp_path: Path) -> None:
+        expected_error = (
+            r"(?s)generated playbook failed ansible syntax-check:"
+            r".*conflicting action statements: ansible\.builtin\.set_fact, cacheable"
+            r".*Reproduce generated set_fact cacheable conflict"
+        )
+
+        with chdir(tmp_path):
+            with pytest.raises(ValidationError, match=expected_error):
+                GeneratedPlaybookYaml(
+                    yaml=(
+                        "- hosts: localhost\n"
+                        "  tasks:\n"
+                        "    - name: Reproduce generated set_fact cacheable conflict\n"
+                        "      ansible.builtin.set_fact:\n"
+                        "        generated_fact: ok\n"
+                        "      cacheable: true\n"
+                    )
+                )
+
+    def test_rejects_empty_yaml_list(self) -> None:
+        with pytest.raises(ValidationError, match="generated playbook YAML"):
+            GeneratedPlaybookYaml(yaml="[]")

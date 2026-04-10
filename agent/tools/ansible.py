@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import subprocess
+import tempfile
 import time
 import unicodedata
 from functools import lru_cache
@@ -140,6 +141,42 @@ def _get_registry_entry_by_path(playbook_path: str) -> AnsiblePlaybookRegistryEn
         if path == playbook_path:
             return AnsiblePlaybookRegistryEntry.model_validate(entry)
     raise ValueError(f"Playbook path is not in the registry: {playbook_path}")
+
+
+def check_ansible_playbook_syntax(playbook_yaml: str) -> None:
+    """Validate rendered playbook YAML with ansible-playbook --syntax-check."""
+    ANSIBLE_TMP_DIR.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w",
+        delete=False,
+        dir=ANSIBLE_TMP_DIR,
+        encoding="utf-8",
+        suffix=".yaml",
+    ) as playbook_file:
+        playbook_file.write(playbook_yaml)
+        playbook_path = pathlib.Path(playbook_file.name)
+
+    command = ["ansible-playbook", "--syntax-check", str(playbook_path)]
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            env=_ansible_env(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        stdout = _decode_output(exc.stdout).strip()
+        stderr = _decode_output(exc.stderr).strip()
+        details = "\n".join(part for part in (stderr, stdout) if part)
+        if details:
+            raise ValueError(f"generated playbook failed ansible syntax-check:\n{details}") from exc
+        raise ValueError("generated playbook failed ansible syntax-check") from exc
+    except OSError as exc:
+        raise ValueError(f"unable to run ansible-playbook syntax-check: {exc}") from exc
+    finally:
+        playbook_path.unlink(missing_ok=True)
 
 
 def normalize_playbook_name(name: str) -> str:
