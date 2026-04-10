@@ -111,3 +111,8 @@ pattern, and `make test` records those fixtures while pytest replays them by def
 
 Git HTTP integration tests use `git-http-mock-server`, which shells out to the system `git`
 installation. Run `npm install` before executing `make test-git-http`.
+
+## Setup
+
+`./scripts/setup-dev.sh` creates a local `.env` only when one does not already exist. In a linked
+worktree, it prefers copying the main worktree's `.env`; otherwise it falls back to `.env.example`.
