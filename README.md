@@ -111,12 +111,3 @@ pattern, and `make test` records those fixtures while pytest replays them by def
 
 Git HTTP integration tests use `git-http-mock-server`, which shells out to the system `git`
 installation. Run `npm install` before executing `make test-git-http`.
-
-## Conductor
-
-For Conductor workspaces, `conductor.json` provides a local bootstrap path that runs
-`./scripts/setup-dev.sh`, which delegates to `make install` so both Python and Node
-test dependencies are installed before validation.
-
-This setup path is intentionally limited to local dependency installation. Token and
-`.env` initialization remain in `scripts/bootstrap.sh` and are not run automatically.
