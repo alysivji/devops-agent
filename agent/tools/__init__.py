@@ -10,6 +10,7 @@ from .git import (
     git_status,
     list_git_commits,
 )
+from .web import http_get, search_web
 
 __all__ = [
     "create_git_branch",
@@ -18,6 +19,8 @@ __all__ = [
     "git_push",
     "git_status",
     "get_ansible_playbook_registry",
+    "http_get",
     "list_git_commits",
     "run_ansible_playbook",
+    "search_web",
 ]

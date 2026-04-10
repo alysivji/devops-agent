@@ -198,3 +198,16 @@ def git_working_repo_with_remote(
 @pytest.fixture(scope="session")
 def subprocess_vcr_config() -> dict[str, list[BaseFilter]]:
     return {"filters": [DropSubprocessEnvFilter()]}
+
+
+@pytest.fixture(scope="module")
+def vcr_config() -> dict[str, object]:
+    return {
+        "record_mode": "once",
+        "filter_headers": ["authorization", "cookie", "set-cookie"],
+    }
+
+
+@pytest.fixture(scope="module")
+def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:
+    return str(Path(str(request.path)).with_name("_http_cassettes"))
