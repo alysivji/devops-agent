@@ -18,10 +18,12 @@ interactions:
     headers:
       Access-Control-Allow-Origin:
       - '*'
+      Age:
+      - '870'
       CF-Cache-Status:
-      - EXPIRED
+      - HIT
       CF-Ray:
-      - 9e9f53dd6bfb0c7b-ORD
+      - 9e9f93ff3e72c9f2-ORD
       Cache-Control:
       - max-age=1200
       Connection:
@@ -33,7 +35,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Fri, 10 Apr 2026 05:24:51 GMT
+      - Fri, 10 Apr 2026 06:08:38 GMT
       Location:
       - https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/apt_module.html
       Server:
@@ -50,12 +52,6 @@ interactions:
       - same-origin
       referrer-policy:
       - no-referrer-when-downgrade
-      set-cookie:
-      - __cf_bm=Ht59HLq0EvNV8ysORDc3ZjrtSP9Uie9P1ztrdjADndc-1775798691.4274411-1.0.1.1-gRwXlHvi95EQspAxFWYNcs8NUB9VKIsKr404zDz16RWYalqc.rGYiCJLOap4QNggwgvN413tx.WhKYrftEq6f_edeZqOeB4rkANsIWsj0EBYj.XJvMpe8YWGHZyoCCVB;
-        HttpOnly; Secure; Path=/; Domain=docs.ansible.com; Expires=Fri, 10 Apr 2026
-        05:54:51 GMT
-      - _cfuvid=Dtvz8372ArH59mCNNecfFl_pgLttvX6CPNgHUf.evZM-1775798691.4274411-1.0.1.1-ytnV96Zyfy5lw4cFRUnHf48iDewLVzHm1Ee4FE.nKQk;
-        HttpOnly; SameSite=None; Secure; Path=/; Domain=docs.ansible.com
       x-backend:
       - web-i-08c828b887f8de0a5
       x-content-type-options:
@@ -1217,11 +1213,11 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '5785'
+      - '1180'
       CF-Cache-Status:
       - HIT
       CF-Ray:
-      - 9e9f53deed507ce0-ORD
+      - 9e9f93ffc830e137-ORD
       Cache-Control:
       - max-age=1200
       Connection:
@@ -1231,7 +1227,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Fri, 10 Apr 2026 05:24:51 GMT
+      - Fri, 10 Apr 2026 06:08:38 GMT
       ETag:
       - '"5da4682905ecdd87d5d9822785943474"'
       Last-Modified:
