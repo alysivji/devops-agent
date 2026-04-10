@@ -1,0 +1,22 @@
+# name: display_current_time
+# description: Retrieve and display the current time on all servers
+# target: both
+# requires_approval: false
+# tags:
+#   - time
+#   - debug
+#   - info
+
+---
+- name: Get and display current time on all servers
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Get current time
+      ansible.builtin.command: date
+      register: current_time
+      changed_when: false
+
+    - name: Display current time for each host
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ current_time.stdout }}"
