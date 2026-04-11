@@ -5,7 +5,7 @@ from ddgs import DDGS
 from strands import tool
 from strands_tools.http_request import http_request
 
-from ..run_history import record_event
+from ..history import record_event
 
 MAX_SEARCH_RESULTS = 10
 RESULT_PREVIEW_LENGTH = 200

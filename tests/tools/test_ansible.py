@@ -3,8 +3,8 @@ from typing import Any, cast
 
 import pytest
 
-from agent.run_history import RunHistory, reset_active_run_history, set_active_run_history
-from agent.tools import (
+from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
+from devops_bot.tools import (
     get_ansible_inventory_groups,
     get_ansible_playbook_registry,
     run_ansible_playbook,
@@ -37,7 +37,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
 
         cast(Any, run_ansible_playbook)("ansible/playbooks/hello-control.yaml")
 
@@ -67,7 +67,7 @@ class TestRunAnsiblePlaybook:
                 stderr="inventory parse failed",
             )
 
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
 
         with pytest.raises(RuntimeError, match="inventory parse failed"):
             run_ansible_playbook("ansible/playbooks/hello-control.yaml")
@@ -83,7 +83,7 @@ class TestRunAnsiblePlaybook:
                 stderr="inventory parse failed",
             )
 
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
 
         with pytest.raises(
             RuntimeError,
@@ -113,7 +113,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
 
         with pytest.raises(RuntimeError) as exc_info:
             run_ansible_playbook("ansible/playbooks/hello-control.yaml")
@@ -129,7 +129,7 @@ class TestRunAnsiblePlaybook:
     ):
         monkeypatch.setattr("builtins.input", lambda _: "y")
         monkeypatch.setattr(
-            "agent.tools.ansible._available_locales",
+            "devops_bot.tools.ansible._available_locales",
             lambda: {"C", "POSIX", "en_US.UTF-8"},
         )
 
@@ -144,7 +144,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
         monkeypatch.setenv("LC_ALL", "C.UTF-8")
         monkeypatch.setenv("LANG", "C.UTF-8")
         monkeypatch.setenv("LC_CTYPE", "C.UTF-8")
@@ -172,7 +172,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
 
         try:
             run_ansible_playbook("ansible/playbooks/hello-control.yaml")
@@ -197,7 +197,7 @@ class TestRunAnsiblePlaybook:
                 stderr="inventory parse failed",
             )
 
-        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
 
         try:
             with pytest.raises(

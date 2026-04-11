@@ -4,9 +4,9 @@ from typing import Any, cast
 
 import pytest
 
-from agent.create_ansible_playbook import CreateAnsiblePlaybookWorkflow
-from agent.playbook_metadata import GeneratedPlaybookMetadata
-from agent.run_history import RunHistory, reset_active_run_history, set_active_run_history
+from devops_bot.agents.playbook_metadata import GeneratedPlaybookMetadata
+from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
+from devops_bot.tools.playbooks import CreateAnsiblePlaybook
 
 
 class StubGenerator:
@@ -31,7 +31,7 @@ def test_create_playbook_records_approved_write(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        "agent.create_ansible_playbook.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
+        "devops_bot.tools.playbooks.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
     )
     (tmp_path / "ansible" / "playbooks").mkdir(parents=True)
     monkeypatch.setattr("builtins.input", lambda _: "y")
@@ -43,7 +43,7 @@ def test_create_playbook_records_approved_write(
         tags=["connectivity"],
         requires_approval=True,
     )
-    workflow = CreateAnsiblePlaybookWorkflow(
+    playbook_tool = CreateAnsiblePlaybook(
         generator=cast(
             Any,
             StubGenerator(
@@ -56,7 +56,7 @@ def test_create_playbook_records_approved_write(
     token = set_active_run_history(run_history)
 
     try:
-        result = workflow.run("create a ping playbook")
+        result = playbook_tool.run("create a ping playbook")
     finally:
         reset_active_run_history(token)
 
@@ -77,7 +77,7 @@ def test_create_playbook_records_declined_write(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        "agent.create_ansible_playbook.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
+        "devops_bot.tools.playbooks.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
     )
     (tmp_path / "ansible" / "playbooks").mkdir(parents=True)
     monkeypatch.setattr("builtins.input", lambda _: "n")
@@ -89,7 +89,7 @@ def test_create_playbook_records_declined_write(
         tags=["connectivity"],
         requires_approval=True,
     )
-    workflow = CreateAnsiblePlaybookWorkflow(
+    playbook_tool = CreateAnsiblePlaybook(
         generator=cast(
             Any,
             StubGenerator(
@@ -102,7 +102,7 @@ def test_create_playbook_records_declined_write(
     token = set_active_run_history(run_history)
 
     try:
-        result = workflow.run("create a ping playbook")
+        result = playbook_tool.run("create a ping playbook")
     finally:
         reset_active_run_history(token)
 

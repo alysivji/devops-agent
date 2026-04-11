@@ -9,24 +9,23 @@ from strands.hooks.events import (
     MessageAddedEvent,
 )
 
-from .create_ansible_playbook import create_ansible_playbook
-from .edit_ansible_playbook import edit_ansible_playbook
-from .run_history import record_event
-from .tools.ansible import get_ansible_playbook_registry, run_ansible_playbook
-from .utils import build_agent, build_model
+from ..factory import build_agent, build_model
+from ..history import record_event
+from ..tools.ansible import get_ansible_playbook_registry, run_ansible_playbook
+from ..tools.playbooks import create_ansible_playbook, edit_ansible_playbook
 
 ThinkingLevel = str
 
 MAIN_SYSTEM_PROMPT = """
-You orchestrate Ansible playbook workflows for this repository.
+You orchestrate Ansible playbook tools for this repository.
 
 Available tools:
 - `get_ansible_playbook_registry`: inspect the validated playbook registry
 - `run_ansible_playbook`: execute an existing registry playbook by path
-- `create_ansible_playbook`: generate and write a new playbook through the agent workflow
+- `create_ansible_playbook`: generate and write a new playbook through the agent-backed tool
 - `edit_ansible_playbook`: repair an existing registry playbook locally and syntax-check it
 
-Workflow:
+Process:
 - Start by inspecting the current playbook registry when the request might map
   to existing automation.
 - Prefer validating the user's requested end state before running remediation
@@ -44,7 +43,7 @@ Workflow:
 - For failed playbook executions, decide whether the next corrective action is
   editing the existing playbook, creating missing prerequisite automation, or
   running another suitable registry playbook. After the corrective action, retry
-  the playbook or workflow needed for the original request.
+  the playbook or tool action needed for the original request.
 - If a playbook failure reveals missing host prerequisites, package
   dependencies, kernel or boot configuration, service configuration, or other
   environment preparation needed for the original request, treat that as missing

@@ -2,8 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from .run_history import record_event
-from .utils import build_agent, build_model
+from ..factory import build_agent, build_model
+from ..history import record_event
 
 SYSTEM_PROMPT = """
 Role:

@@ -1,4 +1,4 @@
-from .secret_manager import SecretsManager
+from .secrets import SecretsManager
 
 secret_manager = SecretsManager(path=".env")
 

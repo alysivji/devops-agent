@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from agent import main as main_module
+from devops_bot import main as main_module
 
 
 class SuccessfulOrchestrator:
@@ -25,7 +25,7 @@ def test_main_appends_run_history_by_default(
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
     monkeypatch.setattr(main_module, "OrchestratorAgent", SuccessfulOrchestrator)
-    monkeypatch.setattr(sys, "argv", ["agent.main", "inspect the registry"])
+    monkeypatch.setattr(sys, "argv", ["devops_bot", "inspect the registry"])
 
     exit_code = main_module.main()
 
@@ -46,7 +46,7 @@ def test_main_skips_run_history_when_disabled(
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "false")
     monkeypatch.setattr(main_module, "OrchestratorAgent", SuccessfulOrchestrator)
-    monkeypatch.setattr(sys, "argv", ["agent.main", "inspect the registry"])
+    monkeypatch.setattr(sys, "argv", ["devops_bot", "inspect the registry"])
 
     main_module.main()
 
@@ -61,7 +61,7 @@ def test_main_records_failed_session_before_reraising(
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
     monkeypatch.setattr(main_module, "OrchestratorAgent", FailingOrchestrator)
-    monkeypatch.setattr(sys, "argv", ["agent.main", "inspect the registry"])
+    monkeypatch.setattr(sys, "argv", ["devops_bot", "inspect the registry"])
 
     with pytest.raises(RuntimeError, match="boom: inspect the registry"):
         main_module.main()

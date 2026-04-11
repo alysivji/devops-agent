@@ -1,6 +1,6 @@
 # Devops Agent
 
-Figuring out agentic workflows with a Turing Pi cluster.
+Figuring out agentic DevOps tooling with a Turing Pi cluster.
 
 See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectations, and PR writeups.
 
@@ -34,7 +34,7 @@ See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectatio
 
 ## Human-In-The-Loop Playbook Generation
 
-The first generation workflow supports these inventory targets:
+The first generation tool supports these inventory targets:
 
 - `control` for local playbooks
 - `cluster` for remote playbooks over SSH
@@ -61,8 +61,8 @@ Set `OPENAI_MODEL=gpt-5.4` by default for stronger reasoning and coding quality.
 ### Example
 
 ```bash
-uv run python -m agent.main "create a hello world playbook for local nodes"
-uv run python -m agent.main "Install a k3s cluster with a single control plane on the control node and all cluster nodes joining as workers."
+uv run devops-agent "create a hello world playbook for local nodes"
+uv run devops-agent "Install a k3s cluster with a single control plane on the control node and all cluster nodes joining as workers."
 ```
 
 The generated review includes the proposed filename, metadata header fields, and the full YAML before asking for approval.

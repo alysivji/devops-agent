@@ -2,8 +2,8 @@ from typing import Any
 
 import pytest
 
-from agent.run_history import RunHistory, reset_active_run_history, set_active_run_history
-from agent.tools.web import http_get, search_web
+from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
+from devops_bot.tools.web import http_get, search_web
 
 
 class StubDDGS:
@@ -40,7 +40,7 @@ class TestSearchWeb:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            "agent.tools.web.DDGS",
+            "devops_bot.tools.web.DDGS",
             lambda: StubDDGS(
                 results=[
                     {
@@ -75,7 +75,7 @@ class TestSearchWeb:
 
     def test_search_web_records_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "agent.tools.web.DDGS",
+            "devops_bot.tools.web.DDGS",
             lambda: StubDDGS(error=RuntimeError("backend down")),
         )
         run_history = RunHistory(prompt="search for docs")
@@ -98,14 +98,17 @@ class TestHttpGet:
     def test_http_get_raises_for_invalid_result_shape(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr("agent.tools.web.http_request", lambda tool_use: {"status": "success"})
+        monkeypatch.setattr(
+            "devops_bot.tools.web.http_request",
+            lambda tool_use: {"status": "success"},
+        )
 
         with pytest.raises(RuntimeError, match="http get failed"):
             http_get("https://docs.ansible.com/")
 
     def test_http_get_wraps_error_status(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "agent.tools.web.http_request",
+            "devops_bot.tools.web.http_request",
             lambda tool_use: {"status": "error", "content": [{"text": "upstream error"}]},
         )
 
@@ -121,7 +124,7 @@ class TestHttpGet:
             recorded["tool_use"] = tool_use
             return {"status": "success", "content": [{"text": "Status Code: 200"}]}
 
-        monkeypatch.setattr("agent.tools.web.http_request", fake_http_request)
+        monkeypatch.setattr("devops_bot.tools.web.http_request", fake_http_request)
 
         result = http_get("https://docs.ansible.com/", headers={"Accept": "text/html"})
 
