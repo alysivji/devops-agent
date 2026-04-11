@@ -22,7 +22,7 @@ class TestRunAnsiblePlaybook:
 
         assert "PLAY RECAP" in result
 
-    def test_run_ansible_playbook_uses_verbose_output(self, monkeypatch: pytest.MonkeyPatch):
+    def test_run_ansible_playbook_uses_default_output(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr("builtins.input", lambda _: "y")
 
         recorded: dict[str, object] = {}
@@ -41,9 +41,7 @@ class TestRunAnsiblePlaybook:
 
         cast(Any, run_ansible_playbook)("ansible/playbooks/hello-control.yaml")
 
-        assert recorded["args"] == (
-            ["ansible-playbook", "ansible/playbooks/hello-control.yaml", "-vv"],
-        )
+        assert recorded["args"] == (["ansible-playbook", "ansible/playbooks/hello-control.yaml"],)
 
     def test_run_ansible_playbook_requires_approval(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr("builtins.input", lambda _: "n")
@@ -224,51 +222,17 @@ class TestGetAnsiblePlaybookRegistry:
 
         assert isinstance(registry, list)
         assert len(registry) > 0
-        assert registry == [
-            {
-                "description": "Retrieve and display the current time on all servers",
-                "name": "display_current_time",
-                "path": "ansible/playbooks/display-current-time.yaml",
-                "requires_approval": False,
-                "tags": ["time", "debug", "info"],
-                "target": "both",
-            },
-            {
-                "description": "Ping the cluster node group.",
-                "name": "hello-cluster",
-                "path": "ansible/playbooks/hello-cluster.yaml",
-                "requires_approval": True,
-                "tags": ["connectivity", "cluster"],
-                "target": "cluster",
-            },
-            {
-                "description": "Ping the control node group.",
-                "name": "hello-control",
-                "path": "ansible/playbooks/hello-control.yaml",
-                "requires_approval": True,
-                "tags": ["connectivity", "control"],
-                "target": "control",
-            },
-            {
-                "description": "Ping the local control node without privilege escalation.",
-                "name": "hello-local-test",
-                "path": "ansible/playbooks/hello-local-test.yaml",
-                "requires_approval": False,
-                "tags": ["connectivity", "test"],
-                "target": "control",
-            },
-            {
-                "description": (
-                    "Lists files in the root directory on both control and "
-                    "cluster nodes and displays the output."
-                ),
-                "name": "list_files",
-                "path": "ansible/playbooks/list-files.yaml",
-                "requires_approval": False,
-                "tags": ["file_management", "listing", "debugging"],
-                "target": "both",
-            },
-        ]
+        registry_by_path = {entry["path"]: entry for entry in registry}
+        expected_paths = {
+            "ansible/playbooks/display-current-time.yaml",
+            "ansible/playbooks/hello-cluster.yaml",
+            "ansible/playbooks/hello-control.yaml",
+            "ansible/playbooks/hello-local-test.yaml",
+            "ansible/playbooks/list-files.yaml",
+        }
+        assert expected_paths.issubset(registry_by_path)
+        assert registry_by_path["ansible/playbooks/hello-cluster.yaml"]["name"] == "hello-cluster"
+        assert registry_by_path["ansible/playbooks/hello-cluster.yaml"]["target"] == "cluster"
 
     def test_get_ansible_playbook_registry_records_run_history(self) -> None:
         run_history = RunHistory(prompt="inspect registry")

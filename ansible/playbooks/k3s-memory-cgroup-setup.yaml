@@ -1,0 +1,428 @@
+# name: k3s_memory_cgroup_setup
+# description: Prepares nodes for k3s by enabling memory cgroup support including boot configuration adjustments.
+# target: both
+# requires_approval: true
+# tags:
+#   - k3s
+#   - cgroup
+#   - preparation
+#   - memory
+
+---
+- name: Prepare all nodes for k3s by enabling memory cgroup support
+  hosts: control:cluster
+  become: true
+  gather_facts: true
+  vars:
+    k3s_cgroup_reset: false
+    k3s_cgroup_required_kernel_args:
+      - cgroup_memory=1
+      - cgroup_enable=memory
+    k3s_cgroup_conflicting_kernel_args:
+      - cgroup_disable=memory
+    k3s_cgroup_optional_unified_arg: systemd.unified_cgroup_hierarchy=1
+    k3s_cgroup_boot_files:
+      - /boot/firmware/cmdline.txt
+      - /boot/cmdline.txt
+    k3s_cgroup_proc_cmdline: "{{ lookup('file', '/proc/cmdline', errors='ignore') if false else '' }}"
+  tasks:
+    - name: Gather current kernel command line from running system
+      ansible.builtin.slurp:
+        src: /proc/cmdline
+      register: k3s_cgroup_proc_cmdline_raw
+
+    - name: Set current kernel command line fact
+      ansible.builtin.set_fact:
+        k3s_cgroup_current_cmdline: "{{ (k3s_cgroup_proc_cmdline_raw.content | b64decode | trim) }}"
+
+    - name: Detect active cgroup mounts
+      ansible.builtin.command: mount
+      register: k3s_cgroup_mounts
+      changed_when: false
+
+    - name: Detect memory cgroup controller files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /sys/fs/cgroup/memory
+        - /sys/fs/cgroup/memory/memory.limit_in_bytes
+        - /sys/fs/cgroup/cgroup.controllers
+        - /sys/fs/cgroup/memory.max
+        - /sys/fs/cgroup/cgroup.subtree_control
+      register: k3s_cgroup_stat_results
+
+    - name: Build pre-change cgroup detection facts
+      ansible.builtin.set_fact:
+        k3s_cgroup_pre_state:
+          cmdline: "{{ k3s_cgroup_current_cmdline }}"
+          has_cgroup_memory_arg: "{{ 'cgroup_memory=1' in k3s_cgroup_current_cmdline }}"
+          has_cgroup_enable_memory_arg: "{{ 'cgroup_enable=memory' in k3s_cgroup_current_cmdline }}"
+          has_unified_arg: "{{ 'systemd.unified_cgroup_hierarchy=1' in k3s_cgroup_current_cmdline }}"
+          has_v1_memory_mount: "{{ '/sys/fs/cgroup/memory' in k3s_cgroup_mounts.stdout }}"
+          has_v1_memory_limit_file: "{{ (k3s_cgroup_stat_results.results | selectattr('stat.path', 'equalto', '/sys/fs/cgroup/memory/memory.limit_in_bytes') | map(attribute='stat.exists') | list | first) | default(false) }}"
+          has_v2_controllers_file: "{{ (k3s_cgroup_stat_results.results | selectattr('stat.path', 'equalto', '/sys/fs/cgroup/cgroup.controllers') | map(attribute='stat.exists') | list | first) | default(false) }}"
+          has_v2_memory_max_file: "{{ (k3s_cgroup_stat_results.results | selectattr('stat.path', 'equalto', '/sys/fs/cgroup/memory.max') | map(attribute='stat.exists') | list | first) | default(false) }}"
+          has_v2_subtree_file: "{{ (k3s_cgroup_stat_results.results | selectattr('stat.path', 'equalto', '/sys/fs/cgroup/cgroup.subtree_control') | map(attribute='stat.exists') | list | first) | default(false) }}"
+          v2_controllers: "{{ lookup('ansible.builtin.pipe', 'cat /sys/fs/cgroup/cgroup.controllers 2>/dev/null || true') if false else '' }}"
+
+    - name: Read cgroup v2 controllers when available
+      ansible.builtin.slurp:
+        src: /sys/fs/cgroup/cgroup.controllers
+      register: k3s_cgroup_v2_controllers_raw
+      when: k3s_cgroup_pre_state.has_v2_controllers_file
+
+    - name: Finalize pre-change cgroup state facts
+      ansible.builtin.set_fact:
+        k3s_cgroup_pre_state: "{{ k3s_cgroup_pre_state | combine({'v2_controllers': ((k3s_cgroup_v2_controllers_raw.content | b64decode | trim) if (k3s_cgroup_pre_state.has_v2_controllers_file | bool) else '')}) }}"
+
+    - name: Detect bootloader command line file
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ k3s_cgroup_boot_files }}"
+      register: k3s_cgroup_boot_file_stats
+
+    - name: Select bootloader command line file when present
+      ansible.builtin.set_fact:
+        k3s_cgroup_boot_file: >-
+          {{
+            (k3s_cgroup_boot_file_stats.results
+            | selectattr('stat.exists', 'equalto', true)
+            | map(attribute='stat.path')
+            | list
+            | first)
+            | default('')
+          }}
+
+    - name: Detect grub default configuration file
+      ansible.builtin.stat:
+        path: /etc/default/grub
+      register: k3s_cgroup_grub_default_stat
+
+    - name: Detect extlinux configuration file
+      ansible.builtin.stat:
+        path: /boot/extlinux/extlinux.conf
+      register: k3s_cgroup_extlinux_stat
+
+    - name: Reset boot command line configuration when explicitly requested on Raspberry Pi style systems
+      ansible.builtin.replace:
+        path: "{{ k3s_cgroup_boot_file }}"
+        regexp: '(^| ){{ item | regex_escape() }}(?= |$)'
+        replace: ''
+      loop:
+        - cgroup_memory=1
+        - cgroup_enable=memory
+        - systemd.unified_cgroup_hierarchy=1
+      register: k3s_cgroup_reset_bootfile
+      when:
+        - k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length > 0
+
+    - name: Normalize Raspberry Pi style boot command line spacing after reset
+      ansible.builtin.replace:
+        path: "{{ k3s_cgroup_boot_file }}"
+        regexp: '\s+'
+        replace: ' '
+      register: k3s_cgroup_reset_bootfile_spacing
+      when:
+        - k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length > 0
+
+    - name: Reset GRUB kernel command line when explicitly requested
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX='
+        line: 'GRUB_CMDLINE_LINUX=""'
+        backrefs: false
+      register: k3s_cgroup_reset_grub
+      when:
+        - k3s_cgroup_reset | bool
+        - k3s_cgroup_grub_default_stat.stat.exists
+
+    - name: Reset extlinux append line when explicitly requested
+      ansible.builtin.replace:
+        path: /boot/extlinux/extlinux.conf
+        regexp: '(^\s*APPEND\s+.*?)(?:\s+{{ item | regex_escape() }})+(?=\s|$)'
+        replace: '\1'
+      loop:
+        - cgroup_memory=1
+        - cgroup_enable=memory
+        - systemd.unified_cgroup_hierarchy=1
+      register: k3s_cgroup_reset_extlinux
+      when:
+        - k3s_cgroup_reset | bool
+        - k3s_cgroup_extlinux_stat.stat.exists
+
+    - name: Remove conflicting Raspberry Pi style boot command line arguments that disable memory cgroups
+      ansible.builtin.replace:
+        path: "{{ k3s_cgroup_boot_file }}"
+        regexp: '(^| ){{ item | regex_escape() }}(?= |$)'
+        replace: ''
+      loop: "{{ k3s_cgroup_conflicting_kernel_args }}"
+      register: k3s_cgroup_remove_conflicting_bootfile
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length > 0
+
+    - name: Normalize Raspberry Pi style boot command line spacing after removing conflicting arguments
+      ansible.builtin.replace:
+        path: "{{ k3s_cgroup_boot_file }}"
+        regexp: '\s+'
+        replace: ' '
+      register: k3s_cgroup_remove_conflicting_bootfile_spacing
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length > 0
+
+    - name: Ensure Raspberry Pi style boot command line includes required memory cgroup kernel arguments
+      ansible.builtin.lineinfile:
+        path: "{{ k3s_cgroup_boot_file }}"
+        regexp: '^(.*)$'
+        line: "\\1 {{ item }}"
+        backrefs: true
+      loop: "{{ k3s_cgroup_required_kernel_args }}"
+      register: k3s_cgroup_bootfile_updates
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length > 0
+        - item not in k3s_cgroup_current_cmdline
+
+    - name: Ensure GRUB kernel command line variable exists
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX='
+        line: 'GRUB_CMDLINE_LINUX=""'
+        create: false
+      register: k3s_cgroup_grub_init
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length == 0
+        - k3s_cgroup_grub_default_stat.stat.exists
+
+    - name: Remove conflicting GRUB kernel command line arguments that disable memory cgroups
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '(?<=GRUB_CMDLINE_LINUX=")(^|.*\s){{ item | regex_escape() }}(?=\s|"$)'
+        replace: '\1'
+      loop: "{{ k3s_cgroup_conflicting_kernel_args }}"
+      register: k3s_cgroup_remove_conflicting_grub
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length == 0
+        - k3s_cgroup_grub_default_stat.stat.exists
+
+    - name: Ensure GRUB kernel command line includes required memory cgroup kernel arguments
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '^(GRUB_CMDLINE_LINUX="(?!.*\b{{ item | regex_escape() }}\b)([^"]*))"$'
+        replace: '\1 {{ item }}"'
+      loop: "{{ k3s_cgroup_required_kernel_args }}"
+      register: k3s_cgroup_grub_updates
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length == 0
+        - k3s_cgroup_grub_default_stat.stat.exists
+
+    - name: Ensure extlinux APPEND line excludes conflicting memory cgroup disable arguments
+      ansible.builtin.replace:
+        path: /boot/extlinux/extlinux.conf
+        regexp: '(^\s*APPEND\s+.*?)(?:\s+{{ item | regex_escape() }})(?=\s|$)'
+        replace: '\1'
+      loop: "{{ k3s_cgroup_conflicting_kernel_args }}"
+      register: k3s_cgroup_remove_conflicting_extlinux
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length == 0
+        - not k3s_cgroup_grub_default_stat.stat.exists
+        - k3s_cgroup_extlinux_stat.stat.exists
+
+    - name: Ensure extlinux APPEND line includes required memory cgroup kernel arguments
+      ansible.builtin.replace:
+        path: /boot/extlinux/extlinux.conf
+        regexp: '(^\s*APPEND\s+.*?)(?!.*\b{{ item | regex_escape() }}\b)(\s*)$'
+        replace: '\1 {{ item }}'
+      loop: "{{ k3s_cgroup_required_kernel_args }}"
+      register: k3s_cgroup_extlinux_updates
+      when:
+        - not k3s_cgroup_reset | bool
+        - k3s_cgroup_boot_file | length == 0
+        - not k3s_cgroup_grub_default_stat.stat.exists
+        - k3s_cgroup_extlinux_stat.stat.exists
+
+    - name: Regenerate GRUB configuration on Debian-family systems when GRUB settings changed
+      ansible.builtin.command: update-grub
+      register: k3s_cgroup_update_grub_debian
+      changed_when: true
+      when:
+        - k3s_cgroup_grub_default_stat.stat.exists
+        - >-
+          (
+            (k3s_cgroup_reset | bool and (k3s_cgroup_reset_grub is defined and k3s_cgroup_reset_grub.changed)) or
+            (not k3s_cgroup_reset | bool and (
+              (k3s_cgroup_grub_init is defined and k3s_cgroup_grub_init.changed) or
+              ((k3s_cgroup_remove_conflicting_grub.results | selectattr('changed', 'equalto', true) | list | length) > 0) or
+              ((k3s_cgroup_grub_updates.results | selectattr('changed', 'equalto', true) | list | length) > 0)
+            ))
+          )
+        - ansible_facts['os_family'] == 'Debian'
+
+    - name: Regenerate GRUB configuration on RedHat-family systems when GRUB settings changed
+      ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
+      register: k3s_cgroup_update_grub_redhat
+      changed_when: true
+      when:
+        - k3s_cgroup_grub_default_stat.stat.exists
+        - >-
+          (
+            (k3s_cgroup_reset | bool and (k3s_cgroup_reset_grub is defined and k3s_cgroup_reset_grub.changed)) or
+            (not k3s_cgroup_reset | bool and (
+              (k3s_cgroup_grub_init is defined and k3s_cgroup_grub_init.changed) or
+              ((k3s_cgroup_remove_conflicting_grub.results | selectattr('changed', 'equalto', true) | list | length) > 0) or
+              ((k3s_cgroup_grub_updates.results | selectattr('changed', 'equalto', true) | list | length) > 0)
+            ))
+          )
+        - ansible_facts['os_family'] == 'RedHat'
+
+    - name: Compute whether reboot is required to apply cgroup boot configuration changes
+      ansible.builtin.set_fact:
+        k3s_cgroup_reboot_required: >-
+          {{
+            (
+              (k3s_cgroup_reset_bootfile is defined and (k3s_cgroup_reset_bootfile.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_reset_bootfile_spacing is defined and k3s_cgroup_reset_bootfile_spacing.changed) or
+              (k3s_cgroup_reset_grub is defined and k3s_cgroup_reset_grub.changed) or
+              (k3s_cgroup_reset_extlinux is defined and (k3s_cgroup_reset_extlinux.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_remove_conflicting_bootfile is defined and (k3s_cgroup_remove_conflicting_bootfile.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_remove_conflicting_bootfile_spacing is defined and k3s_cgroup_remove_conflicting_bootfile_spacing.changed) or
+              (k3s_cgroup_bootfile_updates is defined and (k3s_cgroup_bootfile_updates.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_grub_init is defined and k3s_cgroup_grub_init.changed) or
+              (k3s_cgroup_remove_conflicting_grub is defined and (k3s_cgroup_remove_conflicting_grub.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_grub_updates is defined and (k3s_cgroup_grub_updates.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_remove_conflicting_extlinux is defined and (k3s_cgroup_remove_conflicting_extlinux.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_extlinux_updates is defined and (k3s_cgroup_extlinux_updates.results | selectattr('changed', 'equalto', true) | list | length > 0)) or
+              (k3s_cgroup_update_grub_debian is defined and k3s_cgroup_update_grub_debian.changed) or
+              (k3s_cgroup_update_grub_redhat is defined and k3s_cgroup_update_grub_redhat.changed)
+            ) | bool
+          }}
+
+    - name: Assert a supported bootloader configuration target was found when changes are needed
+      block:
+        - name: Validate presence of supported bootloader configuration target
+          ansible.builtin.assert:
+            that:
+              - k3s_cgroup_boot_file | length > 0 or k3s_cgroup_grub_default_stat.stat.exists or k3s_cgroup_extlinux_stat.stat.exists
+            fail_msg: >-
+              Unable to find a supported bootloader/kernel command line configuration file.
+              Checked Raspberry Pi cmdline.txt paths, /etc/default/grub, and /boot/extlinux/extlinux.conf.
+              Add support for this platform before using this prerequisite playbook.
+            success_msg: Supported bootloader configuration target detected.
+      rescue:
+        - name: Emit bootloader detection debug context
+          ansible.builtin.debug:
+            msg:
+              host: "{{ inventory_hostname }}"
+              boot_file_candidates: "{{ k3s_cgroup_boot_files }}"
+              selected_boot_file: "{{ k3s_cgroup_boot_file }}"
+              grub_default_exists: "{{ k3s_cgroup_grub_default_stat.stat.exists }}"
+              extlinux_exists: "{{ k3s_cgroup_extlinux_stat.stat.exists }}"
+              current_cmdline: "{{ k3s_cgroup_current_cmdline }}"
+        - name: Fail due to unsupported bootloader configuration target
+          ansible.builtin.fail:
+            msg: Unsupported bootloader configuration target for enabling memory cgroups.
+
+    - name: Reboot host when kernel command line changes require restart
+      ansible.builtin.reboot:
+        msg: Rebooting to apply memory cgroup kernel command line changes for k3s prerequisites.
+        reboot_timeout: 900
+        connect_timeout: 30
+        pre_reboot_delay: 0
+        post_reboot_delay: 15
+        test_command: /bin/true
+      register: k3s_cgroup_reboot_result
+      when: k3s_cgroup_reboot_required | bool
+
+    - name: Wait for host SSH connectivity after reboot when reboot occurred
+      ansible.builtin.wait_for_connection:
+        timeout: 900
+        delay: 5
+        sleep: 5
+      when: k3s_cgroup_reboot_required | bool
+
+    - name: Refresh facts after potential reboot
+      ansible.builtin.setup:
+
+    - name: Gather post-change kernel command line from running system
+      ansible.builtin.slurp:
+        src: /proc/cmdline
+      register: k3s_cgroup_post_cmdline_raw
+
+    - name: Gather post-change cgroup v2 controllers file status
+      ansible.builtin.stat:
+        path: /sys/fs/cgroup/cgroup.controllers
+      register: k3s_cgroup_post_v2_controllers_stat
+
+    - name: Gather post-change cgroup v1 memory mount status
+      ansible.builtin.stat:
+        path: /sys/fs/cgroup/memory/memory.limit_in_bytes
+      register: k3s_cgroup_post_v1_memory_stat
+
+    - name: Gather post-change cgroup v2 memory.max status
+      ansible.builtin.stat:
+        path: /sys/fs/cgroup/memory.max
+      register: k3s_cgroup_post_v2_memory_stat
+
+    - name: Read post-change cgroup v2 controllers when available
+      ansible.builtin.slurp:
+        src: /sys/fs/cgroup/cgroup.controllers
+      register: k3s_cgroup_post_v2_controllers_raw
+      when: k3s_cgroup_post_v2_controllers_stat.stat.exists
+
+    - name: Read post-change cgroup v2 subtree control when available
+      ansible.builtin.slurp:
+        src: /sys/fs/cgroup/cgroup.subtree_control
+      register: k3s_cgroup_post_v2_subtree_raw
+      when: k3s_cgroup_post_v2_controllers_stat.stat.exists
+
+    - name: Build final cgroup state summary
+      ansible.builtin.set_fact:
+        k3s_cgroup_final_state:
+          host: "{{ inventory_hostname }}"
+          reboot_required: "{{ k3s_cgroup_reboot_required | bool }}"
+          reboot_performed: "{{ (k3s_cgroup_reboot_result is defined) and (k3s_cgroup_reboot_result.rebooted | default(false)) }}"
+          cmdline: "{{ k3s_cgroup_post_cmdline_raw.content | b64decode | trim }}"
+          has_cgroup_memory_arg: "{{ 'cgroup_memory=1' in (k3s_cgroup_post_cmdline_raw.content | b64decode | trim) }}"
+          has_cgroup_enable_memory_arg: "{{ 'cgroup_enable=memory' in (k3s_cgroup_post_cmdline_raw.content | b64decode | trim) }}"
+          has_cgroup_disable_memory_arg: "{{ 'cgroup_disable=memory' in (k3s_cgroup_post_cmdline_raw.content | b64decode | trim) }}"
+          cgroup_version: "{{ 'v2' if k3s_cgroup_post_v2_controllers_stat.stat.exists else ('v1' if k3s_cgroup_post_v1_memory_stat.stat.exists else 'unknown') }}"
+          v1_memory_available: "{{ k3s_cgroup_post_v1_memory_stat.stat.exists }}"
+          v2_memory_available: "{{ k3s_cgroup_post_v2_memory_stat.stat.exists }}"
+          v2_controllers: "{{ (k3s_cgroup_post_v2_controllers_raw.content | b64decode | trim) if k3s_cgroup_post_v2_controllers_stat.stat.exists else '' }}"
+          v2_subtree_control: "{{ (k3s_cgroup_post_v2_subtree_raw.content | b64decode | trim) if k3s_cgroup_post_v2_controllers_stat.stat.exists and k3s_cgroup_post_v2_subtree_raw is defined else '' }}"
+          boot_config_target: >-
+            {{
+              k3s_cgroup_boot_file if (k3s_cgroup_boot_file | length > 0)
+              else ('/etc/default/grub' if k3s_cgroup_grub_default_stat.stat.exists else ('/boot/extlinux/extlinux.conf' if k3s_cgroup_extlinux_stat.stat.exists else 'unknown'))
+            }}
+
+    - name: Validate memory cgroup support is present after configuration
+      block:
+        - name: Assert running kernel exposes memory cgroup support required for k3s
+          ansible.builtin.assert:
+            that:
+              - k3s_cgroup_final_state.v1_memory_available | bool or k3s_cgroup_final_state.v2_memory_available | bool
+              - not k3s_cgroup_final_state.has_cgroup_disable_memory_arg | bool
+              - (k3s_cgroup_final_state.cgroup_version == 'v2' and ('memory' in k3s_cgroup_final_state.v2_controllers.split() or k3s_cgroup_final_state.v2_memory_available | bool)) or (k3s_cgroup_final_state.cgroup_version == 'v1' and k3s_cgroup_final_state.v1_memory_available | bool)
+            fail_msg: >-
+              Memory cgroup support is not available after configuration and reboot. Verify firmware/bootloader support,
+              kernel configuration, and that the required command line options were applied.
+            success_msg: Memory cgroup support is available for k3s.
+      rescue:
+        - name: Emit memory cgroup validation debug context
+          ansible.builtin.debug:
+            msg: "{{ k3s_cgroup_final_state }}"
+        - name: Fail due to missing memory cgroup support
+          ansible.builtin.fail:
+            msg: Memory cgroup validation failed after reboot.
+
+    - name: Emit final machine-readable cgroup preparation summary
+      ansible.builtin.debug:
+        msg: "{{ k3s_cgroup_final_state }}"

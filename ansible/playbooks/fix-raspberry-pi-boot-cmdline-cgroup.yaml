@@ -1,0 +1,224 @@
+# name: fix_raspberry_pi_boot_cmdline_cgroup
+# description: Adjusts Raspberry Pi boot command line settings for k3s memory cgroup compatibility across control and cluster hosts.
+# target: both
+# requires_approval: true
+# tags:
+#   - Raspberry Pi
+#   - k3s
+#   - memory cgroup
+#   - boot configuration
+
+---
+- name: Fix Raspberry Pi boot cmdline memory cgroup settings for k3s prerequisites
+  hosts: control:cluster
+  become: true
+  gather_facts: true
+  vars:
+    k3s_memory_cgroup_reset: false
+    k3s_memory_cgroup_candidate_files:
+      - /boot/firmware/cmdline.txt
+      - /boot/cmdline.txt
+  tasks:
+    - name: Gather current kernel command line
+      ansible.builtin.command: cat /proc/cmdline
+      register: proc_cmdline_before
+      changed_when: false
+
+    - name: Discover existing Raspberry Pi boot cmdline files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ k3s_memory_cgroup_candidate_files }}"
+      register: k3s_cmdline_stats
+
+    - name: Select boot cmdline file to manage
+      ansible.builtin.set_fact:
+        k3s_boot_cmdline_file: >-
+          {{
+            (k3s_cmdline_stats.results
+            | selectattr('stat.exists', 'defined')
+            | selectattr('stat.exists')
+            | map(attribute='stat.path')
+            | list
+            | first)
+            | default('')
+          }}
+
+    - name: Assert a Raspberry Pi boot cmdline file was found
+      ansible.builtin.assert:
+        that:
+          - k3s_boot_cmdline_file | length > 0
+        fail_msg: >-
+          No supported boot cmdline file was found. Checked:
+          {{ k3s_memory_cgroup_candidate_files }}
+        success_msg: >-
+          Managing boot cmdline file {{ k3s_boot_cmdline_file }}
+
+    - name: Read existing boot cmdline content
+      ansible.builtin.slurp:
+        path: "{{ k3s_boot_cmdline_file }}"
+      register: k3s_boot_cmdline_raw
+
+    - name: Decode and normalize boot cmdline content
+      ansible.builtin.set_fact:
+        k3s_boot_cmdline_original: >-
+          {{ k3s_boot_cmdline_raw.content | b64decode | regex_replace('[\r\n]+', ' ') | regex_replace('\s+', ' ') | trim }}
+
+    - name: Build corrected boot cmdline tokens for k3s memory cgroup support
+      ansible.builtin.set_fact:
+        k3s_boot_cmdline_filtered_tokens: >-
+          {{
+            (k3s_boot_cmdline_original.split()
+            | reject('equalto', 'cgroup_disable=memory')
+            | reject('equalto', 'cgroup_memory=1')
+            | reject('equalto', 'cgroup_enable=memory')
+            | list)
+          }}
+        k3s_boot_cmdline_expected: >-
+          {{
+            ((k3s_boot_cmdline_original.split()
+            | reject('equalto', 'cgroup_disable=memory')
+            | reject('equalto', 'cgroup_memory=1')
+            | reject('equalto', 'cgroup_enable=memory')
+            | list)
+            + (['cgroup_disable=memory'] if k3s_memory_cgroup_reset | bool else ['cgroup_memory=1', 'cgroup_enable=memory']))
+            | join(' ')
+          }}
+
+    - name: Assert corrected boot cmdline is a single non-empty line
+      ansible.builtin.assert:
+        that:
+          - k3s_boot_cmdline_expected | length > 0
+          - "'\n' not in k3s_boot_cmdline_expected"
+          - "'\r' not in k3s_boot_cmdline_expected"
+        fail_msg: >-
+          Computed boot cmdline is invalid for {{ inventory_hostname }}.
+          Computed value: {{ k3s_boot_cmdline_expected }}
+        success_msg: Computed boot cmdline is valid for single-line bootloader format.
+
+    - name: Safely write corrected boot cmdline
+      ansible.builtin.copy:
+        dest: "{{ k3s_boot_cmdline_file }}"
+        content: "{{ k3s_boot_cmdline_expected }}\n"
+        owner: root
+        group: root
+        mode: '0644'
+        backup: false
+      register: k3s_boot_cmdline_write
+
+    - name: Reboot host when boot cmdline changed
+      ansible.builtin.reboot:
+        msg: Reboot initiated by Ansible after updating boot cmdline for k3s memory cgroup prerequisites
+        connect_timeout: 10
+        reboot_timeout: 900
+        pre_reboot_delay: 0
+        post_reboot_delay: 10
+        test_command: whoami
+      when: k3s_boot_cmdline_write.changed
+
+    - name: Wait for host SSH connectivity after potential reboot
+      ansible.builtin.wait_for_connection:
+        timeout: 900
+        sleep: 5
+
+    - name: Gather current kernel command line after potential reboot
+      ansible.builtin.command: cat /proc/cmdline
+      register: proc_cmdline_after
+      changed_when: false
+
+    - name: Check memory cgroup v1 mount presence
+      ansible.builtin.stat:
+        path: /sys/fs/cgroup/memory
+      register: k3s_cgroup_memory_v1_stat
+
+    - name: Read cgroup v2 controllers when present
+      ansible.builtin.slurp:
+        path: /sys/fs/cgroup/cgroup.controllers
+      register: k3s_cgroup_v2_controllers_raw
+      when: not k3s_cgroup_memory_v1_stat.stat.exists
+
+    - name: Decode cgroup v2 controllers
+      ansible.builtin.set_fact:
+        k3s_cgroup_v2_controllers: "{{ (k3s_cgroup_v2_controllers_raw.content | b64decode | trim).split() }}"
+      when: not k3s_cgroup_memory_v1_stat.stat.exists
+
+    - name: Validate final kernel command line and memory cgroup availability for k3s
+      block:
+        - name: Assert kernel command line has expected memory cgroup settings
+          ansible.builtin.assert:
+            that:
+              - "'cgroup_disable=memory' not in proc_cmdline_after.stdout.split()"
+              - >-
+                (
+                  k3s_memory_cgroup_reset | bool and
+                  ('cgroup_disable=memory' in proc_cmdline_after.stdout.split())
+                ) or
+                (
+                  not (k3s_memory_cgroup_reset | bool) and
+                  ('cgroup_memory=1' in proc_cmdline_after.stdout.split()) and
+                  ('cgroup_enable=memory' in proc_cmdline_after.stdout.split())
+                )
+            fail_msg: >-
+              Final kernel command line validation failed on {{ inventory_hostname }}.
+              Observed /proc/cmdline: {{ proc_cmdline_after.stdout }}
+            success_msg: Kernel command line contains the expected memory cgroup arguments.
+          when: not k3s_memory_cgroup_reset | bool
+
+        - name: Assert memory cgroup support is available for k3s
+          ansible.builtin.assert:
+            that:
+              - k3s_cgroup_memory_v1_stat.stat.exists or ('memory' in (k3s_cgroup_v2_controllers | default([])))
+            fail_msg: >-
+              Memory cgroup support is not available after boot parameter update on {{ inventory_hostname }}.
+              v1_path_exists={{ k3s_cgroup_memory_v1_stat.stat.exists | default(false) }}
+              v2_controllers={{ k3s_cgroup_v2_controllers | default([]) }}
+              proc_cmdline={{ proc_cmdline_after.stdout }}
+            success_msg: Memory cgroup support is available for k3s.
+          when: not k3s_memory_cgroup_reset | bool
+
+        - name: Assert reset mode restored memory cgroup disablement if requested
+          ansible.builtin.assert:
+            that:
+              - "'cgroup_disable=memory' in proc_cmdline_after.stdout.split()"
+            fail_msg: >-
+              Reset mode requested but cgroup_disable=memory was not present after reboot on {{ inventory_hostname }}.
+              Observed /proc/cmdline: {{ proc_cmdline_after.stdout }}
+            success_msg: Reset mode restored cgroup_disable=memory.
+          when: k3s_memory_cgroup_reset | bool
+      rescue:
+        - name: Emit validation failure context for boot cmdline and cgroup state
+          ansible.builtin.debug:
+            msg:
+              host: "{{ inventory_hostname }}"
+              boot_cmdline_file: "{{ k3s_boot_cmdline_file }}"
+              boot_cmdline_original: "{{ k3s_boot_cmdline_original }}"
+              boot_cmdline_expected: "{{ k3s_boot_cmdline_expected }}"
+              proc_cmdline_before: "{{ proc_cmdline_before.stdout | default('') }}"
+              proc_cmdline_after: "{{ proc_cmdline_after.stdout | default('') }}"
+              memory_cgroup_v1_path_exists: "{{ k3s_cgroup_memory_v1_stat.stat.exists | default(false) }}"
+              cgroup_v2_controllers: "{{ k3s_cgroup_v2_controllers | default([]) }}"
+              reset_mode: "{{ k3s_memory_cgroup_reset | bool }}"
+        - name: Fail after emitting validation failure context
+          ansible.builtin.fail:
+            msg: >-
+              Validation of Raspberry Pi boot cmdline memory cgroup settings failed on
+              {{ inventory_hostname }}. Review debug output for kernel cmdline and cgroup state.
+
+    - name: Emit structured final state summary
+      ansible.builtin.debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          boot_cmdline_file: "{{ k3s_boot_cmdline_file }}"
+          boot_cmdline_changed: "{{ k3s_boot_cmdline_write.changed | default(false) }}"
+          reset_mode: "{{ k3s_memory_cgroup_reset | bool }}"
+          managed_boot_cmdline: "{{ k3s_boot_cmdline_expected }}"
+          running_proc_cmdline: "{{ proc_cmdline_after.stdout }}"
+          memory_cgroup_v1_path_exists: "{{ k3s_cgroup_memory_v1_stat.stat.exists | default(false) }}"
+          cgroup_v2_controllers: "{{ k3s_cgroup_v2_controllers | default([]) }}"
+          k3s_memory_cgroup_ready: >-
+            {{
+              (not k3s_memory_cgroup_reset | bool) and
+              (
+                (k3s_cgroup_memory_v1_stat.stat.exists | default(false)) or
+                ('memory' in (k3s_cgroup_v2_controllers | default([])))
+              )
+            }}

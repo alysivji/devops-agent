@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from agent.generate_playbook import GeneratedPlaybookYaml
+from agent.generate_playbook import SYSTEM_PROMPT, GeneratedPlaybookYaml
 
 
 class TestGeneratedPlaybookYaml:
@@ -55,3 +55,23 @@ class TestGeneratedPlaybookYaml:
     def test_rejects_empty_yaml_list(self) -> None:
         with pytest.raises(ValidationError, match="generated playbook YAML"):
             GeneratedPlaybookYaml(yaml="[]")
+
+
+def test_generator_prompt_requires_raspberry_pi_reboot_wait_verification() -> None:
+    assert "Raspberry Pi" in SYSTEM_PROMPT
+    assert "wait_for_connection" in SYSTEM_PROMPT
+    assert "/proc/sys/kernel/random/boot_id" in SYSTEM_PROMPT
+    assert "reboot_timeout` of at least 1200 seconds" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_requires_bounded_cluster_service_operations() -> None:
+    assert "service operations on Raspberry Pi" in SYSTEM_PROMPT
+    assert "avoid using `async`/`poll`" in SYSTEM_PROMPT
+    assert "no_block: true" in SYSTEM_PROMPT
+    assert "service_facts" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_requires_goal_oriented_validation() -> None:
+    assert "requested end state" in SYSTEM_PROMPT
+    assert "all expected nodes as `Ready`" in SYSTEM_PROMPT
+    assert "diagnostics only" in SYSTEM_PROMPT

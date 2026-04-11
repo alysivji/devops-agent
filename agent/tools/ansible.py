@@ -287,12 +287,12 @@ def run_ansible_playbook(playbook_path: str) -> str:
         ),
         details={"playbook_path": playbook_path, "approved": True},
     )
-    command = ["ansible-playbook", playbook_path, "-vv"]
+    command = ["ansible-playbook", playbook_path]
     record_event(
         kind="playbook_execution_started",
         status="started",
         what=f"Started playbook execution for `{playbook_path}`.",
-        why="Run the selected playbook through ansible-playbook with verbose output.",
+        why="Run the selected playbook through ansible-playbook.",
         details={"playbook_path": playbook_path, "command": command},
     )
     started_at = time.monotonic()

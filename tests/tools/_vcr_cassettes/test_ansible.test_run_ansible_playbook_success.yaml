@@ -240,9 +240,29 @@ interactions:
     of another Python interpreter could change the meaning of that path. See
     https://docs.ansible.com/ansible-
     core/2.17/reference_appendices/interpreter_discovery.html for more information.
+- args:
+  - ansible-playbook
+  - ansible/playbooks/hello-local-test.yaml
+  kwargs:
+    stdout: PIPE
+    stderr: PIPE
+    text: true
+  duration: 1.034698724746704
+  returncode: 0
+  stdout: |2+
+
+    PLAY [control] *****************************************************************
+
+    TASK [Ping] ********************************************************************
+    ok: [localhost]
+
+    PLAY RECAP *********************************************************************
+    localhost                  : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+  stderr: ''
 metadata:
   test_name: test_run_ansible_playbook_success
-  recorded_at: '2026-04-09T20:58:18.588819+00:00'
-  python_version: 3.13.1
-  platform: Darwin-23.2.0
-  cassette_count: 2
+  recorded_at: '2026-04-11T06:54:20.225622+00:00'
+  python_version: 3.13.5
+  platform: Linux-6.12.74+deb13+1-amd64
+  cassette_count: 3
