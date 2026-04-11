@@ -13,6 +13,9 @@ dependencies = [
     "strands-agents[openai]>=1.34.1",
 ]
 
+[project.scripts]
+devops-agent = "devops_bot.main:main"
+
 [dependency-groups]
 dev = [
     "ipython>=9.12.0",
@@ -28,6 +31,10 @@ dev = [
     "vcrpy>=7.0.0",
 ]
 
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 addopts = "--subprocess-vcr=replay"
@@ -39,7 +46,10 @@ markers = [
 ]
 
 [tool.uv]
-package = false
+package = true
+
+[tool.setuptools.packages.find]
+include = ["devops_bot*"]
 
 [tool.ruff]
 target-version = "py313"
