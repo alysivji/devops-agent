@@ -87,8 +87,44 @@ class TestRunAnsiblePlaybook:
 
         monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
 
-        with pytest.raises(RuntimeError, match=r"inventory parse failed\s+host unreachable"):
+        with pytest.raises(
+            RuntimeError,
+            match=r"inventory parse failed[\s\S]+host unreachable",
+        ):
             run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+
+    def test_run_ansible_playbook_failure_includes_ansible_diagnosis(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+
+        def fake_run(*args, **kwargs):
+            raise subprocess.CalledProcessError(
+                returncode=2,
+                cmd=args[0],
+                output=(
+                    "TASK [Validate k3s server service and API health] ********\n"
+                    "fatal: [control]: FAILED! => {\n"
+                    '    "msg": "The conditional check '
+                    "`(k3s_server_nodes_json.stdout | from_json).items | length >= 1` "
+                    'failed. object of type builtin_function_or_method has no len()"\n'
+                    "}\n"
+                    "PLAY RECAP\n"
+                    "control : ok=8 changed=0 unreachable=0 failed=1\n"
+                ),
+                stderr="",
+            )
+
+        monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            run_ansible_playbook("ansible/playbooks/hello-control.yaml")
+
+        message = str(exc_info.value)
+        assert "Failed task: Validate k3s server service and API health" in message
+        assert "Failed host: control" in message
+        assert "dict method" in message
+        assert "stdout tail:" in message
 
     def test_run_ansible_playbook_removes_unsupported_locale_vars(
         self, monkeypatch: pytest.MonkeyPatch
@@ -166,12 +202,20 @@ class TestRunAnsiblePlaybook:
         monkeypatch.setattr("agent.tools.ansible.subprocess.run", fake_run)
 
         try:
-            with pytest.raises(RuntimeError, match=r"inventory parse failed\s+host unreachable"):
+            with pytest.raises(
+                RuntimeError,
+                match=r"inventory parse failed[\s\S]+host unreachable",
+            ):
                 run_ansible_playbook("ansible/playbooks/hello-control.yaml")
         finally:
             reset_active_run_history(token)
 
         assert run_history.session.events[-1].kind == "playbook_execution_failed"
+        diagnosis = run_history.session.events[-1].details["failure_diagnosis"]
+        assert isinstance(diagnosis, dict)
+        assert diagnosis["return_code"] == 4
+        assert diagnosis["stderr_tail"] == "inventory parse failed"
+        assert diagnosis["stdout_tail"] == "host unreachable"
 
 
 class TestGetAnsiblePlaybookRegistry:

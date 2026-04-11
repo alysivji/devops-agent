@@ -8,7 +8,7 @@ import tempfile
 import time
 import unicodedata
 from functools import lru_cache
-from typing import Final, Literal, TypedDict
+from typing import Final, Literal, NotRequired, TypedDict
 
 import yaml
 from pydantic import BaseModel, ValidationError
@@ -21,6 +21,11 @@ logger = logging.getLogger(__name__)
 ANSIBLE_TMP_DIR: Final[pathlib.Path] = pathlib.Path(".ansible/tmp")
 PLAYBOOKS_DIR: Final[pathlib.Path] = pathlib.Path("ansible/playbooks")
 INVENTORY_PATH: Final[pathlib.Path] = pathlib.Path("ansible/inventory.ini")
+ANSIBLE_OUTPUT_TAIL_LINES: Final[int] = 80
+ANSIBLE_TASK_PATTERN: Final[re.Pattern[str]] = re.compile(r"^TASK \[(?P<task>.+?)]\s+\*+")
+ANSIBLE_FATAL_PATTERN: Final[re.Pattern[str]] = re.compile(
+    r"^fatal: \[(?P<host>[^]]+)]: FAILED! =>(?P<details>.*)"
+)
 
 
 class AnsiblePlaybookMetadata(BaseModel):
@@ -42,6 +47,16 @@ class AnsiblePlaybookRegistryEntryDict(TypedDict):
     requires_approval: bool
     tags: list[str]
     path: str
+
+
+class AnsibleFailureDiagnosis(TypedDict):
+    return_code: int
+    failed_task: NotRequired[str]
+    failed_host: NotRequired[str]
+    failure_message: NotRequired[str]
+    likely_causes: list[str]
+    stderr_tail: str
+    stdout_tail: str
 
 
 def _serialize_registry_entry(
@@ -310,21 +325,23 @@ def run_ansible_playbook(playbook_path: str) -> str:
         logger.exception("Ansible playbook execution failed")
         stdout = _decode_output(exc.stdout).strip()
         stderr = _decode_output(exc.stderr).strip()
+        diagnosis = _diagnose_ansible_failure(exc, stdout=stdout, stderr=stderr)
         elapsed_seconds = round(time.monotonic() - started_at, 3)
         record_event(
             kind="playbook_execution_failed",
             status="failed",
             what=f"Playbook `{playbook_path}` failed.",
-            why="Capture the failing command and compact stderr/stdout details for review.",
+            why=_summarize_ansible_failure(diagnosis),
             details={
                 "playbook_path": playbook_path,
                 "command": command,
                 "elapsed_seconds": elapsed_seconds,
                 "stdout_summary": _summarize_ansible_output(stdout),
                 "stderr_summary": _summarize_ansible_output(stderr),
+                "failure_diagnosis": diagnosis,
             },
         )
-        details = "\n".join(part for part in (stderr, stdout) if part)
+        details = _format_ansible_failure(diagnosis)
         if details:
             raise RuntimeError(f"Ansible playbook execution failed:\n{details}") from exc
         raise RuntimeError("Ansible playbook execution failed") from exc
@@ -341,3 +358,152 @@ def _summarize_ansible_output(output: str) -> str:
 
     lines = [line for line in normalized.splitlines() if line.strip()]
     return "\n".join(lines[-10:])
+
+
+def _diagnose_ansible_failure(
+    exc: subprocess.CalledProcessError,
+    *,
+    stdout: str,
+    stderr: str,
+) -> AnsibleFailureDiagnosis:
+    combined_output = "\n".join(part for part in (stdout, stderr) if part)
+    diagnosis: AnsibleFailureDiagnosis = {
+        "return_code": exc.returncode,
+        "likely_causes": _detect_likely_ansible_causes(combined_output),
+        "stderr_tail": _tail_lines(stderr, ANSIBLE_OUTPUT_TAIL_LINES),
+        "stdout_tail": _tail_lines(stdout, ANSIBLE_OUTPUT_TAIL_LINES),
+    }
+
+    failed_task = _extract_failed_task(stdout)
+    if failed_task is not None:
+        diagnosis["failed_task"] = failed_task
+
+    failed_host = _extract_failed_host(stdout)
+    if failed_host is not None:
+        diagnosis["failed_host"] = failed_host
+
+    failure_message = _extract_failure_message(combined_output)
+    if failure_message is not None:
+        diagnosis["failure_message"] = failure_message
+
+    return diagnosis
+
+
+def _extract_failed_task(output: str) -> str | None:
+    current_task: str | None = None
+    failed_task: str | None = None
+
+    for line in output.splitlines():
+        task_match = ANSIBLE_TASK_PATTERN.match(line)
+        if task_match is not None:
+            current_task = task_match.group("task").strip()
+            continue
+
+        if ANSIBLE_FATAL_PATTERN.match(line):
+            failed_task = current_task
+
+    return failed_task
+
+
+def _extract_failed_host(output: str) -> str | None:
+    failed_host: str | None = None
+    for line in output.splitlines():
+        fatal_match = ANSIBLE_FATAL_PATTERN.match(line)
+        if fatal_match is not None:
+            failed_host = fatal_match.group("host").strip()
+    return failed_host
+
+
+def _extract_failure_message(output: str) -> str | None:
+    for pattern in (
+        r'"msg":\s*"(?P<message>(?:[^"\\]|\\.)*)"',
+        r"msg:\s*(?P<message>.+)",
+        r"ERROR!\s*(?P<message>.+)",
+    ):
+        match = re.search(pattern, output)
+        if match is not None:
+            return match.group("message").strip()
+
+    for line in output.splitlines():
+        if "FAILED!" in line:
+            return line.strip()
+
+    return None
+
+
+def _detect_likely_ansible_causes(output: str) -> list[str]:
+    normalized = output.lower()
+    causes: list[str] = []
+
+    if ".items" in output and "from_json" in output:
+        causes.append(
+            "A Jinja expression appears to use dot lookup for a JSON key named `items`; "
+            "use bracket lookup such as `parsed_json['items']` to avoid the dict method."
+        )
+
+    if "builtin_function_or_method" in normalized and "length" in normalized:
+        causes.append(
+            "A Jinja `length` filter may be running against a Python method instead of a list "
+            "or dictionary value."
+        )
+
+    if "ansibleundefinedvariable" in normalized or " is undefined" in normalized:
+        causes.append(
+            "A Jinja expression references an undefined variable or nested key; default the "
+            "parent value before indexing into it."
+        )
+
+    if "template error while templating string" in normalized:
+        causes.append(
+            "Ansible failed while rendering a template expression, so a rescue/debug task may "
+            "be masking the original failure."
+        )
+
+    return causes
+
+
+def _format_ansible_failure(diagnosis: AnsibleFailureDiagnosis) -> str:
+    sections: list[str] = [f"Return code: {diagnosis['return_code']}"]
+
+    failed_task = diagnosis.get("failed_task")
+    if failed_task:
+        sections.append(f"Failed task: {failed_task}")
+
+    failed_host = diagnosis.get("failed_host")
+    if failed_host:
+        sections.append(f"Failed host: {failed_host}")
+
+    failure_message = diagnosis.get("failure_message")
+    if failure_message:
+        sections.append(f"Failure message: {failure_message}")
+
+    likely_causes = diagnosis["likely_causes"]
+    if likely_causes:
+        sections.append(
+            "Likely cause hints:\n" + "\n".join(f"- {cause}" for cause in likely_causes)
+        )
+
+    stderr_tail = diagnosis["stderr_tail"]
+    if stderr_tail:
+        sections.append(f"stderr tail:\n{stderr_tail}")
+
+    stdout_tail = diagnosis["stdout_tail"]
+    if stdout_tail:
+        sections.append(f"stdout tail:\n{stdout_tail}")
+
+    return "\n\n".join(sections)
+
+
+def _summarize_ansible_failure(diagnosis: AnsibleFailureDiagnosis) -> str:
+    failed_task = diagnosis.get("failed_task")
+    failed_host = diagnosis.get("failed_host")
+    if failed_task and failed_host:
+        return f"Ansible failed on host `{failed_host}` while running task `{failed_task}`."
+    if failed_task:
+        return f"Ansible failed while running task `{failed_task}`."
+    return "Capture the failing command, Ansible output tails, and deterministic failure hints."
+
+
+def _tail_lines(output: str, line_count: int) -> str:
+    lines = [line for line in output.strip().splitlines() if line.strip()]
+    return "\n".join(lines[-line_count:])
