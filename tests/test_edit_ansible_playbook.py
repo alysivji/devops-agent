@@ -174,21 +174,21 @@ def test_edit_ansible_playbook_requires_registry_path(
         )
 
 
-def test_editor_prompt_preserves_raspberry_pi_reboot_wait_verification() -> None:
-    assert "Raspberry Pi" in SYSTEM_PROMPT
+def test_editor_prompt_preserves_remote_reboot_wait_verification() -> None:
+    assert "remote hosts" in SYSTEM_PROMPT
     assert "wait_for_connection" in SYSTEM_PROMPT
     assert "/proc/sys/kernel/random/boot_id" in SYSTEM_PROMPT
     assert "boot id changed" in SYSTEM_PROMPT
 
 
-def test_editor_prompt_preserves_bounded_cluster_service_operations() -> None:
+def test_editor_prompt_preserves_bounded_remote_service_operations() -> None:
     assert "long-running remote services" in SYSTEM_PROMPT
     assert "Do not use `async`/`poll`" in SYSTEM_PROMPT
     assert "no_block: true" in SYSTEM_PROMPT
-    assert "service_facts" in SYSTEM_PROMPT
+    assert "application state with retries/delay" in SYSTEM_PROMPT
 
 
 def test_editor_prompt_preserves_goal_oriented_validation() -> None:
     assert "goal-state validation" in SYSTEM_PROMPT
-    assert "all expected nodes reporting `Ready`" in SYSTEM_PROMPT
+    assert "cluster/API-level health" in SYSTEM_PROMPT
     assert "diagnostics when that signal is failing" in SYSTEM_PROMPT

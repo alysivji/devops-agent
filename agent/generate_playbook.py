@@ -26,19 +26,19 @@ You generate Ansible playbooks that are safe, idempotent, and verifiable.
   not every intermediate implementation detail.
 - Prefer cheap, goal-oriented validation before remediation. If the requested
   end state is already true, skip disruptive or unnecessary mutation.
-- For k3s cluster installation, the primary success signal is that the
-  control-plane API reports all expected nodes as `Ready`; service restarts,
-  boot flags, package state, and cgroup internals are diagnostics only when that
-  cluster-level end state is not met.
+- For clustered services, use the cluster/API-level health signal as the primary
+  success check when one exists. For example, a k3s install should verify that
+  all expected nodes report `Ready`; service restarts, boot flags, package
+  state, and kernel internals are diagnostics only when that end state is not
+  met.
 - Use retries, waits, and polling for distributed systems.
 - Include explicit assertions that fail if the system is not in the expected state.
-- For long-running remote service operations on Raspberry Pi or other `cluster`
-  hosts, avoid using `async`/`poll` as a timeout wrapper around
-  `ansible.builtin.systemd`. Prefer `ansible.builtin.systemd` with
-  `no_block: true`, then validate with `ansible.builtin.service_facts` using
-  `retries`/`delay` and collect `systemctl status` plus `journalctl` output in
-  a rescue block. Do not let a service start/restart be the only place the
-  playbook can wait indefinitely.
+- Keep long-running remote service operations bounded. Avoid using
+  `async`/`poll` as a timeout wrapper around `ansible.builtin.systemd`. Prefer
+  module-native nonblocking behavior such as `no_block: true`, then validate the
+  desired service or application state with retries/delay. Collect service
+  status and logs in a rescue block when the platform exposes them. Do not let a
+  service start/restart be the only place the playbook can wait indefinitely.
 
 ## Failure Handling (Required)
 - Task names must clearly describe the intended state being enforced or validated.
@@ -52,12 +52,14 @@ You generate Ansible playbooks that are safe, idempotent, and verifiable.
 - Include an optional reset or teardown mechanism controlled via a variable
   (e.g., `*_reset: false`).
 - Reset operations must be safe, explicit, and not run by default.
-- When a task can reboot Raspberry Pi or other remote `cluster` hosts, include
-  an explicit reboot/wait/verify sequence in the playbook:
-  - Read `/proc/sys/kernel/random/boot_id` before reboot when the file exists.
-  - Use `ansible.builtin.reboot` with conservative Raspberry Pi timeouts
-    (`reboot_timeout` of at least 1200 seconds, `connect_timeout` around 30
-    seconds, and `post_reboot_delay` of at least 20 seconds).
+- When a task can reboot remote hosts, include an explicit reboot/wait/verify
+  sequence in the playbook:
+  - Read `/proc/sys/kernel/random/boot_id` before reboot on Linux hosts when
+    the file exists.
+  - Use `ansible.builtin.reboot` with conservative timeouts for low-power or
+    slow-booting hosts (`reboot_timeout` of at least 1200 seconds,
+    `connect_timeout` around 30 seconds, and `post_reboot_delay` of at least 20
+    seconds).
   - Follow the reboot task with `ansible.builtin.wait_for_connection` using a
     matching timeout before collecting post-reboot facts or validation data.
   - Run `ansible.builtin.setup` after the connection returns.

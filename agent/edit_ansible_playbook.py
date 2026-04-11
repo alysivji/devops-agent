@@ -32,26 +32,26 @@ Editing Rules:
 - Prefer goal-state validation over exhaustive implementation checks. If the
   requested end state is already true, preserve or add guards that skip
   disruptive remediation such as service restarts, boot edits, or reboot logic.
-- For k3s cluster installation, treat all expected nodes reporting `Ready` from
-  the control-plane API as the primary success signal; service state, cgroup
-  state, and boot flags should be diagnostics when that signal is failing.
+- For clustered services, preserve or add cluster/API-level health as the
+  primary success signal when one exists. For example, a k3s install should
+  verify all expected nodes report `Ready`; service state, boot flags, and
+  kernel internals should be diagnostics when that signal is failing.
 - Preserve explicit failure messages and structured debug context.
 - If repairing JSON/Jinja access, prefer bracket lookup for dictionary keys that
   can collide with Python method names, such as `items`.
-- If repairing a playbook that starts or restarts long-running remote services
-  on Raspberry Pi or other `cluster` hosts, keep the service operation bounded.
-  Do not use `async`/`poll` as a timeout wrapper around
-  `ansible.builtin.systemd`. Prefer `ansible.builtin.systemd` with
-  `no_block: true`, then validate with `ansible.builtin.service_facts` using
-  retries/delay and collect
-  `systemctl status` plus `journalctl` output in a rescue block.
-- If repairing a playbook that can reboot Raspberry Pi or other remote `cluster`
-  hosts, preserve or add an explicit reboot/wait/verify sequence: capture
-  `/proc/sys/kernel/random/boot_id` before reboot when available, use
-  `ansible.builtin.reboot` with conservative Raspberry Pi timeouts, follow it
-  with `ansible.builtin.wait_for_connection`, refresh facts with
-  `ansible.builtin.setup`, and assert the boot id changed before post-reboot
-  desired-state validation.
+- If repairing a playbook that starts or restarts long-running remote services,
+  keep the service operation bounded. Do not use `async`/`poll` as a timeout
+  wrapper around `ansible.builtin.systemd`. Prefer module-native nonblocking
+  behavior such as `no_block: true`, then validate the desired service or
+  application state with retries/delay and collect service status and logs in a
+  rescue block when the platform exposes them.
+- If repairing a playbook that can reboot remote hosts, preserve or add an
+  explicit reboot/wait/verify sequence: capture
+  `/proc/sys/kernel/random/boot_id` before reboot on Linux hosts when available,
+  use `ansible.builtin.reboot` with conservative timeouts for low-power or
+  slow-booting hosts, follow it with `ansible.builtin.wait_for_connection`,
+  refresh facts with `ansible.builtin.setup`, and assert the boot id changed
+  before post-reboot desired-state validation.
 """
 
 

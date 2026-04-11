@@ -32,10 +32,11 @@ Workflow:
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts. If the requested state is already true, report
   success instead of continuing through prerequisite or repair automation.
-- Keep validation goal-oriented. For a k3s cluster install request, all expected
-  nodes reporting `Ready` from the control-plane API is the primary success
-  signal; boot flags, service restarts, package state, and cgroup internals are
-  diagnostics only when that end state is not met.
+- Keep validation goal-oriented. Pick success signals that prove the user's
+  requested capability works, and treat implementation details as diagnostics
+  unless the capability-level check is failing. For clustered services, prefer
+  cluster/API health over individual service restarts, package state, boot
+  flags, or kernel internals.
 - If the registry already contains the right playbook, run it with `run_ansible_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
@@ -49,12 +50,11 @@ Workflow:
   environment preparation needed for the original request, treat that as missing
   prerequisite automation. Inspect the registry for a matching prerequisite
   playbook; if none exists, call `create_ansible_playbook` to create one.
-- If a prerequisite playbook changes a configuration file but validation shows
-  the live host state still differs, such as `/proc/cmdline` retaining a kernel
-  argument after a boot file edit, do not stop because there is no existing
-  validated playbook for that deeper inspection. Treat the mismatch as missing
-  diagnostic/remediation automation and use `create_ansible_playbook` to discover
-  the active configuration source and repair it when possible.
+- If a prerequisite playbook changes configuration but validation shows the live
+  host state still differs, do not stop because there is no existing validated
+  playbook for deeper inspection. Treat the mismatch as missing
+  diagnostic/remediation automation and use `create_ansible_playbook` to
+  discover the active configuration source and repair it when possible.
 - Do not rerun the exact same failing playbook without first taking a corrective
   action or identifying that the failure was transient.
 - After editing an existing playbook, inspect the registry again and call
