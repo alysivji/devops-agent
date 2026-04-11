@@ -1,0 +1,485 @@
+# name: k3s_cluster_management
+# description: Prepare, install, and validate k3s cluster components on control and worker nodes, with optional reset functionality for nodes.
+# target: both
+# requires_approval: true
+# tags:
+#   - k3s
+#   - cluster
+#   - installation
+#   - validation
+
+---
+- name: Detect whether the requested k3s cluster state is already complete
+  hosts: control
+  become: true
+  gather_facts: false
+  vars:
+    k3s_reset: false
+    expected_total_nodes: "{{ 1 + (groups['cluster'] | default([]) | length) }}"
+  tasks:
+    - name: Check whether k3s binary exists on the control node
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_existing_server_binary_stat
+
+    - name: Count Ready nodes from the existing k3s cluster
+      ansible.builtin.shell: |
+        set -o errexit -o nounset -o pipefail
+        /usr/local/bin/k3s kubectl get nodes --no-headers | awk '$2 == "Ready" { count++ } END { print count + 0 }'
+      args:
+        executable: /bin/bash
+      register: k3s_existing_ready_node_count
+      changed_when: false
+      failed_when: false
+      when: k3s_existing_server_binary_stat.stat.exists
+
+    - name: Record whether the requested k3s cluster is already Ready
+      ansible.builtin.set_fact:
+        k3s_existing_cluster_ready: >-
+          {{
+            (not (k3s_reset | bool)) and
+            k3s_existing_server_binary_stat.stat.exists and
+            ((k3s_existing_ready_node_count.stdout | default('0') | int) >= (expected_total_nodes | int))
+          }}
+
+    - name: Emit existing k3s cluster readiness summary
+      ansible.builtin.debug:
+        msg:
+          expected_total_nodes: "{{ expected_total_nodes | int }}"
+          ready_node_count: "{{ k3s_existing_ready_node_count.stdout | default('0') | int }}"
+          cluster_ready: "{{ k3s_existing_cluster_ready | bool }}"
+
+- name: Prepare and optionally reset k3s nodes
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    k3s_version: "v1.32.5+k3s1"
+    k3s_channel: "stable"
+    k3s_server_port: 6443
+    k3s_reset: false
+    k3s_server_additional_args: ""
+    k3s_agent_additional_args: ""
+  tasks:
+    - name: Skip preparation when requested k3s cluster state is already Ready
+      ansible.builtin.meta: end_play
+      when: hostvars[groups['control'][0]].k3s_existing_cluster_ready | default(false) | bool
+
+    - name: Ensure required system packages are installed
+      ansible.builtin.package:
+        name:
+          - curl
+          - ca-certificates
+        state: present
+
+    - name: Reset k3s server when explicitly requested
+      ansible.builtin.command: /usr/local/bin/k3s-uninstall.sh
+      register: k3s_server_reset_result
+      changed_when: k3s_server_reset_result.rc == 0
+      failed_when: false
+      when:
+        - k3s_reset | bool
+        - inventory_hostname in groups['control']
+        - ansible.builtin.stat is not defined
+
+    - name: Check whether k3s server uninstall script exists before reset
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s-uninstall.sh
+      register: k3s_server_uninstall_stat
+      when:
+        - k3s_reset | bool
+        - inventory_hostname in groups['control']
+
+    - name: Run k3s server uninstall script when present and reset requested
+      ansible.builtin.command: /usr/local/bin/k3s-uninstall.sh
+      register: k3s_server_reset_run
+      changed_when: k3s_server_reset_run.rc == 0
+      when:
+        - k3s_reset | bool
+        - inventory_hostname in groups['control']
+        - k3s_server_uninstall_stat.stat.exists
+
+    - name: Check whether k3s agent uninstall script exists before reset
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s-agent-uninstall.sh
+      register: k3s_agent_uninstall_stat
+      when:
+        - k3s_reset | bool
+        - inventory_hostname in groups['cluster']
+
+    - name: Run k3s agent uninstall script when present and reset requested
+      ansible.builtin.command: /usr/local/bin/k3s-agent-uninstall.sh
+      register: k3s_agent_reset_run
+      changed_when: k3s_agent_reset_run.rc == 0
+      when:
+        - k3s_reset | bool
+        - inventory_hostname in groups['cluster']
+        - k3s_agent_uninstall_stat.stat.exists
+
+    - name: Ensure reset summary is available
+      ansible.builtin.debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          reset_requested: "{{ k3s_reset | bool }}"
+          server_uninstall_present: "{{ (k3s_server_uninstall_stat.stat.exists if (k3s_server_uninstall_stat is defined and k3s_server_uninstall_stat.stat is defined) else false) }}"
+          agent_uninstall_present: "{{ (k3s_agent_uninstall_stat.stat.exists if (k3s_agent_uninstall_stat is defined and k3s_agent_uninstall_stat.stat is defined) else false) }}"
+
+- name: Install and validate k3s server on control node
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    k3s_version: "v1.32.5+k3s1"
+    k3s_channel: "stable"
+    k3s_server_port: 6443
+    k3s_reset: false
+    k3s_server_additional_args: ""
+  tasks:
+    - name: Skip control-plane installation when requested k3s cluster state is already Ready
+      ansible.builtin.meta: end_play
+      when: hostvars[groups['control'][0]].k3s_existing_cluster_ready | default(false) | bool
+
+    - name: Assert exactly one control node is defined
+      ansible.builtin.assert:
+        that:
+          - groups['control'] is defined
+          - groups['control'] | length == 1
+        fail_msg: "Inventory must define exactly one host in the 'control' group for a single-control-plane k3s deployment."
+        success_msg: "Inventory contains exactly one control node as required."
+
+    - name: Determine control node advertise address
+      ansible.builtin.set_fact:
+        k3s_control_ip: "{{ ansible_default_ipv4.address }}"
+
+    - name: Check whether k3s server binary is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_server_binary_stat
+
+    - name: Install k3s server when not already installed
+      ansible.builtin.shell: |
+        set -o errexit -o nounset -o pipefail
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION='{{ k3s_version }}' \
+          INSTALL_K3S_CHANNEL='{{ k3s_channel }}' \
+          sh -s - server --node-ip {{ k3s_control_ip }} {{ k3s_server_additional_args }}
+      args:
+        executable: /bin/bash
+      register: k3s_server_install_result
+      changed_when: true
+      when: not k3s_server_binary_stat.stat.exists
+
+    - name: Ensure k3s service is enabled and started on control node
+      ansible.builtin.systemd:
+        name: k3s
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Wait for k3s server API port to become reachable
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ k3s_server_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+
+    - name: Wait for k3s node token file to be created
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 300
+        state: present
+
+    - name: Read k3s server node token
+      ansible.builtin.slurp:
+        path: /var/lib/rancher/k3s/server/node-token
+      register: k3s_server_node_token_file
+
+    - name: Set decoded k3s server node token fact
+      ansible.builtin.set_fact:
+        k3s_node_token: "{{ k3s_server_node_token_file.content | b64decode | trim }}"
+
+    - name: Validate k3s server service and API health
+      block:
+        - name: Collect k3s service status on control node
+          ansible.builtin.service_facts:
+
+        - name: Query Kubernetes node list from control node
+          ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes -o json
+          register: k3s_server_nodes_json
+          changed_when: false
+          retries: 30
+          delay: 10
+          until: k3s_server_nodes_json.rc == 0
+
+        - name: Parse Kubernetes node list from control node
+          ansible.builtin.set_fact:
+            k3s_server_nodes_parsed: "{{ k3s_server_nodes_json.stdout | from_json }}"
+
+        - name: Assert k3s server is running and node token is non-empty
+          ansible.builtin.assert:
+            that:
+              - ansible_facts.services['k3s.service'] is defined
+              - ansible_facts.services['k3s.service'].state == 'running'
+              - k3s_node_token | length > 0
+              - k3s_server_nodes_parsed['items'] is defined
+              - k3s_server_nodes_parsed['items'] | length >= 1
+            fail_msg: "k3s server validation failed: service not running, token missing, or Kubernetes API did not return any nodes."
+            success_msg: "k3s server is running, token is available, and Kubernetes API is responding."
+      rescue:
+        - name: Capture k3s service status output after validation failure
+          ansible.builtin.command: systemctl status k3s --no-pager
+          register: k3s_server_systemctl_status
+          changed_when: false
+          failed_when: false
+
+        - name: Capture k3s journal output after validation failure
+          ansible.builtin.command: journalctl -u k3s --no-pager -n 200
+          register: k3s_server_journal_output
+          changed_when: false
+          failed_when: false
+
+        - name: Emit structured debug context for k3s server validation failure
+          ansible.builtin.debug:
+            msg:
+              host: "{{ inventory_hostname }}"
+              service_known: "{{ (ansible_facts.services is defined and 'k3s.service' in ansible_facts.services) | ternary(true, false) }}"
+              service_state: "{{ ansible_facts.services['k3s.service'].state if (ansible_facts.services is defined and 'k3s.service' in ansible_facts.services) else 'unknown' }}"
+              token_length: "{{ k3s_node_token | default('') | length }}"
+              kubectl_rc: "{{ k3s_server_nodes_json.rc | default('unknown') }}"
+              kubectl_stdout: "{{ k3s_server_nodes_json.stdout | default('') }}"
+              kubectl_stderr: "{{ k3s_server_nodes_json.stderr | default('') }}"
+              systemctl_status: "{{ k3s_server_systemctl_status.stdout | default('') }}"
+              journal_tail: "{{ k3s_server_journal_output.stdout | default('') }}"
+
+        - name: Fail with actionable message when k3s server validation does not pass
+          ansible.builtin.fail:
+            msg: "k3s server validation failed on control node. Review the structured debug output for service, journal, and kubectl details."
+
+    - name: Publish control-plane connection facts for worker nodes
+      ansible.builtin.set_stats:
+        data:
+          k3s_control_ip: "{{ k3s_control_ip }}"
+          k3s_node_token: "{{ k3s_node_token }}"
+
+    - name: Emit structured debug summary for control node
+      ansible.builtin.debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          role: "control"
+          control_ip: "{{ k3s_control_ip }}"
+          api_url: "https://{{ k3s_control_ip }}:{{ k3s_server_port }}"
+          token_length: "{{ k3s_node_token | length }}"
+          service_name: "k3s"
+
+- name: Install and validate k3s agents on cluster worker nodes
+  hosts: cluster
+  become: true
+  gather_facts: true
+  vars:
+    k3s_version: "v1.32.5+k3s1"
+    k3s_channel: "stable"
+    k3s_server_port: 6443
+    k3s_reset: false
+    k3s_agent_additional_args: ""
+  tasks:
+    - name: Skip worker installation when requested k3s cluster state is already Ready
+      ansible.builtin.meta: end_play
+      when: hostvars[groups['control'][0]].k3s_existing_cluster_ready | default(false) | bool
+
+    - name: Derive control-plane connection details from inventory and shared stats
+      ansible.builtin.set_fact:
+        k3s_control_host: "{{ groups['control'][0] }}"
+        k3s_control_ip: "{{ hostvars[groups['control'][0]].k3s_control_ip | default(hostvars[groups['control'][0]].ansible_default_ipv4.address) }}"
+        k3s_node_token: "{{ hostvars[groups['control'][0]].k3s_node_token | default(hostvars[groups['control'][0]].ansible_local.k3s_node_token | default('')) }}"
+
+    - name: Assert worker nodes have required control-plane connection details
+      ansible.builtin.assert:
+        that:
+          - groups['control'] is defined
+          - groups['control'] | length == 1
+          - k3s_control_ip | length > 0
+          - k3s_node_token | length > 0
+        fail_msg: "Worker installation requires one control host, a reachable control IP, and a non-empty k3s node token from the control node."
+        success_msg: "Worker prerequisites are available from the control node."
+
+    - name: Check whether k3s agent binary is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_agent_binary_stat
+
+    - name: Install k3s agent when not already installed
+      ansible.builtin.shell: |
+        set -o errexit -o nounset -o pipefail
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION='{{ k3s_version }}' \
+          INSTALL_K3S_CHANNEL='{{ k3s_channel }}' \
+          K3S_URL='https://{{ k3s_control_ip }}:{{ k3s_server_port }}' \
+          K3S_TOKEN='{{ k3s_node_token }}' \
+          sh -s - agent --node-ip {{ ansible_default_ipv4.address }} {{ k3s_agent_additional_args }}
+      args:
+        executable: /bin/bash
+      register: k3s_agent_install_result
+      changed_when: true
+      when: not k3s_agent_binary_stat.stat.exists
+
+    - name: Ensure k3s-agent service is enabled and started on worker nodes
+      ansible.builtin.systemd:
+        name: k3s-agent
+        enabled: true
+        state: started
+        daemon_reload: true
+        no_block: true
+      register: k3s_agent_systemd_start
+
+    - name: Wait for k3s-agent service port dependencies and startup delay
+      ansible.builtin.wait_for:
+        timeout: 30
+      changed_when: false
+
+    - name: Validate k3s-agent service state on worker nodes
+      block:
+        - name: Collect k3s-agent service facts on worker nodes
+          ansible.builtin.service_facts:
+          register: k3s_agent_service_facts
+          changed_when: false
+          retries: 30
+          delay: 5
+          until: >-
+            ansible_facts.services['k3s-agent.service'] is defined and
+            ansible_facts.services['k3s-agent.service'].state == 'running'
+
+        - name: Assert k3s-agent service is running on worker nodes
+          ansible.builtin.assert:
+            that:
+              - >-
+                ansible_facts.services['k3s-agent.service'] is defined and
+                ansible_facts.services['k3s-agent.service'].state == 'running'
+            fail_msg: "k3s-agent service is not running on this worker node."
+            success_msg: "k3s-agent service is running on this worker node."
+      rescue:
+        - name: Capture k3s-agent service status after validation failure
+          ansible.builtin.command: systemctl status k3s-agent --no-pager
+          register: k3s_agent_systemctl_status
+          changed_when: false
+          failed_when: false
+
+        - name: Capture k3s-agent journal output after validation failure
+          ansible.builtin.command: journalctl -u k3s-agent --no-pager -n 200
+          register: k3s_agent_journal_output
+          changed_when: false
+          failed_when: false
+
+        - name: Emit structured debug context for k3s-agent validation failure
+          ansible.builtin.debug:
+            msg:
+              host: "{{ inventory_hostname }}"
+              service_known: "{{ (ansible_facts.services is defined and 'k3s-agent.service' in ansible_facts.services) | ternary(true, false) }}"
+              service_state: "{{ ansible_facts.services['k3s-agent.service'].state if (ansible_facts.services is defined and 'k3s-agent.service' in ansible_facts.services) else 'unknown' }}"
+              systemctl_status: "{{ k3s_agent_systemctl_status.stdout | default('') }}"
+              journal_tail: "{{ k3s_agent_journal_output.stdout | default('') }}"
+
+        - name: Fail with actionable message when k3s-agent validation does not pass
+          ansible.builtin.fail:
+            msg: "k3s-agent validation failed on worker node. Review the structured debug output for service and journal details."
+
+    - name: Emit structured debug summary for worker node
+      ansible.builtin.debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          role: "worker"
+          worker_ip: "{{ ansible_default_ipv4.address }}"
+          control_ip: "{{ k3s_control_ip }}"
+          api_url: "https://{{ k3s_control_ip }}:{{ k3s_server_port }}"
+          service_name: "k3s-agent"
+
+- name: Validate full k3s cluster membership from control node
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    expected_worker_count: "{{ groups['cluster'] | default([]) | length }}"
+    expected_total_nodes: "{{ 1 + (groups['cluster'] | default([]) | length) }}"
+  tasks:
+    - name: Wait for all expected nodes to register with the cluster
+      ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes -o json
+      register: k3s_cluster_nodes_json
+      changed_when: false
+      retries: 30
+      delay: 10
+      until: >-
+        k3s_cluster_nodes_json.rc == 0 and
+        ((k3s_cluster_nodes_json.stdout | from_json)['items'] | length) >= (expected_total_nodes | int)
+
+    - name: Validate final cluster node count and readiness from control node
+      block:
+        - name: Refresh cluster node list for final validation
+          ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes -o json
+          register: k3s_cluster_nodes_final_json
+          changed_when: false
+
+        - name: Parse final cluster node list JSON
+          ansible.builtin.set_fact:
+            k3s_cluster_nodes_parsed: "{{ k3s_cluster_nodes_final_json.stdout | from_json }}"
+
+        - name: Build structured cluster readiness summary
+          ansible.builtin.set_fact:
+            k3s_cluster_summary:
+              expected_total_nodes: "{{ expected_total_nodes | int }}"
+              expected_worker_count: "{{ expected_worker_count | int }}"
+              actual_total_nodes: "{{ k3s_cluster_nodes_parsed['items'] | length }}"
+              node_names: "{{ k3s_cluster_nodes_parsed['items'] | map(attribute='metadata.name') | list }}"
+              ready_statuses: >-
+                {{
+                  dict(
+                    (k3s_cluster_nodes_parsed['items']
+                    | map(attribute='metadata.name')
+                    | list)
+                    | zip(
+                      (k3s_cluster_nodes_parsed['items']
+                      | map(attribute='status.conditions')
+                      | map('selectattr', 'type', 'equalto', 'Ready')
+                      | map('list')
+                      | map('first')
+                      | map(attribute='status')
+                      | list)
+                    )
+                  )
+                }}
+
+        - name: Assert all expected nodes are present and Ready
+          ansible.builtin.assert:
+            that:
+              - k3s_cluster_summary.actual_total_nodes | int == k3s_cluster_summary.expected_total_nodes | int
+              - k3s_cluster_summary.ready_statuses | dict2items | map(attribute='value') | list | unique == ['True']
+            fail_msg: "Final cluster validation failed: expected node count was not met or one or more nodes are not Ready."
+            success_msg: "Final cluster validation succeeded: all expected nodes are present and Ready."
+      rescue:
+        - name: Capture detailed node listing after final validation failure
+          ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes -o wide
+          register: k3s_cluster_nodes_wide
+          changed_when: false
+          failed_when: false
+
+        - name: Capture detailed node JSON after final validation failure
+          ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes -o json
+          register: k3s_cluster_nodes_failure_json
+          changed_when: false
+          failed_when: false
+
+        - name: Emit structured debug context for final cluster validation failure
+          ansible.builtin.debug:
+            msg:
+              host: "{{ inventory_hostname }}"
+              expected_total_nodes: "{{ expected_total_nodes | int }}"
+              expected_worker_count: "{{ expected_worker_count | int }}"
+              kubectl_wide: "{{ k3s_cluster_nodes_wide.stdout | default('') }}"
+              kubectl_json: "{{ k3s_cluster_nodes_failure_json.stdout | default('') }}"
+
+        - name: Fail with actionable message when final cluster validation does not pass
+          ansible.builtin.fail:
+            msg: "Final k3s cluster validation failed. Review the structured debug output for kubectl node listings."
+
+    - name: Emit structured debug summary for final cluster state
+      ansible.builtin.debug:
+        msg: "{{ k3s_cluster_summary }}"

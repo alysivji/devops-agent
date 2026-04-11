@@ -13,7 +13,7 @@
 - Prefer local inspection first. Read code, inventory, config, playbooks, and tests before running a remote action.
 - Document the remote dependency in the PR description when a change depends on credentials, network access, or external systems.
 - If a tool has both local and remote modes, make the local path the default in development and tests.
-- Prefer `TypedDict` for structured tool return objects when the result should serialize as JSON through the Strands `@tool` wrapper. `TypedDict` keeps the runtime shape as plain dict/list data, while `list[BaseModel]` can fall back to Python repr text instead of JSON.
+- For structured `@tool` results, keep the returned runtime value JSON-serializable with plain dict/list/scalar shapes. Use `TypedDict` to document those shapes when helpful, and avoid returning Pydantic models or other objects directly through tool wrappers.
 
 ## Setup Expectations
 

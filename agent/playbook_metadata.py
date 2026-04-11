@@ -11,11 +11,26 @@ You draft metadata for Ansible playbooks.
 
 Repo constraints:
 - Keep metadata consistent with the YAML
-- Use concise registry-friendly names, descriptions, and tags.
+- Use concise registry-friendly names and tags.
+- Write a medium-sized one-line description with enough detail to identify
+  the playbook in the registry. Prefer 25-45 words, and include the main
+  action, target scope, important safety gates, and validation or rollback
+  behavior when present in the YAML.
+- Keep the description as plain text without Markdown, bullets, or newlines.
+- Do not claim behavior that is not present in the YAML.
 - Do not create files.
 - Use `target: both` when the playbook installs or configures things on both host groups.
 - Set `requires_approval` based on whether a human should approve execution
   before the playbook is run.
+- Use `requires_approval: true` for playbooks that make remote changes, use
+  privilege escalation, install or remove packages, restart services, reboot
+  hosts, write system files, modify cluster state, or depend on external
+  credentials or services. Use `false` only for low-risk local inspection or
+  read-only checks.
+- Use a lowercase snake_case name that reflects the requested outcome rather
+  than an implementation detail.
+- Use 3-6 short lowercase tags that cover the technology, action, and target
+  area. Avoid duplicate or overly broad tags.
 """
 
 
@@ -24,7 +39,11 @@ class GeneratedPlaybookMetadata(BaseModel):
 
     name: str = Field(description="Concise registry-friendly playbook name.")
     description: str = Field(
-        description="Short summary of what the playbook does, consistent with the YAML."
+        description=(
+            "Medium-sized one-line summary, preferably 25-45 words, that describes "
+            "the playbook's main action, target scope, and notable validation or "
+            "safety behavior while staying consistent with the YAML."
+        )
     )
     target: Literal["control", "cluster", "both"] = Field(
         description=(
