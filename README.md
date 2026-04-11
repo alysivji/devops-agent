@@ -62,6 +62,7 @@ Set `OPENAI_MODEL=gpt-5.4` by default for stronger reasoning and coding quality.
 
 ```bash
 uv run python -m agent.main "create a hello world playbook for local nodes"
+uv run python -m agent.main "Install a k3s cluster with a single control plane on the control node and all cluster nodes joining as workers."
 ```
 
 The generated review includes the proposed filename, metadata header fields, and the full YAML before asking for approval.
