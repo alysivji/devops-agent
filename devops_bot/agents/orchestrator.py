@@ -11,8 +11,8 @@ from strands.hooks.events import (
 
 from ..factory import build_agent, build_model
 from ..history import record_event
-from ..tools.ansible import get_ansible_playbook_registry, run_ansible_playbook
-from ..tools.playbooks import create_ansible_playbook, edit_ansible_playbook
+from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
+from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
 ThinkingLevel = str
 
@@ -20,10 +20,10 @@ MAIN_SYSTEM_PROMPT = """
 You orchestrate Ansible playbook tools for this repository.
 
 Available tools:
-- `get_ansible_playbook_registry`: inspect the validated playbook registry
-- `run_ansible_playbook`: execute an existing registry playbook by path
-- `create_ansible_playbook`: generate and write a new playbook through the agent-backed tool
-- `edit_ansible_playbook`: repair an existing registry playbook locally and syntax-check it
+- `ansible_list_playbooks`: inspect the validated playbook registry
+- `ansible_run_playbook`: execute an existing registry playbook by path
+- `ansible_create_playbook`: generate and write a new playbook through the agent-backed tool
+- `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
 
 Process:
 - Start by inspecting the current playbook registry when the request might map
@@ -36,7 +36,7 @@ Process:
   unless the capability-level check is failing. For clustered services, prefer
   cluster/API health over individual service restarts, package state, boot
   flags, or kernel internals.
-- If the registry already contains the right playbook, run it with `run_ansible_playbook`.
+- If the registry already contains the right playbook, run it with `ansible_run_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
   corrective action available through the tools, then try again.
@@ -48,21 +48,21 @@ Process:
   dependencies, kernel or boot configuration, service configuration, or other
   environment preparation needed for the original request, treat that as missing
   prerequisite automation. Inspect the registry for a matching prerequisite
-  playbook; if none exists, call `create_ansible_playbook` to create one.
+  playbook; if none exists, call `ansible_create_playbook` to create one.
 - If a prerequisite playbook changes configuration but validation shows the live
   host state still differs, do not stop because there is no existing validated
   playbook for deeper inspection. Treat the mismatch as missing
-  diagnostic/remediation automation and use `create_ansible_playbook` to
+  diagnostic/remediation automation and use `ansible_create_playbook` to
   discover the active configuration source and repair it when possible.
 - Do not rerun the exact same failing playbook without first taking a corrective
   action or identifying that the failure was transient.
 - After editing an existing playbook, inspect the registry again and call
-  `run_ansible_playbook` for the same playbook when the original user request
+  `ansible_run_playbook` for the same playbook when the original user request
   still requires execution. Do not stop with a natural-language approval request;
-  `run_ansible_playbook` owns the approval prompt for remote-impacting execution.
+  `ansible_run_playbook` owns the approval prompt for remote-impacting execution.
 - After creating prerequisite automation, inspect the registry and call
-  `run_ansible_playbook` for the prerequisite playbook. If it completes, call
-  `run_ansible_playbook` for the original playbook again when the original user
+  `ansible_run_playbook` for the prerequisite playbook. If it completes, call
+  `ansible_run_playbook` for the original playbook again when the original user
   request still requires execution.
 - Do not end with "if you want, I can..." while there is an available tool call
   that can move the original request forward. Only stop when the requested end
@@ -71,7 +71,7 @@ Process:
 - Do not edit inventory, Python code, docs, or arbitrary files while handling
   an Ansible playbook execution failure.
 - If the registry does not contain the needed automation, create a new playbook
-  with `create_ansible_playbook`.
+  with `ansible_create_playbook`.
 - After creating a new playbook, inspect the registry again and run the appropriate playbook.
 - For simple registry lookup questions, answer using the registry without
   creating or running anything.
@@ -92,10 +92,10 @@ class OrchestratorAgent:
             model=build_model(model_id="gpt-5.4"),
             system_prompt=MAIN_SYSTEM_PROMPT,
             tools=[
-                get_ansible_playbook_registry,
-                run_ansible_playbook,
-                create_ansible_playbook,
-                edit_ansible_playbook,
+                ansible_list_playbooks,
+                ansible_run_playbook,
+                ansible_create_playbook,
+                ansible_edit_playbook,
             ],
         )
         self.agent.add_hook(self._on_before_invocation, BeforeInvocationEvent)

@@ -5,7 +5,7 @@ def test_orchestrator_prompt_treats_live_state_mismatch_as_actionable() -> None:
     assert "host state still differs" in MAIN_SYSTEM_PROMPT
     assert "diagnostic/remediation automation" in MAIN_SYSTEM_PROMPT
     assert "active configuration source" in MAIN_SYSTEM_PROMPT
-    assert "create_ansible_playbook" in MAIN_SYSTEM_PROMPT
+    assert "ansible_create_playbook" in MAIN_SYSTEM_PROMPT
 
 
 def test_orchestrator_prompt_prefers_goal_state_validation() -> None:

@@ -1,26 +1,26 @@
 from .ansible import (
-    get_ansible_inventory_groups,
-    get_ansible_playbook_registry,
-    run_ansible_playbook,
+    ansible_list_inventory_groups,
+    ansible_list_playbooks,
+    ansible_run_playbook,
 )
 from .git import (
-    create_git_branch,
-    create_git_commit,
+    git_create_branch,
+    git_create_commit,
+    git_list_commits,
     git_push,
     git_status,
-    list_git_commits,
 )
 from .web import http_get, search_web
 
 __all__ = [
-    "create_git_branch",
-    "create_git_commit",
-    "get_ansible_inventory_groups",
-    "get_ansible_playbook_registry",
+    "git_create_branch",
+    "git_create_commit",
+    "ansible_list_inventory_groups",
+    "ansible_list_playbooks",
     "git_push",
     "git_status",
     "http_get",
-    "list_git_commits",
-    "run_ansible_playbook",
+    "git_list_commits",
+    "ansible_run_playbook",
     "search_web",
 ]
