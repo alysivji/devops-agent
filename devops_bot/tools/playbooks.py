@@ -15,8 +15,8 @@ from ..agents.playbook_generator import GeneratePlaybookAgent
 from ..agents.playbook_metadata import GeneratedPlaybookMetadata, PlaybookMetadataAgent
 from ..history import record_event
 from .ansible import (
+    ansible_list_playbooks,
     check_ansible_playbook_syntax,
-    get_ansible_playbook_registry,
 )
 
 PLAYBOOKS_DIR = Path("ansible/playbooks")
@@ -30,7 +30,7 @@ class CreateAnsiblePlaybookResult(BaseModel):
 
 
 @tool
-def create_ansible_playbook(query: str) -> Path | None:
+def ansible_create_playbook(query: str) -> Path | None:
     """
     Generate an Ansible playbook from a natural-language request.
 
@@ -242,7 +242,7 @@ class AnsiblePlaybookEditor(Protocol):
 
 
 @tool
-def edit_ansible_playbook(
+def ansible_edit_playbook(
     playbook_path: str,
     requested_change: str,
 ) -> EditAnsiblePlaybookToolResult:
@@ -360,7 +360,7 @@ def _validate_registry_playbook_path(playbook_path: str) -> Path:
     if requested_path.is_absolute():
         raise ValueError("playbook path must be relative")
 
-    registry_paths = {entry["path"] for entry in get_ansible_playbook_registry()}
+    registry_paths = {entry["path"] for entry in ansible_list_playbooks()}
     if playbook_path not in registry_paths:
         raise ValueError(f"Playbook path is not in the registry: {playbook_path}")
 

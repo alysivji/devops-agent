@@ -59,7 +59,7 @@ class StubEditor:
         return self.edited
 
 
-def test_edit_ansible_playbook_records_approved_write(
+def test_ansible_edit_playbook_records_approved_write(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -104,7 +104,7 @@ def test_edit_ansible_playbook_records_approved_write(
     assert "playbook_edit_written" in event_kinds
 
 
-def test_edit_ansible_playbook_records_declined_write(
+def test_ansible_edit_playbook_records_declined_write(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -145,7 +145,7 @@ def test_edit_ansible_playbook_records_declined_write(
     assert "playbook_edit_written" not in event_kinds
 
 
-def test_edit_ansible_playbook_requires_registry_path(
+def test_ansible_edit_playbook_requires_registry_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:

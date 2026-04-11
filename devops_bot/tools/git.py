@@ -27,7 +27,7 @@ def git_status() -> str:
 
 
 @tool
-def list_git_commits(limit: int = 10) -> str:
+def git_list_commits(limit: int = 10) -> str:
     """Return the most recent commits as one line each."""
     if limit < 1:
         raise ValueError("limit must be at least 1")
@@ -42,7 +42,7 @@ def list_git_commits(limit: int = 10) -> str:
 
 
 @tool
-def create_git_commit(message: str) -> str:
+def git_create_commit(message: str) -> str:
     """Stage all changes, create a git commit, and return the new commit summary."""
     if not message.strip():
         raise ValueError("message must not be empty")
@@ -53,7 +53,7 @@ def create_git_commit(message: str) -> str:
 
 
 @tool
-def create_git_branch(branch_name: str, base_ref: str = "origin/main") -> str:
+def git_create_branch(branch_name: str, base_ref: str = "origin/main") -> str:
     """Create and check out a new branch from a base ref."""
     if not branch_name.strip():
         raise ValueError("branch_name must not be empty")

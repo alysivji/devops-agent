@@ -151,7 +151,7 @@ def _parse_playbook_metadata(playbook_path: pathlib.Path) -> AnsiblePlaybookRegi
 
 
 def _get_registry_entry_by_path(playbook_path: str) -> AnsiblePlaybookRegistryEntry:
-    for entry in get_ansible_playbook_registry():
+    for entry in ansible_list_playbooks():
         path = entry["path"]
         if path == playbook_path:
             return AnsiblePlaybookRegistryEntry.model_validate(entry)
@@ -206,7 +206,7 @@ def normalize_playbook_name(name: str) -> str:
 
 
 @tool
-def get_ansible_inventory_groups() -> list[str]:
+def ansible_list_inventory_groups() -> list[str]:
     """Return the supported top-level inventory groups from ansible/inventory.ini."""
     parser = configparser.ConfigParser(allow_no_value=True)
     parser.read(INVENTORY_PATH, encoding="utf-8")
@@ -222,7 +222,7 @@ def get_ansible_inventory_groups() -> list[str]:
 
 
 @tool
-def get_ansible_playbook_registry() -> list[AnsiblePlaybookRegistryEntryDict]:
+def ansible_list_playbooks() -> list[AnsiblePlaybookRegistryEntryDict]:
     """Return the Ansible playbook registry with validated metadata.
 
     Returns:
@@ -244,7 +244,7 @@ def get_ansible_playbook_registry() -> list[AnsiblePlaybookRegistryEntryDict]:
 
 
 @tool
-def run_ansible_playbook(playbook_path: str) -> str:
+def ansible_run_playbook(playbook_path: str) -> str:
     """Run a validated Ansible playbook and return its standard output.
 
     Args:

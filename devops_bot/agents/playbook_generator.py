@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from ..factory import build_agent, build_model
 from ..history import record_event
-from ..tools.ansible import check_ansible_playbook_syntax, get_ansible_inventory_groups
+from ..tools.ansible import ansible_list_inventory_groups, check_ansible_playbook_syntax
 from ..tools.web import http_get, search_web
 
 SYSTEM_PROMPT = """
@@ -101,7 +101,7 @@ class GeneratePlaybookAgent:
         self.agent = build_agent(
             model=build_model(model_id="gpt-5.4"),
             system_prompt=SYSTEM_PROMPT,
-            tools=[get_ansible_inventory_groups, search_web, http_get],
+            tools=[ansible_list_inventory_groups, search_web, http_get],
         )
 
     def run(self, prompt: str) -> GeneratedPlaybookYaml:

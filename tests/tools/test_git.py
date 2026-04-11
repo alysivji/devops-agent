@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 
 from devops_bot.tools import (
-    create_git_branch,
-    create_git_commit,
+    git_create_branch,
+    git_create_commit,
+    git_list_commits,
     git_push,
     git_status,
-    list_git_commits,
 )
 
 
@@ -72,31 +72,31 @@ class TestGitStatus:
 
 
 class TestListGitCommits:
-    def test_list_git_commits(self, git_repo: Path):
+    def test_git_list_commits(self, git_repo: Path):
         with _chdir(git_repo):
-            result = list_git_commits(limit=5)
+            result = git_list_commits(limit=5)
 
         assert result.endswith(" Initial commit")
 
-    def test_list_git_commits_rejects_invalid_limit(self):
+    def test_git_list_commits_rejects_invalid_limit(self):
         with pytest.raises(ValueError):
-            list_git_commits(limit=0)
+            git_list_commits(limit=0)
 
 
 class TestCreateGitCommit:
-    def test_create_git_commit_with_staging(self, git_repo: Path):
+    def test_git_create_commit_with_staging(self, git_repo: Path):
         (git_repo / "playbook.yml").write_text("---\n- hosts: all\n", encoding="utf-8")
 
         with _chdir(git_repo):
-            result = create_git_commit("Add git tools")
+            result = git_create_commit("Add git tools")
 
         assert result.endswith(" Add git tools")
         assert (git_repo / "playbook.yml").exists()
 
     @pytest.mark.parametrize("message", ["   ", ""])
-    def test_create_git_commit_rejects_empty_message(self, message: str):
+    def test_git_create_commit_rejects_empty_message(self, message: str):
         with pytest.raises(ValueError):
-            create_git_commit(message)
+            git_create_commit(message)
 
 
 class TestGitPush:
@@ -250,7 +250,7 @@ class TestGitPush:
 
 
 class TestCreateGitBranch:
-    def test_create_git_branch_from_local_base_branch(self, git_repo: Path):
+    def test_git_create_branch_from_local_base_branch(self, git_repo: Path):
         with _chdir(git_repo):
             subprocess.run(
                 ["git", "branch", "local-base"],
@@ -260,7 +260,7 @@ class TestCreateGitBranch:
                 text=True,
             )
 
-            result = create_git_branch("feature/test", base_ref="local-base")
+            result = git_create_branch("feature/test", base_ref="local-base")
             current_branch = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 check=True,
@@ -272,7 +272,7 @@ class TestCreateGitBranch:
         assert result == "Created and switched to feature/test from local-base"
         assert current_branch == "feature/test"
 
-    def test_create_git_branch_noops_when_already_on_branch(self, git_repo: Path):
+    def test_git_create_branch_noops_when_already_on_branch(self, git_repo: Path):
         with _chdir(git_repo):
             subprocess.run(
                 ["git", "checkout", "-b", "feature/test"],
@@ -282,7 +282,7 @@ class TestCreateGitBranch:
                 text=True,
             )
 
-            result = create_git_branch("feature/test")
+            result = git_create_branch("feature/test")
             current_branch = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 check=True,
@@ -294,7 +294,7 @@ class TestCreateGitBranch:
         assert result == "Already on feature/test"
         assert current_branch == "feature/test"
 
-    def test_create_git_branch_uses_default_base_ref(self, git_repo: Path):
+    def test_git_create_branch_uses_default_base_ref(self, git_repo: Path):
         with _chdir(git_repo):
             subprocess.run(
                 ["git", "branch", "origin/main"],
@@ -304,7 +304,7 @@ class TestCreateGitBranch:
                 text=True,
             )
 
-            result = create_git_branch("feature/test")
+            result = git_create_branch("feature/test")
             current_branch = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 check=True,
@@ -316,7 +316,7 @@ class TestCreateGitBranch:
         assert result == "Created and switched to feature/test from origin/main"
         assert current_branch == "feature/test"
 
-    def test_create_git_branch_uses_explicit_base_ref(self, git_repo: Path):
+    def test_git_create_branch_uses_explicit_base_ref(self, git_repo: Path):
         with _chdir(git_repo):
             subprocess.run(
                 ["git", "branch", "origin/release"],
@@ -326,7 +326,7 @@ class TestCreateGitBranch:
                 text=True,
             )
 
-            result = create_git_branch("feature/test", base_ref="origin/release")
+            result = git_create_branch("feature/test", base_ref="origin/release")
             current_branch = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 check=True,
@@ -339,11 +339,11 @@ class TestCreateGitBranch:
         assert current_branch == "feature/test"
 
     @pytest.mark.parametrize("branch_name", ["", "   "])
-    def test_create_git_branch_rejects_empty_branch_name(self, branch_name: str):
+    def test_git_create_branch_rejects_empty_branch_name(self, branch_name: str):
         with pytest.raises(ValueError):
-            create_git_branch(branch_name)
+            git_create_branch(branch_name)
 
     @pytest.mark.parametrize("base_ref", ["", "   "])
-    def test_create_git_branch_rejects_empty_base_ref(self, base_ref: str):
+    def test_git_create_branch_rejects_empty_base_ref(self, base_ref: str):
         with pytest.raises(ValueError):
-            create_git_branch("feature/test", base_ref=base_ref)
+            git_create_branch("feature/test", base_ref=base_ref)
