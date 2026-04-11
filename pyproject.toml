@@ -50,7 +50,7 @@ select = ["E", "F", "I"]
 
 [tool.mypy]
 python_version = "3.13"
-files = ["agent", "tests"]
+files = ["devops_bot", "tests"]
 check_untyped_defs = true
 ignore_missing_imports = true
 pretty = true

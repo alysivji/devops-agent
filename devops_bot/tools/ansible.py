@@ -14,7 +14,7 @@ import yaml
 from pydantic import BaseModel, ValidationError
 from strands import tool
 
-from ..run_history import record_event
+from ..history import record_event
 
 logger = logging.getLogger(__name__)
 

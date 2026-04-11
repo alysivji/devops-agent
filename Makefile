@@ -16,7 +16,7 @@ install-pre-commit: ## install the git pre-commit hook
 	uv run pre-commit install
 
 run: ## run the agent
-	uv run python -m agent.main
+	uv run python -m devops_bot
 
 lint: ## run lint checks
 	uv run ruff check .
@@ -41,3 +41,6 @@ check: ## run local CI checks
 
 shell: ## open an ipython shell with the dependency environment loaded
 	uv run ipython --ipython-dir=.ipython
+
+cli: ## run the CLI
+	uv run python -m devops_bot.main --help

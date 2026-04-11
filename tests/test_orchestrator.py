@@ -1,4 +1,4 @@
-from agent.orchestrator import MAIN_SYSTEM_PROMPT
+from devops_bot.agents.orchestrator import MAIN_SYSTEM_PROMPT
 
 
 def test_orchestrator_prompt_treats_live_state_mismatch_as_actionable() -> None:

@@ -1,8 +1,8 @@
 import argparse
 import sys
 
-from .orchestrator import OrchestratorAgent
-from .run_history import (
+from .agents.orchestrator import OrchestratorAgent
+from .history import (
     RUN_HISTORY_PATH,
     RunHistory,
     append_session_jsonl,

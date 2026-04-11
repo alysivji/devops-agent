@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from agent.generate_playbook import SYSTEM_PROMPT, GeneratedPlaybookYaml
+from devops_bot.agents.playbook_generator import SYSTEM_PROMPT, GeneratedPlaybookYaml
 
 
 class TestGeneratedPlaybookYaml:

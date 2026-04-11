@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-from agent.run_history import RunHistory, append_session_jsonl, run_history_enabled
+from devops_bot.history import RunHistory, append_session_jsonl, run_history_enabled
 
 
 def test_run_history_enabled_by_default(monkeypatch) -> None:
     monkeypatch.setattr(
-        "agent.run_history.secret_manager.get",
+        "devops_bot.history.secret_manager.get",
         lambda secret_type, name, default: default,
     )
 

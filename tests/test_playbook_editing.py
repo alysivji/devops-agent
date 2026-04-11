@@ -2,12 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from agent.edit_ansible_playbook import (
-    SYSTEM_PROMPT,
-    EditAnsiblePlaybookWorkflow,
-    EditedAnsiblePlaybook,
+from devops_bot.agents.playbook_editor import SYSTEM_PROMPT, EditedAnsiblePlaybook
+from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
+from devops_bot.tools.playbooks import (
+    EditAnsiblePlaybook,
 )
-from agent.run_history import RunHistory, reset_active_run_history, set_active_run_history
 
 ORIGINAL_PLAYBOOK = """\
 # name: hello-control
@@ -69,12 +68,12 @@ def test_edit_ansible_playbook_records_approved_write(
     playbook_path = playbooks_dir / "hello-control.yaml"
     playbook_path.write_text(ORIGINAL_PLAYBOOK, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("agent.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
-    monkeypatch.setattr("agent.edit_ansible_playbook.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("devops_bot.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
     monkeypatch.setattr("builtins.input", lambda _: "y")
 
     syntax_checked: list[str] = []
-    workflow = EditAnsiblePlaybookWorkflow(
+    playbook_tool = EditAnsiblePlaybook(
         editor=StubEditor(
             EditedAnsiblePlaybook(
                 content=EDITED_PLAYBOOK,
@@ -88,7 +87,7 @@ def test_edit_ansible_playbook_records_approved_write(
     token = set_active_run_history(run_history)
 
     try:
-        result = workflow.run(
+        result = playbook_tool.run(
             playbook_path="ansible/playbooks/hello-control.yaml",
             requested_change="Rename the ping task for clarity.",
         )
@@ -114,11 +113,11 @@ def test_edit_ansible_playbook_records_declined_write(
     playbook_path = playbooks_dir / "hello-control.yaml"
     playbook_path.write_text(ORIGINAL_PLAYBOOK, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("agent.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
-    monkeypatch.setattr("agent.edit_ansible_playbook.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("devops_bot.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
     monkeypatch.setattr("builtins.input", lambda _: "n")
 
-    workflow = EditAnsiblePlaybookWorkflow(
+    playbook_tool = EditAnsiblePlaybook(
         editor=StubEditor(
             EditedAnsiblePlaybook(
                 content=EDITED_PLAYBOOK,
@@ -132,7 +131,7 @@ def test_edit_ansible_playbook_records_declined_write(
     token = set_active_run_history(run_history)
 
     try:
-        result = workflow.run(
+        result = playbook_tool.run(
             playbook_path="ansible/playbooks/hello-control.yaml",
             requested_change="Rename the ping task for clarity.",
         )
@@ -153,10 +152,10 @@ def test_edit_ansible_playbook_requires_registry_path(
     playbooks_dir = tmp_path / "ansible" / "playbooks"
     playbooks_dir.mkdir(parents=True)
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("agent.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
-    monkeypatch.setattr("agent.edit_ansible_playbook.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("devops_bot.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
 
-    workflow = EditAnsiblePlaybookWorkflow(
+    playbook_tool = EditAnsiblePlaybook(
         editor=StubEditor(
             EditedAnsiblePlaybook(
                 content=EDITED_PLAYBOOK,
@@ -168,7 +167,7 @@ def test_edit_ansible_playbook_requires_registry_path(
     )
 
     with pytest.raises(ValueError, match="not in the registry"):
-        workflow.run(
+        playbook_tool.run(
             playbook_path="ansible/playbooks/missing.yaml",
             requested_change="Rename the ping task for clarity.",
         )

@@ -1,4 +1,4 @@
-from agent.utils import build_model
+from devops_bot.factory import build_model
 
 
 def test_build_model_omits_none_params() -> None:
