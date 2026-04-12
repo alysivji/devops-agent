@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -156,6 +157,60 @@ class TestRunAnsiblePlaybook:
         assert "LC_ALL" not in env
         assert "LANG" not in env
         assert "LC_CTYPE" not in env
+
+    def test_ansible_run_playbook_loads_dotenv_into_subprocess_environment(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+        playbooks_dir = tmp_path / "ansible" / "playbooks"
+        playbooks_dir.mkdir(parents=True)
+        playbook_path = playbooks_dir / "hello-control.yaml"
+        playbook_path.write_text(
+            "# name: hello-control\n"
+            "# description: Ping the control node group.\n"
+            "# target: control\n"
+            "# requires_approval: true\n"
+            "# tags:\n"
+            "#   - connectivity\n"
+            "\n"
+            "---\n"
+            "- name: Hello control\n"
+            "  hosts: control\n"
+            "  tasks:\n"
+            "    - name: Ping control\n"
+            "      ansible.builtin.ping:\n",
+            encoding="utf-8",
+        )
+        (tmp_path / ".env").write_text(
+            'MINIO_ROOT_USER="dotenv user"\nexport MINIO_ROOT_PASSWORD=dotenv-password\n',
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        monkeypatch.delenv("MINIO_ROOT_USER", raising=False)
+        monkeypatch.setenv("MINIO_ROOT_PASSWORD", "os-password")
+
+        recorded: dict[str, object] = {}
+
+        def fake_run(*args, **kwargs):
+            recorded["kwargs"] = kwargs
+            return subprocess.CompletedProcess(
+                args=args[0],
+                returncode=0,
+                stdout="PLAY RECAP\n",
+                stderr="",
+            )
+
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+
+        ansible_run_playbook("ansible/playbooks/hello-control.yaml")
+
+        kwargs = cast(dict[str, Any], recorded["kwargs"])
+        env = cast(dict[str, str], kwargs["env"])
+        assert env["MINIO_ROOT_USER"] == "dotenv user"
+        assert env["MINIO_ROOT_PASSWORD"] == "os-password"
 
     def test_ansible_run_playbook_success_records_run_history(
         self, monkeypatch: pytest.MonkeyPatch

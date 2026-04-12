@@ -14,6 +14,7 @@
 - Document the remote dependency in the PR description when a change depends on credentials, network access, or external systems.
 - If a tool has both local and remote modes, make the local path the default in development and tests.
 - For structured `@tool` results, keep the returned runtime value JSON-serializable with plain dict/list/scalar shapes. Use `TypedDict` to document those shapes when helpful, and avoid returning Pydantic models or other objects directly through tool wrappers.
+- Use untracked `.env` files for local secret values. Commit only placeholder examples such as `.env.example`, document the required variable names, and make Ansible playbooks fail fast with an early `assert` when a required environment variable is missing. Do not commit real secret values in playbooks, inventories, docs, or environment examples.
 
 ## Setup Expectations
 

@@ -1,0 +1,326 @@
+# name: deploy_and_validate_minio
+# description: Deploy and validate MinIO on the control node, ensuring user/group existence, correct binary installation, and service health checks, while enforcing non-default credentials with rollback options for systemd changes and environment configurations.
+# target: control
+# requires_approval: true
+# tags:
+#   - minio
+#   - deployment
+#   - validation
+#   - systemd
+#   - storage
+# required_environment:
+#   - MINIO_ROOT_USER
+#   - MINIO_ROOT_PASSWORD
+
+---
+- name: Deploy and validate MinIO on the control node
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    minio_reset: false
+    minio_user: minio
+    minio_group: minio
+    minio_install_dir: /usr/local/bin
+    minio_binary_path: /usr/local/bin/minio
+    minio_data_dir: /var/lib/minio
+    minio_config_dir: /etc/minio
+    minio_env_file: /etc/minio/minio.conf
+    minio_service_name: minio
+    minio_api_bind_address: 0.0.0.0
+    minio_api_port: 9000
+    minio_console_port: 9001
+    minio_root_user: "{{ lookup('ansible.builtin.env', 'MINIO_ROOT_USER', default='') }}"
+    minio_root_password: "{{ lookup('ansible.builtin.env', 'MINIO_ROOT_PASSWORD', default='') }}"
+    minio_download_url: https://dl.min.io/server/minio/release/linux-amd64/minio
+    minio_expected_health_status: 200
+    minio_service_unit: |
+      [Unit]
+      Description=MinIO Object Storage
+      Documentation=https://min.io/docs/minio/linux/index.html
+      Wants=network-online.target
+      After=network-online.target
+      AssertFileIsExecutable={{ minio_binary_path }}
+
+      [Service]
+      User={{ minio_user }}
+      Group={{ minio_group }}
+      EnvironmentFile={{ minio_env_file }}
+      ExecStart={{ minio_binary_path }} server --address ${MINIO_ADDRESS} --console-address ${MINIO_CONSOLE_ADDRESS} ${MINIO_VOLUMES}
+      Restart=on-failure
+      RestartSec=5s
+      LimitNOFILE=65536
+      TasksMax=infinity
+      TimeoutStartSec=300
+      TimeoutStopSec=300
+      WorkingDirectory={{ minio_data_dir }}
+      NoNewPrivileges=true
+      ProtectSystem=full
+      ReadWritePaths={{ minio_data_dir }} {{ minio_config_dir }}
+
+      [Install]
+      WantedBy=multi-user.target
+  tasks:
+    - name: Validate required MinIO environment variables are provided
+      ansible.builtin.assert:
+        that:
+          - minio_root_user | length > 0
+          - minio_root_password | length >= 12
+          - minio_root_password != 'minioadmin'
+        fail_msg: >-
+          Set MINIO_ROOT_USER and MINIO_ROOT_PASSWORD in the runtime environment before running this playbook.
+          Load them from an untracked .env file and use non-default credentials; the password must be at least
+          12 characters long.
+        success_msg: Required MinIO environment variables are present.
+
+    - name: Optionally reset MinIO deployment
+      when: minio_reset | bool
+      block:
+        - name: Stop and disable MinIO service during reset
+          ansible.builtin.systemd:
+            name: "{{ minio_service_name }}"
+            state: stopped
+            enabled: false
+            daemon_reload: true
+          failed_when: false
+
+        - name: Remove MinIO systemd unit during reset
+          ansible.builtin.file:
+            path: "/etc/systemd/system/{{ minio_service_name }}.service"
+            state: absent
+
+        - name: Remove MinIO environment file during reset
+          ansible.builtin.file:
+            path: "{{ minio_env_file }}"
+            state: absent
+
+        - name: Remove MinIO binary during reset
+          ansible.builtin.file:
+            path: "{{ minio_binary_path }}"
+            state: absent
+
+        - name: Remove MinIO configuration directory during reset
+          ansible.builtin.file:
+            path: "{{ minio_config_dir }}"
+            state: absent
+
+        - name: Remove MinIO data directory during reset
+          ansible.builtin.file:
+            path: "{{ minio_data_dir }}"
+            state: absent
+
+        - name: Reload systemd after MinIO reset
+          ansible.builtin.systemd:
+            daemon_reload: true
+
+    - name: Validate control node architecture is supported by configured MinIO binary URL
+      ansible.builtin.assert:
+        that:
+          - ansible_architecture in ['x86_64', 'amd64']
+        fail_msg: >-
+          This playbook is configured to download the linux-amd64 MinIO binary, but the control node architecture is
+          {{ ansible_architecture }}. Update minio_download_url for this platform.
+        success_msg: Control node architecture matches the configured MinIO binary URL.
+
+    - name: Ensure MinIO group exists
+      ansible.builtin.group:
+        name: "{{ minio_group }}"
+        system: true
+        state: present
+
+    - name: Ensure MinIO user exists
+      ansible.builtin.user:
+        name: "{{ minio_user }}"
+        group: "{{ minio_group }}"
+        system: true
+        shell: /usr/sbin/nologin
+        home: "{{ minio_data_dir }}"
+        create_home: false
+        state: present
+
+    - name: Ensure MinIO data directory exists
+      ansible.builtin.file:
+        path: "{{ minio_data_dir }}"
+        state: directory
+        owner: "{{ minio_user }}"
+        group: "{{ minio_group }}"
+        mode: '0750'
+
+    - name: Ensure MinIO configuration directory exists
+      ansible.builtin.file:
+        path: "{{ minio_config_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Check whether MinIO binary is already installed
+      ansible.builtin.stat:
+        path: "{{ minio_binary_path }}"
+      register: minio_binary_stat
+
+    - name: Download MinIO binary when not already installed
+      ansible.builtin.get_url:
+        url: "{{ minio_download_url }}"
+        dest: "{{ minio_binary_path }}"
+        owner: root
+        group: root
+        mode: '0755'
+        force: false
+      when: not minio_binary_stat.stat.exists
+
+    - name: Ensure MinIO environment file contains explicit non-default credentials and bind settings
+      ansible.builtin.copy:
+        dest: "{{ minio_env_file }}"
+        owner: root
+        group: root
+        mode: '0600'
+        content: |
+          MINIO_ROOT_USER={{ minio_root_user }}
+          MINIO_ROOT_PASSWORD={{ minio_root_password }}
+          MINIO_VOLUMES={{ minio_data_dir }}
+          MINIO_ADDRESS={{ minio_api_bind_address }}:{{ minio_api_port }}
+          MINIO_CONSOLE_ADDRESS={{ minio_api_bind_address }}:{{ minio_console_port }}
+      register: minio_env_file_result
+
+    - name: Assert MinIO credentials are explicitly non-default
+      ansible.builtin.assert:
+        that:
+          - minio_root_user != 'minioadmin'
+          - minio_root_password != 'minioadmin'
+          - minio_root_password | length >= 12
+        fail_msg: >-
+          MinIO credentials must be explicit non-default values and the password must be at least 12 characters long.
+        success_msg: MinIO credentials are explicit non-default values.
+
+    - name: Ensure MinIO systemd service unit is installed
+      ansible.builtin.copy:
+        dest: "/etc/systemd/system/{{ minio_service_name }}.service"
+        owner: root
+        group: root
+        mode: '0644'
+        content: "{{ minio_service_unit }}"
+      register: minio_service_unit_result
+
+    - name: Reload systemd when MinIO service definition changed
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: minio_service_unit_result.changed or minio_env_file_result.changed
+
+    - name: Restart MinIO service when unit or environment changed
+      ansible.builtin.systemd:
+        name: "{{ minio_service_name }}"
+        enabled: true
+        state: restarted
+        no_block: true
+      when: minio_service_unit_result.changed or minio_env_file_result.changed
+
+    - name: Collect current MinIO local health before remediation
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ minio_api_port }}/minio/health/live"
+        method: GET
+        status_code: [200]
+        return_content: true
+      register: minio_local_health_pre
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure MinIO service is enabled and started when local API is not already healthy
+      ansible.builtin.systemd:
+        name: "{{ minio_service_name }}"
+        enabled: true
+        state: started
+        no_block: true
+      when: >-
+        minio_local_health_pre.status | default(0) != minio_expected_health_status
+
+    - name: Validate MinIO local API becomes reachable after startup
+      block:
+        - name: Poll MinIO live health endpoint locally until reachable
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:{{ minio_api_port }}/minio/health/live"
+            method: GET
+            status_code: [200]
+            return_content: true
+          register: minio_local_health_post
+          retries: 30
+          delay: 2
+          until: minio_local_health_post.status == minio_expected_health_status
+          changed_when: false
+
+        - name: Gather MinIO service status after health validation
+          ansible.builtin.systemd:
+            name: "{{ minio_service_name }}"
+          register: minio_service_status
+          changed_when: false
+
+        - name: Assert MinIO service is running and enabled with reachable API
+          ansible.builtin.assert:
+            that:
+              - minio_local_health_post.status == minio_expected_health_status
+              - minio_service_status.status.ActiveState == 'active'
+              - minio_service_status.status.SubState in ['running', 'listening']
+              - minio_service_status.status.UnitFileState == 'enabled'
+            fail_msg: >-
+              MinIO did not reach the expected running state with a locally reachable API on port {{ minio_api_port }}.
+            success_msg: MinIO is running, enabled, and its local API is reachable.
+      rescue:
+        - name: Collect MinIO service status on validation failure
+          ansible.builtin.systemd:
+            name: "{{ minio_service_name }}"
+          register: minio_service_status_failed
+          failed_when: false
+          changed_when: false
+
+        - name: Collect MinIO journal logs on validation failure
+          ansible.builtin.command:
+            cmd: "journalctl -u {{ minio_service_name }} --no-pager -n 100"
+          register: minio_journal_failed
+          failed_when: false
+          changed_when: false
+
+        - name: Emit MinIO failure context
+          ansible.builtin.debug:
+            msg:
+              service_status: "{{ minio_service_status_failed.status | default({}) }}"
+              health_probe_status: "{{ minio_local_health_post.status | default(minio_local_health_pre.status | default('unreachable')) }}"
+              health_probe_content: "{{ minio_local_health_post.content | default(minio_local_health_pre.content | default('')) }}"
+              journal_tail: "{{ minio_journal_failed.stdout_lines | default([]) }}"
+
+        - name: Fail when MinIO API is not reachable after startup attempt
+          ansible.builtin.fail:
+            msg: >-
+              MinIO API is not reachable locally at http://127.0.0.1:{{ minio_api_port }}/minio/health/live.
+              Review the emitted service status and journal output for diagnostics.
+
+    - name: Read configured MinIO environment file for verification
+      ansible.builtin.slurp:
+        src: "{{ minio_env_file }}"
+      register: minio_env_file_slurp
+      changed_when: false
+
+    - name: Assert configured MinIO environment file contains requested explicit settings
+      ansible.builtin.assert:
+        that:
+          - "'MINIO_ROOT_USER={{ minio_root_user }}' in (minio_env_file_slurp.content | b64decode)"
+          - "'MINIO_ROOT_PASSWORD={{ minio_root_password }}' in (minio_env_file_slurp.content | b64decode)"
+          - "'MINIO_VOLUMES={{ minio_data_dir }}' in (minio_env_file_slurp.content | b64decode)"
+          - "'MINIO_ADDRESS={{ minio_api_bind_address }}:{{ minio_api_port }}' in (minio_env_file_slurp.content | b64decode)"
+        fail_msg: >-
+          MinIO environment configuration does not match the requested explicit credentials, data directory, or bind address.
+        success_msg: MinIO environment configuration matches the requested explicit settings.
+
+    - name: Emit final MinIO deployment summary
+      ansible.builtin.debug:
+        msg:
+          service_name: "{{ minio_service_name }}"
+          binary_path: "{{ minio_binary_path }}"
+          data_directory: "{{ minio_data_dir }}"
+          config_file: "{{ minio_env_file }}"
+          api_endpoint: "http://127.0.0.1:{{ minio_api_port }}"
+          live_health_endpoint: "http://127.0.0.1:{{ minio_api_port }}/minio/health/live"
+          console_endpoint: "http://127.0.0.1:{{ minio_console_port }}"
+          service_active_state: "{{ minio_service_status.status.ActiveState | default('unknown') }}"
+          service_unit_state: "{{ minio_service_status.status.UnitFileState | default('unknown') }}"
+          health_status: "{{ minio_local_health_post.status | default('unknown') }}"
+          root_user_configured: "{{ minio_root_user }}"

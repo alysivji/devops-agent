@@ -11,6 +11,7 @@ from functools import lru_cache
 from typing import Final, Literal, NotRequired, TypedDict
 
 import yaml
+from dotenv import dotenv_values
 from pydantic import BaseModel, ValidationError
 from strands import tool
 
@@ -78,9 +79,15 @@ def _confirm_playbook_execution(entry: AnsiblePlaybookRegistryEntry) -> bool:
 
 
 def _ansible_env() -> dict[str, str]:
-    """Create a writable environment for Ansible temp files."""
+    """Create a writable environment for Ansible temp files and .env-backed secrets."""
     ANSIBLE_TMP_DIR.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ)
+    dotenv_env = {
+        key: value
+        for key, value in dotenv_values(".env").items()
+        if value is not None and key not in env
+    }
+    env.update(dotenv_env)
     env["ANSIBLE_LOCAL_TEMP"] = str(ANSIBLE_TMP_DIR.resolve())
     _remove_unsupported_locale_vars(env)
     return env

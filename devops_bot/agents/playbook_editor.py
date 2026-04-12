@@ -21,6 +21,22 @@ Output Requirements:
 Editing Rules:
 - Make the smallest practical change that satisfies the requested repair.
 - Prefer deterministic Ansible modules and clear assertions over opaque shell.
+- If a playbook needs a sensitive value such as a password, token, key, or
+  credential, read it from a runtime environment variable with
+  `lookup('ansible.builtin.env', 'NAME', default='')`. Do not hardcode real
+  secrets, secret-looking sample values, or generated passwords in playbook
+  vars, tasks, comments, or debug output.
+- For every required sensitive environment variable, preserve or add an early
+  `ansible.builtin.assert` before remote-changing tasks. The assertion must
+  check that the value is present and meets any minimum safety requirements, and
+  the failure message must name the exact environment variable users need to set
+  in their untracked `.env` file.
+- When a playbook changes a systemd service unit, environment file, or service
+  configuration file, preserve or add an appropriate `reloaded` or `restarted`
+  service state guarded by the registered file-change results, then validate the
+  service or application health. Use `started` only as the steady state guard
+  for an unhealthy or stopped service; it does not apply new config to an
+  already-running service.
 - Prefer goal-state validation over exhaustive implementation checks. If the
   requested end state is already true, preserve or add guards that skip
   disruptive remediation such as service restarts, boot edits, or reboot logic.
