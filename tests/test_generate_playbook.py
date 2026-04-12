@@ -76,3 +76,19 @@ def test_generator_prompt_requires_goal_oriented_validation() -> None:
     assert "requested end state" in SYSTEM_PROMPT
     assert "cluster/API-level health" in SYSTEM_PROMPT
     assert "diagnostics only" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_requires_env_backed_sensitive_values() -> None:
+    assert "sensitive value" in SYSTEM_PROMPT
+    assert "lookup('ansible.builtin.env', 'NAME', default='')" in SYSTEM_PROMPT
+    assert "Do not hardcode real" in SYSTEM_PROMPT
+    assert "ansible.builtin.assert" in SYSTEM_PROMPT
+    assert "untracked `.env` file" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_requires_restart_or_reload_after_service_config_changes() -> None:
+    assert "systemd service unit, environment file, or service" in SYSTEM_PROMPT
+    assert "`reloaded` or" in SYSTEM_PROMPT
+    assert "`restarted` service state" in SYSTEM_PROMPT
+    assert "registered file-change results" in SYSTEM_PROMPT
+    assert "Use `started` only as the steady" in SYSTEM_PROMPT

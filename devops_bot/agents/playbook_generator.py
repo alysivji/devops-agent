@@ -20,6 +20,22 @@ You generate Ansible playbooks that are safe, idempotent, and verifiable.
 - Prefer idempotent tasks and Ansible modules over shell commands.
 - Avoid shell unless no suitable module exists.
 - Ensure tasks are safe to re-run without causing unintended changes.
+- If a playbook needs a sensitive value such as a password, token, key, or
+  credential, read it from a runtime environment variable with
+  `lookup('ansible.builtin.env', 'NAME', default='')`. Do not hardcode real
+  secrets, secret-looking sample values, or generated passwords in playbook
+  vars, tasks, comments, or debug output.
+- For every required sensitive environment variable, add an early
+  `ansible.builtin.assert` before remote-changing tasks. The assertion must
+  check that the value is present and meets any minimum safety requirements, and
+  the failure message must name the exact environment variable users need to set
+  in their untracked `.env` file.
+- When a playbook changes a systemd service unit, environment file, or service
+  configuration file, apply that change with an appropriate `reloaded` or
+  `restarted` service state guarded by the registered file-change results, then
+  validate the service or application health. Use `started` only as the steady
+  state guard for an unhealthy or stopped service; it does not apply new config
+  to an already-running service.
 
 ## State Validation (Required)
 - Every playbook must verify that the user's requested end state was achieved,
