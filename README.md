@@ -96,17 +96,13 @@ The JSONL run history remains a compact summary and audit artifact. Optional
 Strands session storage persists the agent's messages and state for object-level
 inspection and future backend experiments. It is disabled by default.
 
-For local S3-compatible storage, start MinIO:
+For local S3-compatible storage, point the session backend at a reachable MinIO
+or S3-compatible endpoint. The control-node MinIO service listens on
+`http://127.0.0.1:9000` for S3 API calls and serves the browser console at
+`http://127.0.0.1:9001`.
 
-```bash
-make local-s3-up
-```
-
-MinIO listens on `http://127.0.0.1:9000` for S3 API calls and serves the browser
-console at `http://127.0.0.1:9001`. The local console credentials are
-`minioadmin` / `minioadmin`.
-
-Use these `.env` values for local MinIO exploration:
+Use these `.env` values for local MinIO exploration, replacing the bucket and
+credentials with values provisioned on the MinIO server:
 
 ```bash
 DEVOPS_AGENT_SESSION_BACKEND=s3
@@ -114,8 +110,8 @@ DEVOPS_AGENT_SESSION_S3_BUCKET=devops-agent-sessions
 DEVOPS_AGENT_SESSION_S3_PREFIX=local/
 DEVOPS_AGENT_SESSION_S3_REGION=us-east-1
 DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL=http://127.0.0.1:9000
-DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID=minioadmin
-DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY=minioadmin
+DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID=<minio-access-key>
+DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY=<minio-secret-key>
 ```
 
 Use the `DEVOPS_AGENT_SESSION_S3_*` credential variables for local MinIO if your
@@ -124,6 +120,15 @@ shell already has AWS credentials for another account.
 Each CLI invocation creates a new Strands session. When run history is enabled,
 the S3 session ID matches the JSONL `run_id`, so objects appear under keys like
 `local/session_<run_id>/`.
+
+Pass `--session-id` to choose the Strands session ID explicitly:
+
+```bash
+uv run devops-agent --session-id support-session "create a hello world playbook for local nodes"
+```
+
+When `--session-id` is set, run history still writes its own `run_id`; the
+Strands session objects use the CLI-provided session ID.
 
 Other S3-compatible providers can use the same session settings with different
 credentials, bucket, prefix, region, and endpoint URL. Example endpoints:
@@ -136,7 +141,7 @@ The session storage credentials need object read/write/delete and list access:
 `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`, and `s3:ListBucket`.
 
 Live S3-compatible storage is optional local infrastructure. Default tests do
-not require Docker, MinIO, or cloud credentials.
+not require MinIO or cloud credentials.
 
 ### Commands
 

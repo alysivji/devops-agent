@@ -60,8 +60,8 @@ def test_build_session_manager_configures_s3_compatible_endpoint(
             "DEVOPS_AGENT_SESSION_S3_REGION": "us-east-1",
             "DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL": "http://127.0.0.1:9000",
             "DEVOPS_AGENT_SESSION_S3_ADDRESSING_STYLE": "path",
-            "DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID": "minioadmin",
-            "DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY": "minioadmin",
+            "DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID": "devops-agent",
+            "DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY": "local-minio-secret",
         },
     )
 
@@ -75,7 +75,7 @@ def test_build_session_manager_configures_s3_compatible_endpoint(
     assert call["region_name"] == "us-east-1"
     assert isinstance(call["boto_session"], ConfiguredBotoSession)
     assert call["boto_session"]._endpoint_url == "http://127.0.0.1:9000"
-    assert call["boto_session"].get_credentials().access_key == "minioadmin"
+    assert call["boto_session"].get_credentials().access_key == "devops-agent"
     assert call["boto_client_config"].signature_version == "s3v4"
     assert call["boto_client_config"].s3 == {"addressing_style": "path"}
 

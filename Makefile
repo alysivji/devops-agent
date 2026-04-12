@@ -44,13 +44,3 @@ shell: ## open an ipython shell with the dependency environment loaded
 
 cli: ## run the CLI
 	uv run devops-agent --help
-
-local-s3-up: ## start local MinIO and create the sessions bucket
-	docker compose up -d minio
-	docker compose run --rm minio-client
-
-local-s3-down: ## stop local MinIO without deleting stored session data
-	docker compose down
-
-local-s3-logs: ## tail local MinIO logs
-	docker compose logs -f minio

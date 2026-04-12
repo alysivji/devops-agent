@@ -68,6 +68,29 @@ def test_main_skips_run_history_when_disabled(
     assert SuccessfulOrchestrator.session_ids == ["generated-session"]
 
 
+def test_main_uses_explicit_cli_session_id(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
+    SuccessfulOrchestrator.session_ids = []
+    monkeypatch.setattr(main_module, "OrchestratorAgent", SuccessfulOrchestrator)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["devops_bot", "--session-id", "support-session", "inspect the registry"],
+    )
+
+    main_module.main()
+
+    output_path = tmp_path / "docs" / "autonomous-devops-run-history.jsonl"
+    payload = json.loads(output_path.read_text(encoding="utf-8").splitlines()[0])
+
+    assert payload["run_id"] != "support-session"
+    assert SuccessfulOrchestrator.session_ids == ["support-session"]
+
+
 def test_main_records_failed_session_before_reraising(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

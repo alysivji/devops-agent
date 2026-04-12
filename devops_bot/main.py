@@ -18,7 +18,7 @@ from .session import get_session_storage_event_details
 def main() -> int:
     parser = argparse.ArgumentParser(description="Dev Ops Agent.")
     parser.add_argument("prompt", help="Natural-language prompt.")
-    parser.add_argument("--session-id", help="Specify a session ID for logging.")
+    parser.add_argument("--session-id", help="Specify the Strands session ID for this run.")
     args = parser.parse_args()
 
     run_history = RunHistory(prompt=args.prompt) if run_history_enabled() else None
