@@ -11,6 +11,7 @@ from strands.hooks.events import (
 
 from ..factory import build_agent, build_model
 from ..history import record_event
+from ..session import build_session_manager
 from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
@@ -85,9 +86,17 @@ Process:
 
 
 class OrchestratorAgent:
-    def __init__(self, *, thinking: ThinkingLevel = "medium") -> None:
+    def __init__(
+        self,
+        *,
+        thinking: ThinkingLevel = "medium",  # not currently used
+        session_id: str | None = None,
+    ) -> None:
         _ = thinking
         self._latest_rationale: str | None = None
+        session_manager = (
+            build_session_manager(session_id=session_id) if session_id is not None else None
+        )
         self.agent = build_agent(
             model=build_model(model_id="gpt-5.4"),
             system_prompt=MAIN_SYSTEM_PROMPT,
@@ -97,6 +106,7 @@ class OrchestratorAgent:
                 ansible_create_playbook,
                 ansible_edit_playbook,
             ],
+            session_manager=session_manager,
         )
         self.agent.add_hook(self._on_before_invocation, BeforeInvocationEvent)
         self.agent.add_hook(self._on_message_added, MessageAddedEvent)
