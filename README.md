@@ -90,6 +90,54 @@ Disable run history by setting `DEVOPS_AGENT_RUN_HISTORY_ENABLED=false`.
 
 Human-readable talk generation is intentionally deferred. This first pass writes only the JSONL artifact.
 
+## Strands Session Storage
+
+The JSONL run history remains a compact summary and audit artifact. Optional
+Strands session storage persists the agent's messages and state for object-level
+inspection and future backend experiments. It is disabled by default.
+
+For local S3-compatible storage, start MinIO:
+
+```bash
+make local-s3-up
+```
+
+MinIO listens on `http://127.0.0.1:9000` for S3 API calls and serves the browser
+console at `http://127.0.0.1:9001`. The local console credentials are
+`minioadmin` / `minioadmin`.
+
+Use these `.env` values for local MinIO exploration:
+
+```bash
+DEVOPS_AGENT_SESSION_BACKEND=s3
+DEVOPS_AGENT_SESSION_S3_BUCKET=devops-agent-sessions
+DEVOPS_AGENT_SESSION_S3_PREFIX=local/
+DEVOPS_AGENT_SESSION_S3_REGION=us-east-1
+DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL=http://127.0.0.1:9000
+DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID=minioadmin
+DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY=minioadmin
+```
+
+Use the `DEVOPS_AGENT_SESSION_S3_*` credential variables for local MinIO if your
+shell already has AWS credentials for another account.
+
+Each CLI invocation creates a new Strands session. When run history is enabled,
+the S3 session ID matches the JSONL `run_id`, so objects appear under keys like
+`local/session_<run_id>/`.
+
+Other S3-compatible providers can use the same session settings with different
+credentials, bucket, prefix, region, and endpoint URL. Example endpoints:
+
+- MinIO: `http://127.0.0.1:9000`
+- Cloudflare R2: `https://<account-id>.r2.cloudflarestorage.com`
+- Google Cloud Storage S3-compatible/XML API: `https://storage.googleapis.com`
+
+The session storage credentials need object read/write/delete and list access:
+`s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`, and `s3:ListBucket`.
+
+Live S3-compatible storage is optional local infrastructure. Default tests do
+not require Docker, MinIO, or cloud credentials.
+
 ### Commands
 
 ```bash

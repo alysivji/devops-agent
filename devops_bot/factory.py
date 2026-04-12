@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from strands import Agent
 from strands.models.openai import OpenAIModel
+from strands.session.session_manager import SessionManager
 
 from .config import OPENAI_API_KEY
 
@@ -29,6 +30,7 @@ def build_agent(
     *,
     system_prompt: str,
     tools: Optional[Sequence[Any]] = None,
+    session_manager: SessionManager | None = None,
 ) -> Agent:
     if tools is None:
         tools = []
@@ -37,4 +39,5 @@ def build_agent(
         model=model,
         system_prompt=system_prompt,
         tools=list(tools),
+        session_manager=session_manager,
     )

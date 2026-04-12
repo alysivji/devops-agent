@@ -52,3 +52,16 @@ shell:
 # Run the CLI.
 cli:
     uv run devops-agent --help
+
+# Start local MinIO and create the sessions bucket.
+local-s3-up:
+    docker compose up -d minio
+    docker compose run --rm minio-client
+
+# Stop local MinIO without deleting stored session data.
+local-s3-down:
+    docker compose down
+
+# Tail local MinIO logs.
+local-s3-logs:
+    docker compose logs -f minio
