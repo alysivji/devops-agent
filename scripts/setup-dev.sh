@@ -26,4 +26,8 @@ if [[ ! -f "$TARGET" ]]; then
   echo "wrote $ROOT/$TARGET from $SOURCE (mode 600)"
 fi
 
-make install
+if command -v just >/dev/null 2>&1; then
+  just install
+else
+  make install
+fi

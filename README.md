@@ -94,14 +94,13 @@ Human-readable talk generation is intentionally deferred. This first pass writes
 
 ```bash
 # install Python and Node test dependencies
-uv sync --frozen --all-groups
-npm install
+just install
 
 # run tests
-make test
+just test
 
 # run only Git HTTP integration tests
-make test-git-http
+just test-git-http
 
 # create key for cluster nodes
 ssh-keygen -t ed25519
@@ -131,10 +130,10 @@ instead of recorded subprocess fixtures.
 
 Use `subprocess-vcr` for subprocess-heavy paths that are harder to make portable
 across developer machines. The Ansible execution coverage currently follows that
-pattern, and `make test` records those fixtures while pytest replays them by default.
+pattern, and `just test` records those fixtures while pytest replays them by default.
 
 Git HTTP integration tests use `git-http-mock-server`, which shells out to the system `git`
-installation. Run `npm install` before executing `make test-git-http`.
+installation. Run `just install` before executing `just test-git-http`.
 
 ## Setup
 
