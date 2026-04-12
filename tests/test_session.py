@@ -1,7 +1,9 @@
+from typing import Any, cast
+
 import pytest
 
 from devops_bot import session as session_module
-from devops_bot.session import ConfiguredBotoSession, build_session_manager
+from devops_bot.session import build_session_manager
 
 
 class FakeS3SessionManager:
@@ -73,11 +75,33 @@ def test_build_session_manager_configures_s3_compatible_endpoint(
     assert call["bucket"] == "devops-agent-sessions"
     assert call["prefix"] == "local/"
     assert call["region_name"] == "us-east-1"
-    assert isinstance(call["boto_session"], ConfiguredBotoSession)
-    assert call["boto_session"]._endpoint_url == "http://127.0.0.1:9000"
+    assert call["boto_session"].client("s3").meta.endpoint_url == "http://127.0.0.1:9000"
     assert call["boto_session"].get_credentials().access_key == "devops-agent"
     assert call["boto_client_config"].signature_version == "s3v4"
     assert call["boto_client_config"].s3 == {"addressing_style": "path"}
+
+
+def test_build_session_manager_uses_default_s3_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    FakeS3SessionManager.calls = []
+    monkeypatch.setattr(session_module, "S3SessionManager", FakeS3SessionManager)
+    monkeypatch.setattr(session_module, "SESSION_S3_ACCESS_KEY_ID", "minioadmin")
+    monkeypatch.setattr(session_module, "SESSION_S3_SECRET_ACCESS_KEY", "minioadmin")
+    _patch_session_env(
+        monkeypatch,
+        {
+            "DEVOPS_AGENT_SESSION_BACKEND": "s3",
+            "DEVOPS_AGENT_SESSION_S3_BUCKET": "devops-agent-sessions",
+        },
+    )
+
+    build_session_manager("run-123")
+
+    boto_session = cast(Any, FakeS3SessionManager.calls[0]["boto_session"])
+    credentials = boto_session.get_credentials()
+    assert credentials.access_key == "minioadmin"
+    assert credentials.secret_key == "minioadmin"
 
 
 def test_session_storage_event_details_redacts_endpoint_credentials(

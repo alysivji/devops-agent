@@ -110,12 +110,15 @@ DEVOPS_AGENT_SESSION_S3_BUCKET=devops-agent-sessions
 DEVOPS_AGENT_SESSION_S3_PREFIX=local/
 DEVOPS_AGENT_SESSION_S3_REGION=us-east-1
 DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL=http://127.0.0.1:9000
-DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID=<minio-access-key>
-DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY=<minio-secret-key>
+MINIO_ROOT_USER=<minio-access-key>
+MINIO_ROOT_PASSWORD=<minio-secret-key>
 ```
 
-Use the `DEVOPS_AGENT_SESSION_S3_*` credential variables for local MinIO if your
-shell already has AWS credentials for another account.
+The session S3 credentials default to `MINIO_ROOT_USER` and
+`MINIO_ROOT_PASSWORD` for local MinIO. Use
+`DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID` and
+`DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY` only when the session store should
+use different credentials from the MinIO service.
 
 Each CLI invocation creates a new Strands session. When run history is enabled,
 the S3 session ID matches the JSONL `run_id`, so objects appear under keys like
