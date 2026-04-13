@@ -148,6 +148,41 @@ class TestHelmEditChart:
         assert "helm_chart_edit_preview_presented" in event_kinds
         assert "helm_chart_edit_written" in event_kinds
 
+    def test_helm_edit_chart_skips_binary_chart_dependencies(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        chart_path = tmp_path / "charts" / "nginx"
+        _write_minimal_chart(chart_path)
+        dependency_path = chart_path / "charts" / "nginx-22.6.12.tgz"
+        dependency_path.parent.mkdir()
+        dependency_path.write_bytes(b"\x1f\x8b\x08\x00binary helm dependency")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("builtins.input", lambda _: "n")
+
+        editor = StubChartEditor(
+            EditedHelmChart(
+                files=[
+                    HelmChartFileEdit(path="values.yaml", content="replicaCount: 2\n"),
+                ],
+                summary="Raised nginx replica count.",
+                requires_cluster_validation=True,
+            )
+        )
+        tool = EditHelmChart(editor=editor, lint_runner=lambda _: None)
+
+        result = tool.run(
+            chart_path="charts/nginx",
+            requested_change="Set replica count to 2.",
+        )
+
+        assert result["written"] is False
+        current_files = editor.requests[0][1]
+        assert current_files["Chart.yaml"] == "apiVersion: v2\nname: nginx\nversion: 0.1.0\n"
+        assert current_files["values.yaml"] == "replicaCount: 1\n"
+        assert "charts/nginx-22.6.12.tgz" not in current_files
+
     def test_helm_edit_chart_records_declined_write(
         self,
         monkeypatch: pytest.MonkeyPatch,

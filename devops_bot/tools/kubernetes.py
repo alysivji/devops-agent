@@ -162,7 +162,10 @@ def _read_chart_files(chart_path: Path) -> dict[str, str]:
     files: dict[str, str] = {}
     for file_path in sorted(path for path in chart_path.rglob("*") if path.is_file()):
         relative_path = file_path.relative_to(chart_path).as_posix()
-        files[relative_path] = file_path.read_text(encoding="utf-8")
+        try:
+            files[relative_path] = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
     return files
 
 
