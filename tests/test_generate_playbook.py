@@ -100,3 +100,11 @@ def test_generator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "deploy to the cluster with Helm" in SYSTEM_PROMPT
     assert "Do not install application packages" in SYSTEM_PROMPT
     assert "helm upgrade --install" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_requires_official_docs_research() -> None:
+    assert "Before generating install or configuration automation" in SYSTEM_PROMPT
+    assert "use `search_web` to find current\n  official documentation" in SYSTEM_PROMPT
+    assert "use `http_get` to read the relevant page" in SYSTEM_PROMPT
+    assert "CLI flags" in SYSTEM_PROMPT
+    assert "Prefer official upstream/vendor documentation" in SYSTEM_PROMPT
