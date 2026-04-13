@@ -64,6 +64,7 @@ Set `OPENAI_MODEL=gpt-5.4` by default for stronger reasoning and coding quality.
 uv run devops-agent "create a hello world playbook for local nodes"
 uv run devops-agent "Install a k3s cluster with a single control plane on the control node and all cluster nodes joining as workers."
 uv run devops-agent "Install Helm"
+uv run devops-agent "deploy nginx to Kubernetes with Helm"
 ```
 
 The generated review includes the proposed filename, metadata header fields, and the full YAML before asking for approval.

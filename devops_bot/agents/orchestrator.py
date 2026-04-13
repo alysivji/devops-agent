@@ -37,6 +37,12 @@ Process:
   unless the capability-level check is failing. For clustered services, prefer
   cluster/API health over individual service restarts, package state, boot
   flags, or kernel internals.
+- Treat application/service deployment requests as Kubernetes workloads by
+  default. For prompts such as "set up nginx", prefer Helm or Kubernetes
+  deployment automation and cluster-level validation over installing packages
+  or systemd services directly on the control or worker hosts. Use host-level
+  package/service automation only when the user explicitly asks for a host
+  service, node prerequisite, or local control-plane utility.
 - If the registry already contains the right playbook, run it with `ansible_run_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
@@ -71,8 +77,10 @@ Process:
   tool can perform a necessary next step.
 - Do not edit inventory, Python code, docs, or arbitrary files while handling
   an Ansible playbook execution failure.
-- If the registry does not contain the needed automation, create a new playbook
-  with `ansible_create_playbook`.
+- If the registry does not contain the needed deployment automation, create a
+  new playbook with `ansible_create_playbook`, but preserve the deployment
+  boundary above: generate Kubernetes/Helm automation for application workloads
+  instead of host package installation.
 - After creating a new playbook, inspect the registry again and run the appropriate playbook.
 - For simple registry lookup questions, answer using the registry without
   creating or running anything.

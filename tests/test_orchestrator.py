@@ -25,6 +25,14 @@ def test_orchestrator_prompt_prefers_goal_state_validation() -> None:
     assert "cluster/API health" in MAIN_SYSTEM_PROMPT
 
 
+def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
+    assert "application/service deployment requests" in MAIN_SYSTEM_PROMPT
+    assert 'For prompts such as "set up nginx"' in MAIN_SYSTEM_PROMPT
+    assert "prefer Helm or Kubernetes" in MAIN_SYSTEM_PROMPT
+    assert "over installing packages" in MAIN_SYSTEM_PROMPT
+    assert "host package installation" in MAIN_SYSTEM_PROMPT
+
+
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:
     captured: dict[str, Any] = {}
     fake_session_manager = object()

@@ -92,3 +92,11 @@ def test_generator_prompt_requires_restart_or_reload_after_service_config_change
     assert "`restarted` service state" in SYSTEM_PROMPT
     assert "registered file-change results" in SYSTEM_PROMPT
     assert "Use `started` only as the steady" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_defaults_deployments_to_kubernetes() -> None:
+    assert "application/service deployment requests" in SYSTEM_PROMPT
+    assert 'For prompts such as "set up nginx"' in SYSTEM_PROMPT
+    assert "deploy to the cluster with Helm" in SYSTEM_PROMPT
+    assert "Do not install application packages" in SYSTEM_PROMPT
+    assert "helm upgrade --install" in SYSTEM_PROMPT
