@@ -37,6 +37,11 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "Do not call `ansible_create_playbook`" in MAIN_SYSTEM_PROMPT
     assert "stateful ambiguous requests such as postgres" in MAIN_SYSTEM_PROMPT
     assert "If a Helm/Kubernetes workflow fails" in MAIN_SYSTEM_PROMPT
+    assert "do not automatically run\n  Ansible repair automation" in MAIN_SYSTEM_PROMPT
+    assert (
+        "unless\n  the user explicitly asked you to repair cluster prerequisites"
+        in MAIN_SYSTEM_PROMPT
+    )
     assert "use `helm_create_chart`" in MAIN_SYSTEM_PROMPT
     assert "Use `helm_upgrade_install` for live cluster" in MAIN_SYSTEM_PROMPT
     assert "use `helm_edit_chart`" in MAIN_SYSTEM_PROMPT

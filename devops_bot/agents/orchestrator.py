@@ -82,9 +82,11 @@ Process:
   stop after describing the failure. Use the failure details to choose the next
   corrective action available through the tools, then try again.
 - If a Helm/Kubernetes workflow fails because cluster prerequisites are missing
-  or broken, such as kubeconfig or Helm installation, use the Ansible registry
-  and playbook tools for that prerequisite repair before retrying the original
-  Helm/Kubernetes validation or deployment.
+  or broken, such as kubeconfig or Helm installation, do not automatically run
+  Ansible repair automation for an application deployment request. You may
+  inspect the Ansible registry to identify the available prerequisite repair,
+  then stop with a concise blocker and the exact repair command/playbook unless
+  the user explicitly asked you to repair cluster prerequisites too.
 - For failed playbook executions, decide whether the next corrective action is
   editing the existing playbook, creating missing prerequisite automation, or
   running another suitable registry playbook. After the corrective action, retry
