@@ -1,15 +1,36 @@
 import re
 import subprocess
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Final
+from typing import Final, Protocol, TypedDict
 
 from strands import tool
 
+from ..agents.helm_chart_editor import EditedHelmChart, EditHelmChartAgent
 from ..history import record_event
 
 KUBERNETES_OUTPUT_TAIL_LINES: Final[int] = 80
 HELM_CHARTS_DIR: Final[Path] = Path("charts")
+
+
+class EditHelmChartResult(TypedDict):
+    path: str
+    summary: str
+    files: list[str]
+    written: bool
+    lint_passed: bool
+    requires_cluster_validation: bool
+
+
+class HelmChartEditor(Protocol):
+    def run(
+        self,
+        *,
+        chart_path: Path,
+        current_files: dict[str, str],
+        requested_change: str,
+    ) -> EditedHelmChart: ...
 
 
 def _confirm_kubernetes_mutation(summary: str) -> bool:
@@ -96,6 +117,25 @@ def _build_chart_path(name: str, directory: str) -> Path:
     return chart_dir / name
 
 
+def _validate_chart_path(chart_path: str) -> Path:
+    path = Path(chart_path)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError("Helm chart path must be a relative path inside the repository.")
+    if not path.is_dir():
+        raise ValueError(f"Helm chart path does not exist: {chart_path}")
+    if not (path / "Chart.yaml").is_file():
+        raise ValueError(f"Helm chart is missing Chart.yaml: {chart_path}")
+    return path
+
+
+def _read_chart_files(chart_path: Path) -> dict[str, str]:
+    files: dict[str, str] = {}
+    for file_path in sorted(path for path in chart_path.rglob("*") if path.is_file()):
+        relative_path = file_path.relative_to(chart_path).as_posix()
+        files[relative_path] = file_path.read_text(encoding="utf-8")
+    return files
+
+
 @tool
 def helm_create_chart(name: str, directory: str = str(HELM_CHARTS_DIR)) -> str:
     """Create a new Helm chart scaffold under a repository directory.
@@ -156,6 +196,148 @@ def helm_create_chart(name: str, directory: str = str(HELM_CHARTS_DIR)) -> str:
     if output.strip():
         return output
     return f"Created Helm chart at {chart_path}"
+
+
+@tool
+def helm_edit_chart(chart_path: str, requested_change: str) -> EditHelmChartResult:
+    """Edit files inside an existing Helm chart, then run `helm lint`.
+
+    Args:
+        chart_path: Relative path to an existing Helm chart directory.
+        requested_change: Natural-language description of the chart edit to make.
+    """
+    return EditHelmChart().run(chart_path=chart_path, requested_change=requested_change)
+
+
+class EditHelmChart:
+    def __init__(
+        self,
+        *,
+        editor: HelmChartEditor | None = None,
+        lint_runner: Callable[[Path], None] | None = None,
+    ) -> None:
+        self.editor = editor or EditHelmChartAgent()
+        self.lint_runner = lint_runner or _helm_lint
+
+    def run(self, *, chart_path: str, requested_change: str) -> EditHelmChartResult:
+        target_path = _validate_chart_path(chart_path)
+        current_files = _read_chart_files(target_path)
+        record_event(
+            kind="helm_chart_edit_started",
+            status="started",
+            what=f"Started local edit for Helm chart `{chart_path}`.",
+            why="Edit repo-owned Kubernetes application desired state inside the chart.",
+            details={"path": chart_path, "requested_change": requested_change},
+        )
+
+        edited = self.editor.run(
+            chart_path=target_path,
+            current_files=current_files,
+            requested_change=requested_change,
+        )
+        edited_paths = _validate_chart_file_edits(target_path, edited)
+        print_chart_edit_preview(chart_path=target_path, edited=edited)
+        record_event(
+            kind="helm_chart_edit_preview_presented",
+            status="completed",
+            what="Presented the Helm chart edit preview.",
+            why=(
+                "Show the local chart edit summary and changed files before "
+                "asking for write approval."
+            ),
+            details={
+                "path": str(target_path),
+                "summary": edited.summary,
+                "files": [path.as_posix() for path in edited_paths],
+                "requires_cluster_validation": edited.requires_cluster_validation,
+            },
+        )
+
+        if not _confirm_kubernetes_mutation(
+            f"Write edited Helm chart files under '{target_path}'."
+        ):
+            record_event(
+                kind="helm_chart_edit_declined",
+                status="declined",
+                what=f"Declined local edit for Helm chart `{chart_path}`.",
+                why="The tool requires explicit confirmation before editing chart files.",
+                details={"path": str(target_path), "approved": False},
+            )
+            return {
+                "path": str(target_path),
+                "summary": edited.summary,
+                "files": [path.as_posix() for path in edited_paths],
+                "written": False,
+                "lint_passed": False,
+                "requires_cluster_validation": edited.requires_cluster_validation,
+            }
+
+        for relative_path, file_edit in zip(edited_paths, edited.files, strict=True):
+            destination = target_path / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(_normalize_file_content(file_edit.content), encoding="utf-8")
+
+        self.lint_runner(target_path)
+        record_event(
+            kind="helm_chart_edit_written",
+            status="completed",
+            what=f"Wrote local edit for Helm chart `{chart_path}`.",
+            why="Persist the lint-checked chart edit under the repo-owned chart directory.",
+            details={
+                "path": str(target_path),
+                "approved": True,
+                "summary": edited.summary,
+                "files": [path.as_posix() for path in edited_paths],
+                "lint_passed": True,
+                "requires_cluster_validation": edited.requires_cluster_validation,
+            },
+        )
+        return {
+            "path": str(target_path),
+            "summary": edited.summary,
+            "files": [path.as_posix() for path in edited_paths],
+            "written": True,
+            "lint_passed": True,
+            "requires_cluster_validation": edited.requires_cluster_validation,
+        }
+
+
+def _validate_chart_file_edits(chart_path: Path, edited: EditedHelmChart) -> list[Path]:
+    relative_paths: list[Path] = []
+    resolved_chart_path = chart_path.resolve()
+    for file_edit in edited.files:
+        relative_path = Path(file_edit.path)
+        destination = (chart_path / relative_path).resolve()
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            raise ValueError(f"edited chart file path must stay inside the chart: {file_edit.path}")
+        if resolved_chart_path not in destination.parents:
+            raise ValueError(f"edited chart file path must stay inside the chart: {file_edit.path}")
+        relative_paths.append(relative_path)
+    if not relative_paths:
+        raise ValueError("edited chart must include at least one file")
+    return relative_paths
+
+
+def _helm_lint(chart_path: Path) -> None:
+    _run_command(
+        ["helm", "lint", str(chart_path)],
+        event_kind="helm_lint_chart",
+        what=f"Linted Helm chart `{chart_path}`.",
+        why="Validate the edited chart before reporting the local edit as complete.",
+    )
+
+
+def print_chart_edit_preview(*, chart_path: Path, edited: EditedHelmChart) -> None:
+    print(f"Chart: {chart_path}")
+    print(f"Summary: {edited.summary}")
+    print(f"Requires cluster validation: {str(edited.requires_cluster_validation).lower()}")
+    print("Files:")
+    for file_edit in edited.files:
+        print(f"  - {file_edit.path}")
+
+
+def _normalize_file_content(content: str) -> str:
+    return f"{content.rstrip()}\n"
 
 
 @tool

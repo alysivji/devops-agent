@@ -1,17 +1,49 @@
 import subprocess
+from pathlib import Path
 from typing import Any
 
 import pytest
 
+from devops_bot.agents.helm_chart_editor import EditedHelmChart, HelmChartFileEdit
 from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
 from devops_bot.tools import (
     helm_create_chart,
+    helm_edit_chart,
     helm_list_releases,
     helm_status,
     helm_upgrade_install,
     kubectl_get,
     kubectl_rollout_status,
 )
+from devops_bot.tools.kubernetes import EditHelmChart
+
+
+class StubChartEditor:
+    def __init__(self, edited: EditedHelmChart) -> None:
+        self.edited = edited
+        self.requests: list[tuple[Path, dict[str, str], str]] = []
+
+    def run(
+        self,
+        *,
+        chart_path: Path,
+        current_files: dict[str, str],
+        requested_change: str,
+    ) -> EditedHelmChart:
+        self.requests.append((chart_path, current_files, requested_change))
+        return self.edited
+
+
+def _write_minimal_chart(chart_path: Path) -> None:
+    chart_path.mkdir(parents=True)
+    (chart_path / "Chart.yaml").write_text(
+        "apiVersion: v2\nname: nginx\nversion: 0.1.0\n",
+        encoding="utf-8",
+    )
+    (chart_path / "values.yaml").write_text(
+        "replicaCount: 1\n",
+        encoding="utf-8",
+    )
 
 
 class TestHelmCreateChart:
@@ -61,6 +93,138 @@ class TestHelmCreateChart:
     def test_helm_create_chart_rejects_external_directories(self, directory: str) -> None:
         with pytest.raises(ValueError, match="relative path"):
             helm_create_chart("nginx", directory=directory)
+
+
+class TestHelmEditChart:
+    def test_helm_edit_chart_records_approved_write(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        chart_path = tmp_path / "charts" / "nginx"
+        _write_minimal_chart(chart_path)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        linted: list[Path] = []
+
+        editor = StubChartEditor(
+            EditedHelmChart(
+                files=[
+                    HelmChartFileEdit(path="values.yaml", content="replicaCount: 2\n"),
+                ],
+                summary="Raised nginx replica count.",
+                requires_cluster_validation=True,
+            )
+        )
+        tool = EditHelmChart(editor=editor, lint_runner=linted.append)
+        run_history = RunHistory(prompt="scale nginx chart")
+        token = set_active_run_history(run_history)
+
+        try:
+            result = tool.run(
+                chart_path="charts/nginx",
+                requested_change="Set replica count to 2.",
+            )
+        finally:
+            reset_active_run_history(token)
+
+        assert result == {
+            "path": "charts/nginx",
+            "summary": "Raised nginx replica count.",
+            "files": ["values.yaml"],
+            "written": True,
+            "lint_passed": True,
+            "requires_cluster_validation": True,
+        }
+        assert (chart_path / "values.yaml").read_text(encoding="utf-8") == "replicaCount: 2\n"
+        assert linted == [Path("charts/nginx")]
+        assert editor.requests[0][1]["values.yaml"] == "replicaCount: 1\n"
+        event_kinds = [event.kind for event in run_history.session.events]
+        assert "helm_chart_edit_preview_presented" in event_kinds
+        assert "helm_chart_edit_written" in event_kinds
+
+    def test_helm_edit_chart_records_declined_write(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        chart_path = tmp_path / "charts" / "nginx"
+        _write_minimal_chart(chart_path)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("builtins.input", lambda _: "n")
+
+        tool = EditHelmChart(
+            editor=StubChartEditor(
+                EditedHelmChart(
+                    files=[HelmChartFileEdit(path="values.yaml", content="replicaCount: 2\n")],
+                    summary="Raised nginx replica count.",
+                    requires_cluster_validation=True,
+                )
+            ),
+            lint_runner=lambda _: None,
+        )
+
+        result = tool.run(
+            chart_path="charts/nginx",
+            requested_change="Set replica count to 2.",
+        )
+
+        assert result["written"] is False
+        assert result["lint_passed"] is False
+        assert (chart_path / "values.yaml").read_text(encoding="utf-8") == "replicaCount: 1\n"
+
+    def test_helm_edit_chart_rejects_file_escape(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        chart_path = tmp_path / "charts" / "nginx"
+        _write_minimal_chart(chart_path)
+        monkeypatch.chdir(tmp_path)
+
+        tool = EditHelmChart(
+            editor=StubChartEditor(
+                EditedHelmChart(
+                    files=[HelmChartFileEdit(path="../escape.yaml", content="bad\n")],
+                    summary="Attempted escape.",
+                    requires_cluster_validation=False,
+                )
+            ),
+            lint_runner=lambda _: None,
+        )
+
+        with pytest.raises(ValueError, match="inside the chart"):
+            tool.run(
+                chart_path="charts/nginx",
+                requested_change="Write outside the chart.",
+            )
+
+    def test_helm_edit_chart_tool_returns_plain_dict(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        chart_path = tmp_path / "charts" / "nginx"
+        _write_minimal_chart(chart_path)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        monkeypatch.setattr(
+            "devops_bot.tools.kubernetes.EditHelmChartAgent",
+            lambda: StubChartEditor(
+                EditedHelmChart(
+                    files=[HelmChartFileEdit(path="values.yaml", content="replicaCount: 2\n")],
+                    summary="Raised nginx replica count.",
+                    requires_cluster_validation=True,
+                )
+            ),
+        )
+        monkeypatch.setattr("devops_bot.tools.kubernetes._helm_lint", lambda _: None)
+
+        result = helm_edit_chart("charts/nginx", "Set replica count to 2.")
+
+        assert result["files"] == ["values.yaml"]
+        assert result["written"] is True
+        assert result["lint_passed"] is True
 
 
 class TestHelmListReleases:
