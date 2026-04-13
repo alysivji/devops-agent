@@ -47,6 +47,17 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "call the tool instead of asking for approval in prose" in MAIN_SYSTEM_PROMPT
 
 
+def test_orchestrator_prompt_routes_grafana_metrics_to_control_node() -> None:
+    assert "foundation services" in MAIN_SYSTEM_PROMPT
+    assert "observability\n  sinks" in MAIN_SYSTEM_PROMPT
+    assert '"set up Grafana"' in MAIN_SYSTEM_PROMPT
+    assert '"send metrics from Kubernetes\n  somewhere"' in MAIN_SYSTEM_PROMPT
+    assert "inspect the Ansible playbook registry" in MAIN_SYSTEM_PROMPT
+    assert "unless the user explicitly asks to deploy that\n  service inside Kubernetes" in (
+        MAIN_SYSTEM_PROMPT
+    )
+
+
 def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
     captured: dict[str, Any] = {}
     fake_agent = FakeAgent()
@@ -86,6 +97,15 @@ def test_kubernetes_troubleshooting_skill_uses_direct_blocker_wording() -> None:
     assert "If you want me to proceed" in skill_text
     assert "do not stop with a\n     natural-language next step" in skill_text
     assert "stop at the\n     boundary" not in skill_text
+
+
+def test_kubernetes_troubleshooting_skill_routes_foundation_services_to_ansible() -> None:
+    skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
+
+    assert "Foundation services for this repo" in skill_text
+    assert "observability sinks" in skill_text
+    assert "Grafana for\n     Kubernetes metrics" in skill_text
+    assert "control-node Ansible work" in skill_text
 
 
 def test_kubernetes_troubleshooting_skill_uses_kubeconfig_repair_tool() -> None:

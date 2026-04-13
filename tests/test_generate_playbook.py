@@ -108,3 +108,11 @@ def test_generator_prompt_requires_official_docs_research() -> None:
     assert "use `http_get` to read the relevant page" in SYSTEM_PROMPT
     assert "CLI flags" in SYSTEM_PROMPT
     assert "Prefer official upstream/vendor documentation" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_routes_grafana_metrics_to_control_node() -> None:
+    assert "foundation services for this repo" in SYSTEM_PROMPT
+    assert "observability sinks" in SYSTEM_PROMPT
+    assert "Grafana" in SYSTEM_PROMPT
+    assert "Kubernetes metrics to go" in SYSTEM_PROMPT
+    assert "Only deploy those services into Kubernetes" in SYSTEM_PROMPT

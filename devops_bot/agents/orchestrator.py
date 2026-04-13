@@ -53,6 +53,12 @@ Process:
 - Start by routing the request to the right workflow boundary: Ansible for
   host/substrate state and Helm/Kubernetes for schedulable application
   workloads.
+- In this repo, foundation services such as control panels, observability
+  sinks, and management services belong on the control node by default. For
+  requests such as "set up Grafana" or "send metrics from Kubernetes
+  somewhere", inspect the Ansible playbook registry and create or run
+  control-node automation unless the user explicitly asks to deploy that
+  service inside Kubernetes as a workload.
 - For Kubernetes or Helm requests, load the `kubernetes-troubleshooting` skill
   before handling failures, ambiguous stateful workloads, kubeconfig problems,
   chart registry work, chart edits, or live deployments. Follow that skill for

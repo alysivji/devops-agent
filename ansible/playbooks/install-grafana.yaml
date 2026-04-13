@@ -1,0 +1,259 @@
+# name: install_grafana
+# description: Install and validate Grafana as a host-level service on the control node, ensuring the service is active and healthy, with prechecks and rollback options. Requires approval due to system changes and package installations.
+# target: control
+# requires_approval: true
+# tags:
+#   - grafana
+#   - installation
+#   - service
+#   - health
+#   - monitoring
+
+---
+- name: Install and validate Grafana as a host-level service on the control node
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    grafana_reset: false
+    grafana_default_port: 3000
+    grafana_service_name: grafana-server
+    grafana_repo_url_map:
+      Debian: "https://packages.grafana.com/oss/deb"
+      RedHat: "https://packages.grafana.com/oss/rpm"
+    grafana_repo_gpgkey: "https://packages.grafana.com/gpg.key"
+  tasks:
+    - name: Gather currently installed package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Check current Grafana service state when systemd service exists
+      ansible.builtin.service_facts:
+
+    - name: Check whether Grafana is already listening on the default port
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ grafana_default_port }}"
+        timeout: 1
+      register: grafana_port_precheck
+      ignore_errors: true
+      changed_when: false
+
+    - name: Query Grafana HTTP health endpoint when port is already listening
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ grafana_default_port }}/api/health"
+        method: GET
+        return_content: true
+        status_code: 200
+      register: grafana_health_precheck
+      failed_when: false
+      changed_when: false
+      when: grafana_port_precheck is succeeded
+
+    - name: Determine whether Grafana end state is already satisfied
+      ansible.builtin.set_fact:
+        grafana_already_healthy: >-
+          {{
+            (grafana_service_name + '.service') in ansible_facts.services and
+            ansible_facts.services[grafana_service_name + '.service'].state == 'running' and
+            ansible_facts.services[grafana_service_name + '.service'].status == 'enabled' and
+            grafana_port_precheck is succeeded and
+            (grafana_health_precheck.status | default(0)) == 200 and
+            (grafana_health_precheck.json.database | default('')) == 'ok'
+          }}
+
+    - name: Reset Grafana packages and repository configuration when explicitly requested
+      when: grafana_reset | bool
+      block:
+        - name: Stop and disable Grafana service during reset when present
+          ansible.builtin.systemd:
+            name: "{{ grafana_service_name }}"
+            enabled: false
+            state: stopped
+          failed_when: false
+
+        - name: Remove Grafana package on Debian-family systems during reset
+          ansible.builtin.apt:
+            name: grafana
+            state: absent
+            purge: true
+            update_cache: true
+          when: ansible_os_family == 'Debian'
+
+        - name: Remove Grafana apt repository during reset
+          ansible.builtin.apt_repository:
+            repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] {{ grafana_repo_url_map['Debian'] }} stable main"
+            state: absent
+            filename: grafana
+          when: ansible_os_family == 'Debian'
+
+        - name: Remove Grafana apt keyring during reset
+          ansible.builtin.file:
+            path: /etc/apt/keyrings/grafana.gpg
+            state: absent
+          when: ansible_os_family == 'Debian'
+
+        - name: Remove Grafana package on RedHat-family systems during reset
+          ansible.builtin.dnf:
+            name: grafana
+            state: absent
+          when: ansible_os_family == 'RedHat'
+
+        - name: Remove Grafana yum repository during reset
+          ansible.builtin.yum_repository:
+            name: grafana
+            state: absent
+          when: ansible_os_family == 'RedHat'
+
+    - name: Ensure supported operating system family for host-level Grafana installation
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family in ['Debian', 'RedHat']
+        fail_msg: >-
+          Unsupported OS family {{ ansible_os_family }}. This playbook supports Debian and RedHat families for host-level Grafana installation.
+        success_msg: "Supported OS family detected: {{ ansible_os_family }}"
+
+    - name: Install and configure Grafana when end state is not already satisfied
+      when: not grafana_already_healthy | bool
+      block:
+        - name: Ensure Debian keyring directory exists for Grafana repository
+          ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
+          when: ansible_os_family == 'Debian'
+
+        - name: Download Grafana repository GPG key for Debian-family systems
+          ansible.builtin.get_url:
+            url: "{{ grafana_repo_gpgkey }}"
+            dest: /etc/apt/keyrings/grafana.gpg
+            mode: '0644'
+          when: ansible_os_family == 'Debian'
+
+        - name: Ensure Grafana apt repository is configured on Debian-family systems
+          ansible.builtin.apt_repository:
+            repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] {{ grafana_repo_url_map['Debian'] }} stable main"
+            state: present
+            filename: grafana
+            update_cache: true
+          when: ansible_os_family == 'Debian'
+
+        - name: Ensure Grafana package is installed on Debian-family systems
+          ansible.builtin.apt:
+            name: grafana
+            state: present
+            update_cache: true
+          when: ansible_os_family == 'Debian'
+
+        - name: Ensure Grafana yum repository is configured on RedHat-family systems
+          ansible.builtin.yum_repository:
+            name: grafana
+            description: Grafana OSS Repository
+            baseurl: "{{ grafana_repo_url_map['RedHat'] }}"
+            gpgcheck: true
+            gpgkey: "{{ grafana_repo_gpgkey }}"
+            enabled: true
+            state: present
+          when: ansible_os_family == 'RedHat'
+
+        - name: Ensure Grafana package is installed on RedHat-family systems
+          ansible.builtin.dnf:
+            name: grafana
+            state: present
+            update_cache: true
+          when: ansible_os_family == 'RedHat'
+
+        - name: Ensure Grafana server service is enabled and running
+          ansible.builtin.systemd:
+            name: "{{ grafana_service_name }}"
+            enabled: true
+            state: started
+
+    - name: Validate Grafana service, listener, and health endpoint
+      block:
+        - name: Refresh service facts after Grafana installation or startup
+          ansible.builtin.service_facts:
+
+        - name: Wait for Grafana to listen on the default TCP port
+          ansible.builtin.wait_for:
+            host: "127.0.0.1"
+            port: "{{ grafana_default_port }}"
+            timeout: 120
+          register: grafana_port_wait
+          changed_when: false
+
+        - name: Query Grafana health endpoint until it reports healthy database status
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:{{ grafana_default_port }}/api/health"
+            method: GET
+            return_content: true
+            status_code: 200
+          register: grafana_health_check
+          retries: 24
+          delay: 5
+          until:
+            - grafana_health_check.status == 200
+            - (grafana_health_check.json.database | default('')) == 'ok'
+          changed_when: false
+
+        - name: Collect service status for Grafana validation
+          ansible.builtin.systemd:
+            name: "{{ grafana_service_name }}"
+          register: grafana_systemd_status
+          changed_when: false
+
+        - name: Assert Grafana requested end state is achieved
+          ansible.builtin.assert:
+            that:
+              - (grafana_service_name + '.service') in ansible_facts.services
+              - ansible_facts.services[grafana_service_name + '.service'].state == 'running'
+              - ansible_facts.services[grafana_service_name + '.service'].status == 'enabled'
+              - grafana_port_wait is succeeded
+              - grafana_health_check.status == 200
+              - (grafana_health_check.json.database | default('')) == 'ok'
+            fail_msg: >-
+              Grafana is not in the requested state. Expected enabled/running service, listening on port {{ grafana_default_port }}, and healthy HTTP endpoint at /api/health.
+            success_msg: >-
+              Grafana is enabled, running, listening on port {{ grafana_default_port }}, and reports healthy status.
+      rescue:
+        - name: Collect Grafana journal logs after validation failure
+          ansible.builtin.command:
+            argv:
+              - journalctl
+              - -u
+              - "{{ grafana_service_name }}"
+              - -n
+              - '100'
+              - --no-pager
+          register: grafana_journal_logs
+          changed_when: false
+          failed_when: false
+
+        - name: Emit structured debug output for Grafana validation failure
+          ansible.builtin.debug:
+            msg:
+              service_facts: "{{ ansible_facts.services.get(grafana_service_name + '.service', {}) }}"
+              systemd_status: "{{ grafana_systemd_status | default({}) }}"
+              port_wait: "{{ grafana_port_wait | default({}) }}"
+              health_check: "{{ grafana_health_check | default({}) }}"
+              journal_tail: "{{ grafana_journal_logs.stdout_lines | default([]) }}"
+
+        - name: Fail with actionable message when Grafana validation does not succeed
+          ansible.builtin.fail:
+            msg: >-
+              Grafana validation failed. Review the structured debug output for service state, health endpoint response, and recent journal logs.
+
+    - name: Compute Grafana access URL
+      ansible.builtin.set_fact:
+        grafana_access_url: "http://{{ ansible_default_ipv4.address | default(ansible_host | default(inventory_hostname)) }}:{{ grafana_default_port }}"
+
+    - name: Emit structured debug output summarizing final Grafana state
+      ansible.builtin.debug:
+        msg:
+          service_name: "{{ grafana_service_name }}"
+          service_state: "{{ ansible_facts.services[grafana_service_name + '.service'].state | default('unknown') }}"
+          service_status: "{{ ansible_facts.services[grafana_service_name + '.service'].status | default('unknown') }}"
+          listen_port: "{{ grafana_default_port }}"
+          health_status: "{{ grafana_health_check.json | default({}) }}"
+          access_url: "{{ grafana_access_url }}"
+          reset_requested: "{{ grafana_reset | bool }}"
