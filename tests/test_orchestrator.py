@@ -37,6 +37,7 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "`helm_create_chart` or `helm_edit_chart`" in MAIN_SYSTEM_PROMPT
     assert "For live Kubernetes deployment" in MAIN_SYSTEM_PROMPT
     assert "Repo-owned charts live under\n  `helm/charts`" in MAIN_SYSTEM_PROMPT
+    assert "deploy the\n  chart path instead of a public chart reference" in MAIN_SYSTEM_PROMPT
     assert "call the tool instead of asking for approval in prose" in MAIN_SYSTEM_PROMPT
 
 
@@ -87,6 +88,21 @@ def test_kubernetes_troubleshooting_skill_uses_kubeconfig_repair_tool() -> None:
     assert "kubernetes_fix_access" in skill_text
     assert "tool owns the explicit approval prompt" in skill_text
     assert "sudo install -D -m\n     600" in skill_text
+
+
+def test_kubernetes_troubleshooting_skill_prefers_repo_owned_wrapper_charts() -> None:
+    skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
+
+    assert "prefer deploying the\n     chart path over a public chart reference" in skill_text
+    assert "wrapper charts with\n  `dependencies` in `Chart.yaml`" in skill_text
+
+
+def test_kubernetes_troubleshooting_skill_reports_service_access_safely() -> None:
+    skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
+
+    assert "Do not tell the user to connect to `0.0.0.0`" in skill_text
+    assert "recommend a port-forward" in skill_text
+    assert "`nodes` resource and report `<node-ip>:<node-port>`" in skill_text
 
 
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:

@@ -65,7 +65,8 @@ Process:
   automation.
 - For repo-owned Kubernetes desired state, inspect `helm_list_charts` and use
   `helm_create_chart` or `helm_edit_chart`. Repo-owned charts live under
-  `helm/charts`.
+  `helm/charts`. If a repo-owned chart exists for the requested app, deploy the
+  chart path instead of a public chart reference.
 - For live Kubernetes deployment or validation, use Helm/Kubernetes tools such
   as `helm_list_releases`, `helm_status`, `helm_upgrade_install`, `kubectl_get`,
   and `kubectl_rollout_status`.

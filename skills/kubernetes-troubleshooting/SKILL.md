@@ -19,6 +19,9 @@ turning an application deploy into host repair.
    - Use `helm_list_releases`, `helm_status`, `kubectl_get`, or `kubectl_rollout_status`
      to reproduce the user-visible failure.
    - For repo-owned desired state, use `helm_list_charts` before creating or editing charts.
+   - If a repo-owned chart exists for the requested app, prefer deploying the
+     chart path over a public chart reference. Public charts should usually be
+     captured as wrapper chart dependencies under `helm/charts/`.
    - Do not run `ansible_run_playbook` just because a Helm/Kubernetes check failed.
 
 3. Interpret common access failures.
@@ -54,9 +57,21 @@ turning an application deploy into host repair.
    - After a successful repair, return to the original Helm/Kubernetes
      validation or deployment.
 
+6. Report service access accurately.
+   - Do not tell the user to connect to `0.0.0.0`; it is a bind address, not a
+     usable client destination.
+   - For `LoadBalancer` services with external IP `<pending>` on local k3s,
+     recommend a port-forward such as `kubectl port-forward svc/<name>
+     8080:80`.
+   - If reporting NodePort access, first inspect nodes with `kubectl_get` using
+     the `nodes` resource and report `<node-ip>:<node-port>`, not
+     `0.0.0.0:<node-port>`.
+
 ## Repo Conventions
 
 - Repo-owned Helm charts live under `helm/charts`.
+- Public upstream charts can be represented by wrapper charts with
+  `dependencies` in `Chart.yaml` and local overrides in `values.yaml`.
 - Use `helm_create_chart` for new chart scaffolds and `helm_edit_chart` for
   coordinated edits across values, templates, helpers, and related files.
 - Use `helm_upgrade_install` only for live cluster install/upgrade requests.

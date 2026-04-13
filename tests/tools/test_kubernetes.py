@@ -49,7 +49,10 @@ def _write_minimal_chart(chart_path: Path) -> None:
 
 
 class TestHelmCreateChart:
-    def test_helm_create_chart_requires_approval(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_helm_create_chart_requires_approval(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
         monkeypatch.setattr("builtins.input", lambda _: "n")
         run_history = RunHistory(prompt="create an nginx chart")
         token = set_active_run_history(run_history)
@@ -67,7 +70,7 @@ class TestHelmCreateChart:
     ) -> None:
         monkeypatch.chdir(tmp_path)
         monkeypatch.setattr("builtins.input", lambda _: "y")
-        recorded: dict[str, object] = {}
+        recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
             recorded["args"] = args
@@ -272,7 +275,7 @@ class TestHelmListReleases:
     def test_helm_list_releases_defaults_to_all_namespaces(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        recorded: dict[str, object] = {}
+        recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
             recorded["args"] = args
@@ -286,7 +289,7 @@ class TestHelmListReleases:
         assert recorded["args"] == (["helm", "list", "-o", "json", "--all-namespaces"],)
 
     def test_helm_list_releases_can_target_namespace(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        recorded: dict[str, object] = {}
+        recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
             recorded["args"] = args
@@ -297,6 +300,25 @@ class TestHelmListReleases:
         helm_list_releases(namespace="apps", all_namespaces=False)
 
         assert recorded["args"] == (["helm", "list", "-o", "json", "--namespace", "apps"],)
+
+    def test_helm_list_releases_prefers_repaired_user_kubeconfig(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        kubeconfig = tmp_path / "config"
+        kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
+        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setenv("KUBECONFIG", "/etc/rancher/k3s/k3s.yaml")
+        recorded: dict[str, Any] = {}
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            recorded["env"] = kwargs["env"]
+            return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="[]\n", stderr="")
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        helm_list_releases()
+
+        assert recorded["env"]["KUBECONFIG"] == str(kubeconfig)
 
 
 class TestKubernetesFixAccess:
@@ -386,7 +408,7 @@ class TestKubernetesFixAccess:
 
 class TestHelmStatus:
     def test_helm_status_uses_json_output(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        recorded: dict[str, object] = {}
+        recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
             recorded["args"] = args
@@ -485,6 +507,55 @@ class TestHelmUpgradeInstall:
         with pytest.raises(RuntimeError, match="cluster unreachable"):
             helm_upgrade_install(release="nginx", chart="nginx")
 
+    def test_helm_upgrade_install_builds_dependencies_for_local_chart(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        chart_path = tmp_path / "helm" / "charts" / "nginx"
+        chart_path.mkdir(parents=True)
+        (chart_path / "Chart.yaml").write_text(
+            "apiVersion: v2\n"
+            "name: nginx\n"
+            "version: 0.1.0\n"
+            "dependencies:\n"
+            "  - name: nginx\n"
+            "    alias: upstream\n"
+            "    version: '>=0.0.0'\n"
+            "    repository: oci://registry-1.docker.io/bitnamicharts\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        commands: list[list[str]] = []
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            commands.append(args[0])
+            return subprocess.CompletedProcess(
+                args=args[0],
+                returncode=0,
+                stdout="ok\n",
+                stderr="",
+            )
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        helm_upgrade_install(release="nginx", chart=str(chart_path))
+
+        assert commands == [
+            ["helm", "dependency", "build", str(chart_path)],
+            [
+                "helm",
+                "upgrade",
+                "--install",
+                "nginx",
+                str(chart_path),
+                "--namespace",
+                "default",
+                "--wait",
+                "--timeout",
+                "5m",
+                "--create-namespace",
+            ],
+        ]
+
 
 class TestKubectlGet:
     def test_kubectl_get_builds_namespace_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -503,6 +574,27 @@ class TestKubectlGet:
         assert recorded["args"] == (
             ["kubectl", "get", "pods", "-o", "wide", "--namespace", "apps"],
         )
+
+    def test_kubectl_get_prefers_repaired_user_kubeconfig(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        kubeconfig = tmp_path / "config"
+        kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
+        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setenv("KUBECONFIG", "/etc/rancher/k3s/k3s.yaml")
+        recorded: dict[str, Any] = {}
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            recorded["env"] = kwargs["env"]
+            return subprocess.CompletedProcess(
+                args=args[0], returncode=0, stdout="pods\n", stderr=""
+            )
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        kubectl_get("pods")
+
+        assert recorded["env"]["KUBECONFIG"] == str(kubeconfig)
 
 
 class TestKubectlRolloutStatus:

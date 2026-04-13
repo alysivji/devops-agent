@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 import time
@@ -13,6 +14,7 @@ from ..history import record_event
 
 KUBERNETES_OUTPUT_TAIL_LINES: Final[int] = 80
 HELM_CHARTS_DIR: Final[Path] = Path("helm/charts")
+DEFAULT_KUBECONFIG: Final[Path] = Path("~/.kube/config")
 
 
 class HelmChartRegistryEntry(TypedDict):
@@ -73,6 +75,7 @@ def _run_command(command: list[str], *, event_kind: str, what: str, why: str) ->
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            env=_kubernetes_command_env(),
         )
     except subprocess.CalledProcessError as exc:
         elapsed_seconds = round(time.monotonic() - started_at, 3)
@@ -117,6 +120,14 @@ def _run_command(command: list[str], *, event_kind: str, what: str, why: str) ->
     return stdout
 
 
+def _kubernetes_command_env() -> dict[str, str]:
+    env = os.environ.copy()
+    kubeconfig = DEFAULT_KUBECONFIG.expanduser()
+    if kubeconfig.is_file():
+        env["KUBECONFIG"] = str(kubeconfig)
+    return env
+
+
 def _tail_lines(output: str, line_count: int) -> str:
     lines = [line for line in output.strip().splitlines() if line.strip()]
     return "\n".join(lines[-line_count:])
@@ -153,6 +164,16 @@ def _read_chart_files(chart_path: Path) -> dict[str, str]:
         relative_path = file_path.relative_to(chart_path).as_posix()
         files[relative_path] = file_path.read_text(encoding="utf-8")
     return files
+
+
+def _chart_has_dependencies(chart: str) -> bool:
+    chart_path = Path(chart)
+    chart_yaml_path = chart_path / "Chart.yaml"
+    if not chart_yaml_path.is_file():
+        return False
+
+    metadata = yaml.safe_load(chart_yaml_path.read_text(encoding="utf-8"))
+    return isinstance(metadata, dict) and bool(metadata.get("dependencies"))
 
 
 @tool
@@ -621,6 +642,13 @@ def helm_upgrade_install(
         why="The Helm install/upgrade was explicitly approved.",
         details={"release": release, "chart": chart, "namespace": namespace, "approved": True},
     )
+    if _chart_has_dependencies(chart):
+        _run_command(
+            ["helm", "dependency", "build", chart],
+            event_kind="helm_dependency_build",
+            what=f"Built Helm chart dependencies for `{chart}`.",
+            why="Populate local chart dependencies before installing a repo-owned wrapper chart.",
+        )
     return _run_command(
         command,
         event_kind="helm_upgrade_install",
