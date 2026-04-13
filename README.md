@@ -212,18 +212,22 @@ these patterns:
   history records.
 - Local filesystem and subprocess doubles for lightweight tool behavior, such
   as temp charts, temp repos, and monkeypatched command runners.
-- `subprocess-vcr` for subprocess-heavy paths that are harder to make portable
-  across developer machines. The Ansible execution coverage follows that
-  pattern, and `make test` records those fixtures while pytest replays them by
-  default.
-- `pytest-vcr` for HTTP tool tests where the client is compatible with VCR
+- [`subprocess-vcr`](https://pypi.org/project/subprocess-vcr/) for
+  subprocess-heavy paths that are harder to make portable across developer
+  machines. The Ansible execution coverage follows that pattern, and
+  `make test` records those fixtures while pytest replays them by default.
+- [`pytest-vcr`](https://pypi.org/project/pytest-vcr/) for HTTP tool tests where
+  the client is compatible with VCR
   interception.
-- Local Git HTTP integration tests against `git-http-mock-server`, which shells
-  out to the system `git` and avoids external Git hosts.
-- KWOK-backed Helm/Kubernetes integration tests that create a local Docker-backed
-  Kubernetes API server, seed fake schedulable nodes, and exercise real
-  `helm`/`kubectl` subprocesses against real API objects without touching the
-  live k3s cluster.
+- Local Git HTTP integration tests against
+  [`git-http-mock-server`](https://www.npmjs.com/package/git-http-mock-server),
+  which shells out to the system `git` and avoids external Git hosts.
+- [`KWOK`](https://kwok.sigs.k8s.io/)-backed
+  [`Helm`](https://helm.sh/)/
+  [`kubectl`](https://kubernetes.io/docs/reference/kubectl/) integration tests
+  that create a local [`Docker`](https://www.docker.com/)-backed Kubernetes API
+  server, seed fake schedulable nodes, and exercise real `helm`/`kubectl`
+  subprocesses against real API objects without touching the live k3s cluster.
 
 Run `make test` for the default test suite and `make check` for the local CI
 path. Run `make test-git-http` when you only want the Git HTTP integration
@@ -234,5 +238,6 @@ ensures KWOK is available for the Kubernetes integration tests.
 
 `./scripts/setup-dev.sh` creates a local `.env` only when one does not already exist. In a linked
 worktree, it prefers copying the main worktree's `.env`; otherwise it falls back to `.env.example`.
-It also installs KWOK with Homebrew when available, or falls back to pinned
-release binaries for `kwok` and `kwokctl`.
+It also installs [KWOK](https://kwok.sigs.k8s.io/) with
+[Homebrew](https://brew.sh/) when available, or falls back to pinned release
+binaries for `kwok` and `kwokctl`.
