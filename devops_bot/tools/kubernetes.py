@@ -3,15 +3,25 @@ import subprocess
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Final, Protocol, TypedDict
+from typing import Final, NotRequired, Protocol, TypedDict
 
+import yaml
 from strands import tool
 
 from ..agents.helm_chart_editor import EditedHelmChart, EditHelmChartAgent
 from ..history import record_event
 
 KUBERNETES_OUTPUT_TAIL_LINES: Final[int] = 80
-HELM_CHARTS_DIR: Final[Path] = Path("charts")
+HELM_CHARTS_DIR: Final[Path] = Path("helm/charts")
+
+
+class HelmChartRegistryEntry(TypedDict):
+    name: str
+    version: str
+    path: str
+    description: NotRequired[str]
+    app_version: NotRequired[str]
+    chart_type: NotRequired[str]
 
 
 class EditHelmChartResult(TypedDict):
@@ -134,6 +144,60 @@ def _read_chart_files(chart_path: Path) -> dict[str, str]:
         relative_path = file_path.relative_to(chart_path).as_posix()
         files[relative_path] = file_path.read_text(encoding="utf-8")
     return files
+
+
+@tool
+def helm_list_charts() -> list[HelmChartRegistryEntry]:
+    """Return repo-owned Helm charts under helm/charts with Chart.yaml metadata."""
+    if not HELM_CHARTS_DIR.exists():
+        registry: list[HelmChartRegistryEntry] = []
+    else:
+        registry = [
+            _parse_chart_metadata(chart_path)
+            for chart_path in sorted(path for path in HELM_CHARTS_DIR.iterdir() if path.is_dir())
+            if (chart_path / "Chart.yaml").is_file()
+        ]
+
+    record_event(
+        kind="helm_chart_registry_read",
+        status="completed",
+        what="Read the Helm chart registry.",
+        why=(
+            "Inspect repo-owned Kubernetes application desired state before "
+            "creating or editing charts."
+        ),
+        details={"count": len(registry), "paths": [entry["path"] for entry in registry]},
+    )
+    return registry
+
+
+def _parse_chart_metadata(chart_path: Path) -> HelmChartRegistryEntry:
+    metadata = yaml.safe_load((chart_path / "Chart.yaml").read_text(encoding="utf-8"))
+    if not isinstance(metadata, dict):
+        raise ValueError(f"Helm chart metadata must be a mapping: {chart_path / 'Chart.yaml'}")
+
+    name = metadata.get("name")
+    version = metadata.get("version")
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"Helm chart is missing a string name: {chart_path / 'Chart.yaml'}")
+    if not isinstance(version, str) or not version:
+        raise ValueError(f"Helm chart is missing a string version: {chart_path / 'Chart.yaml'}")
+
+    entry: HelmChartRegistryEntry = {
+        "name": name,
+        "version": version,
+        "path": str(chart_path),
+    }
+    description = metadata.get("description")
+    if isinstance(description, str) and description:
+        entry["description"] = description
+    app_version = metadata.get("appVersion")
+    if isinstance(app_version, str) and app_version:
+        entry["app_version"] = app_version
+    chart_type = metadata.get("type")
+    if isinstance(chart_type, str) and chart_type:
+        entry["chart_type"] = chart_type
+    return entry
 
 
 @tool

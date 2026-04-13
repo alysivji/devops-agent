@@ -41,6 +41,8 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "Use `helm_upgrade_install` for live cluster" in MAIN_SYSTEM_PROMPT
     assert "use `helm_edit_chart`" in MAIN_SYSTEM_PROMPT
     assert "values, templates, helpers" in MAIN_SYSTEM_PROMPT
+    assert "Inspect `helm_list_charts`" in MAIN_SYSTEM_PROMPT
+    assert "Repo-owned charts live under `helm/charts`" in MAIN_SYSTEM_PROMPT
 
 
 def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
@@ -61,6 +63,7 @@ def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
     assert {
         "helm_create_chart",
         "helm_edit_chart",
+        "helm_list_charts",
         "helm_list_releases",
         "helm_status",
         "helm_upgrade_install",

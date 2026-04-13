@@ -9,6 +9,7 @@ from devops_bot.history import RunHistory, reset_active_run_history, set_active_
 from devops_bot.tools import (
     helm_create_chart,
     helm_edit_chart,
+    helm_list_charts,
     helm_list_releases,
     helm_status,
     helm_upgrade_install,
@@ -72,7 +73,7 @@ class TestHelmCreateChart:
             return subprocess.CompletedProcess(
                 args=args[0],
                 returncode=0,
-                stdout="Creating charts/nginx\n",
+                stdout="Creating helm/charts/nginx\n",
                 stderr="",
             )
 
@@ -80,9 +81,9 @@ class TestHelmCreateChart:
 
         result = helm_create_chart("nginx")
 
-        assert result == "Creating charts/nginx\n"
-        assert recorded["args"] == (["helm", "create", "charts/nginx"],)
-        assert (tmp_path / "charts").is_dir()
+        assert result == "Creating helm/charts/nginx\n"
+        assert recorded["args"] == (["helm", "create", "helm/charts/nginx"],)
+        assert (tmp_path / "helm" / "charts").is_dir()
 
     @pytest.mark.parametrize("name", ["Nginx", "bad/name", "-nginx", "nginx-"])
     def test_helm_create_chart_rejects_invalid_names(self, name: str) -> None:
@@ -225,6 +226,45 @@ class TestHelmEditChart:
         assert result["files"] == ["values.yaml"]
         assert result["written"] is True
         assert result["lint_passed"] is True
+
+
+class TestHelmListCharts:
+    def test_helm_list_charts_reads_chart_yaml_metadata(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        chart_path = tmp_path / "helm" / "charts" / "nginx"
+        chart_path.mkdir(parents=True)
+        (chart_path / "Chart.yaml").write_text(
+            "apiVersion: v2\n"
+            "name: nginx\n"
+            "description: Test nginx chart.\n"
+            "type: application\n"
+            "version: 0.1.0\n"
+            "appVersion: 1.27.0\n",
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        registry = helm_list_charts()
+
+        assert registry == [
+            {
+                "name": "nginx",
+                "version": "0.1.0",
+                "path": "helm/charts/nginx",
+                "description": "Test nginx chart.",
+                "app_version": "1.27.0",
+                "chart_type": "application",
+            }
+        ]
+
+    def test_helm_list_charts_ignores_directories_without_chart_metadata(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        (tmp_path / "helm" / "charts" / "README.d").mkdir(parents=True)
+        monkeypatch.chdir(tmp_path)
+
+        assert helm_list_charts() == []
 
 
 class TestHelmListReleases:

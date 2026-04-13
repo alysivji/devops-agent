@@ -44,10 +44,12 @@ host-managed durable services belong in Ansible, while cluster-managed workloads
 belong in Helm/Kubernetes.
 
 For Kubernetes application desired state, prefer repo-owned Helm charts under
-`charts/` when the user asks to create or store deployable artifacts. Use live
-Helm install/upgrade only when the user asks to apply the workload to the
-cluster. Existing charts are edited through a chart-aware agent that can update
-values, templates, helpers, and related files together before running Helm lint.
+`helm/charts/` when the user asks to create or store deployable artifacts. The
+agent exposes a chart registry for that directory, similar to the Ansible
+playbook registry. Use live Helm install/upgrade only when the user asks to
+apply the workload to the cluster. Existing charts are edited through a
+chart-aware agent that can update values, templates, helpers, and related files
+together before running Helm lint.
 
 The first generation tool supports these inventory targets:
 

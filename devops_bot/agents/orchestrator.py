@@ -16,6 +16,7 @@ from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
 from ..tools.kubernetes import (
     helm_create_chart,
     helm_edit_chart,
+    helm_list_charts,
     helm_list_releases,
     helm_status,
     helm_upgrade_install,
@@ -36,6 +37,7 @@ Available tools:
 - `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
 - `helm_create_chart`: create a repo-owned Helm chart scaffold with explicit approval
 - `helm_edit_chart`: edit files inside an existing Helm chart with explicit approval
+- `helm_list_charts`: inspect the repo-owned Helm chart registry under helm/charts
 - `helm_list_releases`: inspect Helm releases in the configured Kubernetes cluster
 - `helm_status`: inspect one Helm release in the configured Kubernetes cluster
 - `helm_upgrade_install`: install or upgrade a Helm release with explicit approval
@@ -73,6 +75,8 @@ Process:
 - For application workload changes to an existing chart, use `helm_edit_chart`
   so the chart editor can update values, templates, helpers, and related files
   coherently inside that chart.
+- Inspect `helm_list_charts` before creating or editing repo-owned Helm chart
+  desired state. Repo-owned charts live under `helm/charts`.
 - If the registry already contains the right playbook, run it with `ansible_run_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
@@ -150,6 +154,7 @@ class OrchestratorAgent:
                 ansible_edit_playbook,
                 helm_create_chart,
                 helm_edit_chart,
+                helm_list_charts,
                 helm_list_releases,
                 helm_status,
                 helm_upgrade_install,
