@@ -19,6 +19,7 @@ from .kubernetes import (
     helm_upgrade_install,
     kubectl_get,
     kubectl_rollout_status,
+    kubernetes_fix_access,
 )
 from .web import http_get, search_web
 
@@ -39,6 +40,7 @@ __all__ = [
     "helm_list_releases",
     "helm_status",
     "helm_upgrade_install",
+    "kubernetes_fix_access",
     "kubectl_get",
     "kubectl_rollout_status",
 ]

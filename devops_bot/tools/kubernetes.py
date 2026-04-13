@@ -33,6 +33,15 @@ class EditHelmChartResult(TypedDict):
     requires_cluster_validation: bool
 
 
+class KubernetesAccessFixResult(TypedDict):
+    source: str
+    destination: str
+    applied: bool
+    verified: bool
+    kubectl_cluster_info: str
+    helm_list_releases: str
+
+
 class HelmChartEditor(Protocol):
     def run(
         self,
@@ -402,6 +411,110 @@ def print_chart_edit_preview(*, chart_path: Path, edited: EditedHelmChart) -> No
 
 def _normalize_file_content(content: str) -> str:
     return f"{content.rstrip()}\n"
+
+
+@tool
+def kubernetes_fix_access(
+    source: str = "/etc/rancher/k3s/k3s.yaml",
+    destination: str = "~/.kube/config",
+) -> KubernetesAccessFixResult:
+    """Repair local Kubernetes client access by installing a readable k3s kubeconfig.
+
+    Args:
+        source: Source k3s kubeconfig path to copy from.
+        destination: Destination kubeconfig path for the current user.
+    """
+    source_path = Path(source)
+    if source_path != Path("/etc/rancher/k3s/k3s.yaml"):
+        raise ValueError("kubernetes_fix_access only supports the k3s admin kubeconfig source.")
+
+    destination_path = Path(destination).expanduser()
+    if not destination_path.is_absolute() or ".." in destination_path.parts:
+        raise ValueError("destination must resolve to an absolute path without parent traversal.")
+
+    user_id = subprocess.run(
+        ["id", "-un"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    ).stdout.strip()
+    group_id = subprocess.run(
+        ["id", "-gn"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    ).stdout.strip()
+
+    summary = f"Install readable kubeconfig at '{destination_path}' from '{source_path}'."
+    record_event(
+        kind="kubernetes_access_repair_requested",
+        status="started",
+        what=summary,
+        why="Repair local kubeconfig access before retrying Helm/Kubernetes workflow tools.",
+        details={"source": str(source_path), "destination": str(destination_path)},
+    )
+    if not _confirm_kubernetes_mutation(summary):
+        record_event(
+            kind="kubernetes_access_repair_declined",
+            status="declined",
+            what=summary,
+            why="The tool requires explicit confirmation before writing kubeconfig.",
+            details={
+                "source": str(source_path),
+                "destination": str(destination_path),
+                "approved": False,
+            },
+        )
+        return {
+            "source": str(source_path),
+            "destination": str(destination_path),
+            "applied": False,
+            "verified": False,
+            "kubectl_cluster_info": "",
+            "helm_list_releases": "",
+        }
+
+    _run_command(
+        [
+            "sudo",
+            "install",
+            "-D",
+            "-m",
+            "600",
+            "-o",
+            user_id,
+            "-g",
+            group_id,
+            str(source_path),
+            str(destination_path),
+        ],
+        event_kind="kubernetes_access_repair",
+        what=summary,
+        why="Copy the k3s admin kubeconfig to a user-readable kubeconfig for local tools.",
+    )
+    kubectl_output = _run_command(
+        ["kubectl", "--kubeconfig", str(destination_path), "cluster-info"],
+        event_kind="kubernetes_access_repair_verify_kubectl",
+        what="Verified Kubernetes API access with kubectl.",
+        why="Confirm the repaired kubeconfig can reach the cluster API.",
+    )
+    helm_output = _run_command(
+        ["helm", "--kubeconfig", str(destination_path), "list", "--all-namespaces"],
+        event_kind="kubernetes_access_repair_verify_helm",
+        what="Verified Helm API access.",
+        why="Confirm Helm can reach the cluster API with the repaired kubeconfig.",
+    )
+
+    return {
+        "source": str(source_path),
+        "destination": str(destination_path),
+        "applied": True,
+        "verified": True,
+        "kubectl_cluster_info": kubectl_output,
+        "helm_list_releases": helm_output,
+    }
 
 
 @tool

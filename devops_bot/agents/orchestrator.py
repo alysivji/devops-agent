@@ -24,6 +24,7 @@ from ..tools.kubernetes import (
     helm_upgrade_install,
     kubectl_get,
     kubectl_rollout_status,
+    kubernetes_fix_access,
 )
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
@@ -44,6 +45,7 @@ Available tools:
 - `helm_list_releases`: inspect Helm releases in the configured Kubernetes cluster
 - `helm_status`: inspect one Helm release in the configured Kubernetes cluster
 - `helm_upgrade_install`: install or upgrade a Helm release with explicit approval
+- `kubernetes_fix_access`: repair local k3s kubeconfig access with explicit approval
 - `kubectl_get`: inspect Kubernetes resources through the configured cluster API
 - `kubectl_rollout_status`: validate Kubernetes workload rollout readiness
 
@@ -67,6 +69,9 @@ Process:
 - For live Kubernetes deployment or validation, use Helm/Kubernetes tools such
   as `helm_list_releases`, `helm_status`, `helm_upgrade_install`, `kubectl_get`,
   and `kubectl_rollout_status`.
+- If the Kubernetes blocker is only that the current user cannot read the k3s
+  kubeconfig, use `kubernetes_fix_access` rather than a broader Ansible repair
+  playbook.
 - If the Ansible registry already contains the right playbook, run it with `ansible_run_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
@@ -143,6 +148,7 @@ class OrchestratorAgent:
                 helm_list_releases,
                 helm_status,
                 helm_upgrade_install,
+                kubernetes_fix_access,
                 kubectl_get,
                 kubectl_rollout_status,
             ],

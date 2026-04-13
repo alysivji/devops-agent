@@ -15,6 +15,7 @@ from devops_bot.tools import (
     helm_upgrade_install,
     kubectl_get,
     kubectl_rollout_status,
+    kubernetes_fix_access,
 )
 from devops_bot.tools.kubernetes import EditHelmChart
 
@@ -296,6 +297,91 @@ class TestHelmListReleases:
         helm_list_releases(namespace="apps", all_namespaces=False)
 
         assert recorded["args"] == (["helm", "list", "-o", "json", "--namespace", "apps"],)
+
+
+class TestKubernetesFixAccess:
+    def test_kubernetes_fix_access_requires_approval(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("builtins.input", lambda _: "n")
+        run_history = RunHistory(prompt="fix kubernetes access")
+        token = set_active_run_history(run_history)
+
+        try:
+            result = kubernetes_fix_access()
+        finally:
+            reset_active_run_history(token)
+
+        assert result == {
+            "source": "/etc/rancher/k3s/k3s.yaml",
+            "destination": str(Path("~/.kube/config").expanduser()),
+            "applied": False,
+            "verified": False,
+            "kubectl_cluster_info": "",
+            "helm_list_releases": "",
+        }
+        assert run_history.session.events[-1].kind == "kubernetes_access_repair_declined"
+
+    def test_kubernetes_fix_access_copies_and_verifies_after_approval(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        commands: list[list[str]] = []
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            command = args[0]
+            commands.append(command)
+            if command == ["id", "-un"]:
+                stdout = "ansible\n"
+            elif command == ["id", "-gn"]:
+                stdout = "ansible\n"
+            elif command[0:2] == ["kubectl", "--kubeconfig"]:
+                stdout = "Kubernetes control plane is running\n"
+            elif command[0:2] == ["helm", "--kubeconfig"]:
+                stdout = "NAME NAMESPACE REVISION\n"
+            else:
+                stdout = ""
+            return subprocess.CompletedProcess(args=command, returncode=0, stdout=stdout, stderr="")
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        result = kubernetes_fix_access()
+
+        assert commands == [
+            ["id", "-un"],
+            ["id", "-gn"],
+            [
+                "sudo",
+                "install",
+                "-D",
+                "-m",
+                "600",
+                "-o",
+                "ansible",
+                "-g",
+                "ansible",
+                "/etc/rancher/k3s/k3s.yaml",
+                str(Path("~/.kube/config").expanduser()),
+            ],
+            [
+                "kubectl",
+                "--kubeconfig",
+                str(Path("~/.kube/config").expanduser()),
+                "cluster-info",
+            ],
+            [
+                "helm",
+                "--kubeconfig",
+                str(Path("~/.kube/config").expanduser()),
+                "list",
+                "--all-namespaces",
+            ],
+        ]
+        assert result["applied"] is True
+        assert result["verified"] is True
+        assert result["kubectl_cluster_info"] == "Kubernetes control plane is running\n"
+
+    def test_kubernetes_fix_access_rejects_non_k3s_source(self) -> None:
+        with pytest.raises(ValueError, match="k3s admin kubeconfig"):
+            kubernetes_fix_access(source="/tmp/config")
 
 
 class TestHelmStatus:

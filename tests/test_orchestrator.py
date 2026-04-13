@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from devops_bot.agents import orchestrator as orchestrator_module
@@ -60,12 +61,28 @@ def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
         "helm_list_releases",
         "helm_status",
         "helm_upgrade_install",
+        "kubernetes_fix_access",
         "kubectl_get",
         "kubectl_rollout_status",
     }.issubset(tool_names)
     plugins = captured["build_agent"]["plugins"]
     assert len(plugins) == 1
     assert plugins[0].get_available_skills()[0].name == "kubernetes-troubleshooting"
+
+
+def test_kubernetes_troubleshooting_skill_uses_direct_blocker_wording() -> None:
+    skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
+
+    assert "Next step: repair cluster access with <playbook>" in skill_text
+    assert "Do not end with soft phrasing" in skill_text
+    assert "If you want me to proceed" in skill_text
+
+
+def test_kubernetes_troubleshooting_skill_uses_kubeconfig_repair_tool() -> None:
+    skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
+
+    assert "kubernetes_fix_access" in skill_text
+    assert "sudo install -D -m 600" in skill_text
 
 
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:
