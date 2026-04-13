@@ -1,0 +1,2 @@
+# Helm dependency archives
+charts/*/charts/*.tgz

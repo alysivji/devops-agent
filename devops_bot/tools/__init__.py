@@ -10,6 +10,17 @@ from .git import (
     git_push,
     git_status,
 )
+from .kubernetes import (
+    helm_create_chart,
+    helm_edit_chart,
+    helm_list_charts,
+    helm_list_releases,
+    helm_status,
+    helm_upgrade_install,
+    kubectl_get,
+    kubectl_rollout_status,
+    kubernetes_fix_access,
+)
 from .web import http_get, search_web
 
 __all__ = [
@@ -23,4 +34,13 @@ __all__ = [
     "git_list_commits",
     "ansible_run_playbook",
     "search_web",
+    "helm_create_chart",
+    "helm_edit_chart",
+    "helm_list_charts",
+    "helm_list_releases",
+    "helm_status",
+    "helm_upgrade_install",
+    "kubernetes_fix_access",
+    "kubectl_get",
+    "kubectl_rollout_status",
 ]

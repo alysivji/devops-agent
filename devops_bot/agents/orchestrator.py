@@ -1,6 +1,8 @@
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any
 
+from strands import AgentSkills
 from strands.hooks.events import (
     AfterInvocationEvent,
     AfterToolCallEvent,
@@ -13,34 +15,79 @@ from ..factory import build_agent, build_model
 from ..history import record_event
 from ..session import build_session_manager
 from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
+from ..tools.kubernetes import (
+    helm_create_chart,
+    helm_edit_chart,
+    helm_list_charts,
+    helm_list_releases,
+    helm_status,
+    helm_upgrade_install,
+    kubectl_get,
+    kubectl_rollout_status,
+    kubernetes_fix_access,
+)
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
 ThinkingLevel = str
+SKILLS_DIR = Path("skills")
 
 MAIN_SYSTEM_PROMPT = """
-You orchestrate Ansible playbook tools for this repository.
+You orchestrate DevOps workflow tools for this repository.
 
 Available tools:
 - `ansible_list_playbooks`: inspect the validated playbook registry
 - `ansible_run_playbook`: execute an existing registry playbook by path
 - `ansible_create_playbook`: generate and write a new playbook through the agent-backed tool
 - `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
+- `helm_create_chart`: create a repo-owned Helm chart scaffold with explicit approval
+- `helm_edit_chart`: edit files inside an existing Helm chart with explicit approval
+- `helm_list_charts`: inspect the repo-owned Helm chart registry under helm/charts
+- `helm_list_releases`: inspect Helm releases in the configured Kubernetes cluster
+- `helm_status`: inspect one Helm release in the configured Kubernetes cluster
+- `helm_upgrade_install`: install or upgrade a Helm release with explicit approval
+- `kubernetes_fix_access`: repair local k3s kubeconfig access with explicit approval
+- `kubectl_get`: inspect Kubernetes resources through the configured cluster API
+- `kubectl_rollout_status`: validate Kubernetes workload rollout readiness
 
 Process:
-- Start by inspecting the current playbook registry when the request might map
-  to existing automation.
+- Start by routing the request to the right workflow boundary: Ansible for
+  host/substrate state and Helm/Kubernetes for schedulable application
+  workloads.
+- For Kubernetes or Helm requests, load the `kubernetes-troubleshooting` skill
+  before handling failures, ambiguous stateful workloads, kubeconfig problems,
+  chart registry work, chart edits, or live deployments. Follow that skill for
+  the Ansible-vs-Helm boundary and blocker reporting.
+- For Ansible requests, inspect the current playbook registry when the request
+  might map to existing host/substrate automation.
 - Prefer validating the user's requested end state before running remediation
-  that mutates remote hosts. If the requested state is already true, report
-  success instead of continuing through prerequisite or repair automation.
-- Keep validation goal-oriented. Pick success signals that prove the user's
-  requested capability works, and treat implementation details as diagnostics
-  unless the capability-level check is failing. For clustered services, prefer
-  cluster/API health over individual service restarts, package state, boot
-  flags, or kernel internals.
-- If the registry already contains the right playbook, run it with `ansible_run_playbook`.
+  that mutates remote hosts or cluster state. If the requested state is already
+  true, report success instead of continuing through prerequisite or repair
+  automation.
+- For repo-owned Kubernetes desired state, inspect `helm_list_charts` and use
+  `helm_create_chart` or `helm_edit_chart`. Repo-owned charts live under
+  `helm/charts`. If a repo-owned chart exists for the requested app, deploy the
+  chart path instead of a public chart reference.
+- After creating, editing, or validating a repo-owned chart, update that chart's
+  README when the user-facing access path, service name, namespace, ports, or
+  manual validation steps change.
+- For live Kubernetes deployment or validation, use Helm/Kubernetes tools such
+  as `helm_list_releases`, `helm_status`, `helm_upgrade_install`, `kubectl_get`,
+  and `kubectl_rollout_status`.
+- Validate Kubernetes service availability with rollout/status, service, and
+  endpoint or pod readiness checks before reporting that a service is up. When
+  exposure is user-facing and network access is available, also check the actual
+  access URL.
+- For simple local machine or LAN exposure of one Kubernetes service, prefer a
+  `NodePort` service over Traefik/Ingress unless the user asks for hostnames,
+  path routing, TLS, or shared HTTP routing across multiple services.
+- If the Kubernetes blocker is only that the current user cannot read the k3s
+  kubeconfig, use `kubernetes_fix_access` rather than a broader Ansible repair
+  playbook. The `kubernetes_fix_access` tool owns its own approval prompt, so
+  call the tool instead of asking for approval in prose.
+- If the Ansible registry already contains the right playbook, run it with `ansible_run_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
-  corrective action available through the tools, then try again.
+  corrective action available through the tools or active skill, then try again.
 - For failed playbook executions, decide whether the next corrective action is
   editing the existing playbook, creating missing prerequisite automation, or
   running another suitable registry playbook. After the corrective action, retry
@@ -71,8 +118,10 @@ Process:
   tool can perform a necessary next step.
 - Do not edit inventory, Python code, docs, or arbitrary files while handling
   an Ansible playbook execution failure.
-- If the registry does not contain the needed automation, create a new playbook
-  with `ansible_create_playbook`.
+- If the registry does not contain the needed Ansible host/substrate
+  automation, create a new playbook with `ansible_create_playbook`.
+- Do not call `ansible_create_playbook` for missing Helm/Kubernetes application
+  deployment automation. Load and follow `kubernetes-troubleshooting` instead.
 - After creating a new playbook, inspect the registry again and run the appropriate playbook.
 - For simple registry lookup questions, answer using the registry without
   creating or running anything.
@@ -105,7 +154,17 @@ class OrchestratorAgent:
                 ansible_run_playbook,
                 ansible_create_playbook,
                 ansible_edit_playbook,
+                helm_create_chart,
+                helm_edit_chart,
+                helm_list_charts,
+                helm_list_releases,
+                helm_status,
+                helm_upgrade_install,
+                kubernetes_fix_access,
+                kubectl_get,
+                kubectl_rollout_status,
             ],
+            plugins=[AgentSkills(skills=[SKILLS_DIR], strict=True)],
             session_manager=session_manager,
         )
         self.agent.add_hook(self._on_before_invocation, BeforeInvocationEvent)

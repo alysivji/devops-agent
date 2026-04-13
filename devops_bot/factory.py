@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Any, Optional
 
-from strands import Agent
+from strands import Agent, Plugin
 from strands.models.openai import OpenAIModel
 from strands.session.session_manager import SessionManager
 
@@ -30,14 +30,18 @@ def build_agent(
     *,
     system_prompt: str,
     tools: Optional[Sequence[Any]] = None,
+    plugins: Optional[Sequence[Plugin]] = None,
     session_manager: SessionManager | None = None,
 ) -> Agent:
     if tools is None:
         tools = []
+    if plugins is None:
+        plugins = []
 
     return Agent(
         model=model,
         system_prompt=system_prompt,
         tools=list(tools),
+        plugins=list(plugins),
         session_manager=session_manager,
     )

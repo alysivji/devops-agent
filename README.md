@@ -31,8 +31,29 @@ See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectatio
 - Generate playbooks
 - Decide when to run them
 - React to failures
+- Route host/substrate work to Ansible and schedulable app workloads to Helm/Kubernetes
 
 ## Human-In-The-Loop Playbook Generation
+
+Ansible playbook generation is for host/substrate automation, node-local durable
+services, and cluster prerequisites such as k3s, kubeconfig, and Helm
+installation. Ephemeral or schedulable application workloads should use the
+Helm/Kubernetes tool path instead. For stateful services such as Postgres,
+MinIO, or logging, choose the workflow based on lifecycle and storage ownership:
+host-managed durable services belong in Ansible, while cluster-managed workloads
+belong in Helm/Kubernetes.
+
+For Kubernetes application desired state, prefer repo-owned Helm charts under
+`helm/charts/` when the user asks to create or store deployable artifacts. The
+agent exposes a chart registry for that directory, similar to the Ansible
+playbook registry. Use live Helm install/upgrade only when the user asks to
+apply the workload to the cluster. Existing charts are edited through a
+chart-aware agent that can update values, templates, helpers, and related files
+together before running Helm lint.
+
+Kubernetes and Helm failure handling is also available as a Strands skill under
+`skills/kubernetes-troubleshooting/`; the orchestrator loads repo skills via the
+Strands `AgentSkills` plugin.
 
 The first generation tool supports these inventory targets:
 
@@ -64,6 +85,7 @@ Set `OPENAI_MODEL=gpt-5.4` by default for stronger reasoning and coding quality.
 uv run devops-agent "create a hello world playbook for local nodes"
 uv run devops-agent "Install a k3s cluster with a single control plane on the control node and all cluster nodes joining as workers."
 uv run devops-agent "Install Helm"
+uv run devops-agent "deploy nginx to Kubernetes with Helm"
 ```
 
 The generated review includes the proposed filename, metadata header fields, and the full YAML before asking for approval.
