@@ -21,33 +21,21 @@ def test_orchestrator_prompt_treats_live_state_mismatch_as_actionable() -> None:
 
 def test_orchestrator_prompt_prefers_goal_state_validation() -> None:
     assert "validating the user's requested end state" in MAIN_SYSTEM_PROMPT
-    assert "requested capability works" in MAIN_SYSTEM_PROMPT
-    assert "cluster/API health" in MAIN_SYSTEM_PROMPT
+    assert "requested state is already\n  true" in MAIN_SYSTEM_PROMPT
+    assert "report success instead of continuing" in MAIN_SYSTEM_PROMPT
 
 
 def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "You orchestrate DevOps workflow tools" in MAIN_SYSTEM_PROMPT
     assert "Start by routing the request" in MAIN_SYSTEM_PROMPT
-    assert "application/service deployment requests" in MAIN_SYSTEM_PROMPT
-    assert 'For prompts such as "set up nginx"' in MAIN_SYSTEM_PROMPT
-    assert "prefer Helm or Kubernetes" in MAIN_SYSTEM_PROMPT
-    assert "over installing packages" in MAIN_SYSTEM_PROMPT
-    assert "needed Ansible host/substrate" in MAIN_SYSTEM_PROMPT
-    assert "Route requests before choosing tools" in MAIN_SYSTEM_PROMPT
+    assert "Helm/Kubernetes for schedulable application" in MAIN_SYSTEM_PROMPT
+    assert "load the `kubernetes-troubleshooting` skill" in MAIN_SYSTEM_PROMPT
+    assert "before handling failures" in MAIN_SYSTEM_PROMPT
     assert "Do not call `ansible_create_playbook`" in MAIN_SYSTEM_PROMPT
-    assert "stateful ambiguous requests such as postgres" in MAIN_SYSTEM_PROMPT
-    assert "If a Helm/Kubernetes workflow fails" in MAIN_SYSTEM_PROMPT
-    assert "do not automatically run\n  Ansible repair automation" in MAIN_SYSTEM_PROMPT
-    assert (
-        "unless\n  the user explicitly asked you to repair cluster prerequisites"
-        in MAIN_SYSTEM_PROMPT
-    )
-    assert "use `helm_create_chart`" in MAIN_SYSTEM_PROMPT
-    assert "Use `helm_upgrade_install` for live cluster" in MAIN_SYSTEM_PROMPT
-    assert "use `helm_edit_chart`" in MAIN_SYSTEM_PROMPT
-    assert "values, templates, helpers" in MAIN_SYSTEM_PROMPT
-    assert "Inspect `helm_list_charts`" in MAIN_SYSTEM_PROMPT
-    assert "Repo-owned charts live under `helm/charts`" in MAIN_SYSTEM_PROMPT
+    assert "Load and follow `kubernetes-troubleshooting` instead" in MAIN_SYSTEM_PROMPT
+    assert "`helm_create_chart` or `helm_edit_chart`" in MAIN_SYSTEM_PROMPT
+    assert "For live Kubernetes deployment" in MAIN_SYSTEM_PROMPT
+    assert "Repo-owned charts live under\n  `helm/charts`" in MAIN_SYSTEM_PROMPT
 
 
 def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
