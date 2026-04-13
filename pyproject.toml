@@ -41,6 +41,7 @@ addopts = "--subprocess-vcr=replay"
 env_files = [".env.example"]
 markers = [
     "git_http_integration: tests that require the git-http-mock-server Node dependency",
+    "kwok_integration: tests that require a local KWOK cluster and real helm/kubectl subprocesses",
     "subprocess_vcr: record and replay subprocess output",
     "vcr: tests that record and replay HTTP traffic",
 ]

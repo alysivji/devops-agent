@@ -203,18 +203,41 @@ uv tool install ansible-core --with ansible
 
 ## Testing
 
-Prefer real local test environments when they are cheap to stand up. In this repo,
-the Git tool tests run against temp repositories and the local HTTP mock server
-instead of recorded subprocess fixtures.
+Prefer real local test environments when they are cheap to stand up, and keep
+live remote systems out of the default suite. The test suite currently uses
+these patterns:
 
-Use `subprocess-vcr` for subprocess-heavy paths that are harder to make portable
-across developer machines. The Ansible execution coverage currently follows that
-pattern, and `just test` records those fixtures while pytest replays them by default.
+- Pure unit tests for deterministic behavior such as command construction,
+  validation, error handling, serialization shape, prompt routing, and run
+  history records.
+- Local filesystem and subprocess doubles for lightweight tool behavior, such
+  as temp charts, temp repos, and monkeypatched command runners.
+- [`subprocess-vcr`](https://pypi.org/project/subprocess-vcr/) for
+  subprocess-heavy paths that are harder to make portable across developer
+  machines. The Ansible execution coverage follows that pattern, and
+  `make test` records those fixtures while pytest replays them by default.
+- [`pytest-vcr`](https://pypi.org/project/pytest-vcr/) for HTTP tool tests where
+  the client is compatible with VCR
+  interception.
+- Local Git HTTP integration tests against
+  [`git-http-mock-server`](https://www.npmjs.com/package/git-http-mock-server),
+  which shells out to the system `git` and avoids external Git hosts.
+- [`KWOK`](https://kwok.sigs.k8s.io/)-backed
+  [`Helm`](https://helm.sh/)/
+  [`kubectl`](https://kubernetes.io/docs/reference/kubectl/) integration tests
+  that create a local [`Docker`](https://www.docker.com/)-backed Kubernetes API
+  server, seed fake schedulable nodes, and exercise real `helm`/`kubectl`
+  subprocesses against real API objects without touching the live k3s cluster.
 
-Git HTTP integration tests use `git-http-mock-server`, which shells out to the system `git`
-installation. Run `just install` before executing `just test-git-http`.
+Run `make test` for the default test suite and `make check` for the local CI
+path. Run `make test-git-http` when you only want the Git HTTP integration
+tests. `./scripts/setup-dev.sh` installs the Python and Node dependencies and
+ensures KWOK is available for the Kubernetes integration tests.
 
 ## Setup
 
 `./scripts/setup-dev.sh` creates a local `.env` only when one does not already exist. In a linked
 worktree, it prefers copying the main worktree's `.env`; otherwise it falls back to `.env.example`.
+It also installs [KWOK](https://kwok.sigs.k8s.io/) with
+[Homebrew](https://brew.sh/) when available, or falls back to pinned release
+binaries for `kwok` and `kwokctl`.

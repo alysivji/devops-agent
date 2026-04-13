@@ -21,6 +21,7 @@
 
 - Python tooling is managed with `uv`. Install dependencies with `uv sync --frozen --all-groups`.
 - Git HTTP integration tests also require Node dependencies from `package.json`. Install them with `npm install`.
+- Helm/Kubernetes integration tests use KWOK with local Docker, Helm, kubectl, and kwokctl. `./scripts/setup-dev.sh` installs KWOK for local development; CI installs the pinned tool versions directly.
 - The main validation commands in this repo are:
   - `make check`
   - `make test`
@@ -40,6 +41,7 @@
 - If the HTTP client is not VCR-interceptable, keep the networked wrapper deterministic with local unit tests at the library boundary instead of forcing live HTTP into the suite.
 - Pytest defaults to replay mode through `addopts`, and `make test` records fixtures intentionally for the subprocess-vcr-backed cases.
 - Use the `git_http_integration` marker for Git flows that need a realistic remote without hitting an external host.
+- Use the `kwok_integration` marker for Helm/Kubernetes flows that need real Kubernetes API objects without touching the live k3s cluster. Prefer KWOK-backed local coverage over live remote-cluster tests for these tool wrappers.
 - Keep unit tests focused on command construction, argument validation, serialization shape, and error handling for remote-capable tools.
 - When adding structured tool outputs, add typing that reflects the actual serialized shape exposed to the model runtime.
 - If a remote workflow cannot be covered in automated tests, add a short manual verification note to the PR description.
