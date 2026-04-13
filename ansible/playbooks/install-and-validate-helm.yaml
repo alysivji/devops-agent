@@ -1,0 +1,239 @@
+# name: install_and_validate_helm
+# description: This playbook installs and validates Helm on control hosts with safety checks for architecture support and existing version, performing cleanup after installation and ensuring proper permission configurations before making any changes.
+# target: control
+# requires_approval: true
+# tags:
+#   - helm
+#   - installation
+#   - validation
+#   - control
+#   - package
+
+---
+- name: Install and validate Helm on control hosts
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    helm_reset: false
+    helm_install_dir: /usr/local/bin
+    helm_binary_path: /usr/local/bin/helm
+    helm_arch_map:
+      x86_64: amd64
+      amd64: amd64
+      aarch64: arm64
+      arm64: arm64
+      armv7l: arm
+      armv6l: arm
+    helm_os: linux
+    helm_version: "v3.16.1"
+    helm_platform_arch: "{{ helm_arch_map.get(ansible_architecture, '') }}"
+    helm_archive_basename: "helm-{{ helm_version }}-{{ helm_os }}-{{ helm_platform_arch }}"
+    helm_archive_url: "https://get.helm.sh/{{ helm_archive_basename }}.tar.gz"
+    helm_checksum_url: "https://get.helm.sh/{{ helm_archive_basename }}.tar.gz.sha256sum"
+    helm_temp_dir: "/tmp/{{ helm_archive_basename }}"
+    helm_archive_path: "{{ helm_temp_dir }}/{{ helm_archive_basename }}.tar.gz"
+  tasks:
+    - name: Validate target architecture is supported for Helm install
+      ansible.builtin.assert:
+        that:
+          - helm_platform_arch | length > 0
+        fail_msg: >-
+          Unsupported architecture {{ ansible_architecture }} for Helm installation on this host.
+          Update helm_arch_map to include this architecture.
+        success_msg: "Supported Helm architecture detected: {{ helm_platform_arch }}"
+
+    - name: Gather current Helm version if already installed
+      ansible.builtin.command:
+        cmd: "{{ helm_binary_path }} version --short"
+      register: helm_current_version
+      changed_when: false
+      failed_when: false
+
+    - name: Remove Helm binary when reset is requested
+      ansible.builtin.file:
+        path: "{{ helm_binary_path }}"
+        state: absent
+      when: helm_reset | bool
+
+    - name: Ensure Helm install directory exists
+      ansible.builtin.file:
+        path: "{{ helm_install_dir }}"
+        state: directory
+        mode: '0755'
+      when: not (helm_reset | bool)
+
+    - name: Install Helm when missing or version differs
+      when:
+        - not (helm_reset | bool)
+        - helm_current_version.rc != 0 or ((helm_current_version.stdout | trim) is not search(helm_version))
+      block:
+        - name: Ensure temporary extraction directory is absent before install
+          ansible.builtin.file:
+            path: "{{ helm_temp_dir }}"
+            state: absent
+
+        - name: Create temporary extraction directory for Helm install
+          ansible.builtin.file:
+            path: "{{ helm_temp_dir }}"
+            state: directory
+            mode: '0755'
+
+        - name: Download Helm checksum manifest
+          ansible.builtin.uri:
+            url: "{{ helm_checksum_url }}"
+            method: GET
+            return_content: true
+            status_code: 200
+          register: helm_checksum_manifest
+
+        - name: Derive Helm archive checksum from upstream manifest
+          ansible.builtin.set_fact:
+            helm_archive_checksum: >-
+              {{
+                'sha256:' +
+                (
+                  helm_checksum_manifest.content
+                  | regex_search('^[a-fA-F0-9]{64}', multiline=True)
+                )
+              }}
+
+        - name: Assert Helm checksum was parsed successfully
+          ansible.builtin.assert:
+            that:
+              - helm_archive_checksum is match('^sha256:[a-fA-F0-9]{64}$')
+            fail_msg: >-
+              Failed to parse a valid SHA256 checksum for {{ helm_archive_basename }} from
+              {{ helm_checksum_url }}.
+            success_msg: "Helm archive checksum parsed successfully."
+
+        - name: Download Helm release archive
+          ansible.builtin.get_url:
+            url: "{{ helm_archive_url }}"
+            dest: "{{ helm_archive_path }}"
+            checksum: "{{ helm_archive_checksum }}"
+            mode: '0644'
+            owner: root
+            group: root
+
+        - name: Extract Helm release archive
+          ansible.builtin.unarchive:
+            src: "{{ helm_archive_path }}"
+            dest: "{{ helm_temp_dir }}"
+            remote_src: true
+            creates: "{{ helm_temp_dir }}/{{ helm_os }}-{{ helm_platform_arch }}/helm"
+            mode: '0755'
+            owner: root
+            group: root
+
+        - name: Install Helm binary to target path
+          ansible.builtin.copy:
+            src: "{{ helm_temp_dir }}/{{ helm_os }}-{{ helm_platform_arch }}/helm"
+            dest: "{{ helm_binary_path }}"
+            remote_src: true
+            owner: root
+            group: root
+            mode: '0755'
+
+      always:
+        - name: Remove temporary Helm extraction directory
+          ansible.builtin.file:
+            path: "{{ helm_temp_dir }}"
+            state: absent
+          when: not (helm_reset | bool)
+
+    - name: Validate Helm command is present and reports a version
+      block:
+        - name: Query installed Helm version
+          ansible.builtin.command:
+            cmd: "{{ helm_binary_path }} version --short"
+          register: helm_validated_version
+          changed_when: false
+
+        - name: Assert Helm is installed with the expected version
+          ansible.builtin.assert:
+            that:
+              - helm_validated_version.rc == 0
+              - helm_validated_version.stdout | trim | length > 0
+              - (helm_reset | bool) or ((helm_validated_version.stdout | trim) is search(helm_version))
+            fail_msg: >-
+              Helm validation failed. Expected version {{ helm_version }} when helm_reset=false,
+              but got rc={{ helm_validated_version.rc }}, stdout='{{ helm_validated_version.stdout | trim }}',
+              stderr='{{ helm_validated_version.stderr | trim }}'.
+            success_msg: "Helm is installed and reporting version {{ helm_validated_version.stdout | trim }}."
+      rescue:
+        - name: Emit Helm validation failure context
+          ansible.builtin.debug:
+            msg:
+              helm_binary_path: "{{ helm_binary_path }}"
+              helm_reset: "{{ helm_reset | bool }}"
+              current_probe:
+                rc: "{{ helm_current_version.rc | default('n/a') }}"
+                stdout: "{{ helm_current_version.stdout | default('') | trim }}"
+                stderr: "{{ helm_current_version.stderr | default('') | trim }}"
+              validation_probe:
+                rc: "{{ helm_validated_version.rc | default('n/a') }}"
+                stdout: "{{ helm_validated_version.stdout | default('') | trim }}"
+                stderr: "{{ helm_validated_version.stderr | default('') | trim }}"
+        - name: Fail because Helm is not in the requested end state
+          ansible.builtin.fail:
+            msg: "Helm installation validation failed; see debug output for details."
+
+    - name: Validate Helm can access the configured Kubernetes cluster context
+      when: not (helm_reset | bool)
+      block:
+        - name: Check kubectl current context availability
+          ansible.builtin.command:
+            cmd: kubectl config current-context
+          register: kubectl_current_context
+          changed_when: false
+
+        - name: List Helm releases across namespaces using active kubeconfig
+          ansible.builtin.command:
+            cmd: "{{ helm_binary_path }} list --all-namespaces"
+          register: helm_cluster_validation
+          changed_when: false
+
+        - name: Assert Helm can use the active Kubernetes cluster context
+          ansible.builtin.assert:
+            that:
+              - kubectl_current_context.rc == 0
+              - kubectl_current_context.stdout | trim | length > 0
+              - helm_cluster_validation.rc == 0
+            fail_msg: >-
+              Helm cluster validation failed. Expected kubectl to report an active context and Helm
+              to query releases through the configured kubeconfig, but got kubectl rc={{ kubectl_current_context.rc }},
+              context='{{ kubectl_current_context.stdout | trim }}', kubectl stderr='{{ kubectl_current_context.stderr | trim }}',
+              helm rc={{ helm_cluster_validation.rc }}, helm stdout='{{ helm_cluster_validation.stdout | trim }}',
+              helm stderr='{{ helm_cluster_validation.stderr | trim }}'.
+            success_msg: >-
+              Helm can access Kubernetes cluster context '{{ kubectl_current_context.stdout | trim }}'
+              using the active kubeconfig.
+      rescue:
+        - name: Emit Helm cluster validation failure context
+          ansible.builtin.debug:
+            msg:
+              helm_binary_path: "{{ helm_binary_path }}"
+              helm_reset: "{{ helm_reset | bool }}"
+              kubectl_current_context:
+                rc: "{{ kubectl_current_context.rc | default('n/a') }}"
+                stdout: "{{ kubectl_current_context.stdout | default('') | trim }}"
+                stderr: "{{ kubectl_current_context.stderr | default('') | trim }}"
+              helm_cluster_validation:
+                rc: "{{ helm_cluster_validation.rc | default('n/a') }}"
+                stdout: "{{ helm_cluster_validation.stdout | default('') | trim }}"
+                stderr: "{{ helm_cluster_validation.stderr | default('') | trim }}"
+        - name: Fail because Helm cannot access the configured Kubernetes cluster
+          ansible.builtin.fail:
+            msg: "Helm cluster validation failed; see debug output for details."
+
+    - name: Report final Helm state
+      ansible.builtin.debug:
+        msg:
+          helm:
+            host: "{{ inventory_hostname }}"
+            path: "{{ helm_binary_path }}"
+            version: "{{ helm_validated_version.stdout | default('absent') | trim }}"
+            reset_requested: "{{ helm_reset | bool }}"
+            architecture: "{{ helm_platform_arch }}"
+            install_method: "upstream_binary"
