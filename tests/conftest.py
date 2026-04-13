@@ -3,6 +3,7 @@ import shutil
 import socket
 import subprocess
 import time
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -120,6 +121,167 @@ class GitHttpMockServer:
             encoding="utf-8",
         )
         hook_path.chmod(0o755)
+
+
+@dataclass(frozen=True)
+class KwokCluster:
+    name: str
+    kubeconfig: Path
+
+    @property
+    def env(self) -> dict[str, str]:
+        env = os.environ.copy()
+        env["KUBECONFIG"] = str(self.kubeconfig)
+        env.setdefault("KWOK_KUBE_VERSION", "v1.33.0")
+        return env
+
+
+def _require_kwok_binary(name: str) -> str:
+    path = shutil.which(name)
+    if path is not None:
+        return path
+
+    message = f"{name} is required for kwok_integration tests"
+    if os.environ.get("CI"):
+        pytest.fail(message)
+    pytest.skip(message)
+
+
+def _run_kwok_command(command: list[str], *, env: dict[str, str]) -> None:
+    result = subprocess.run(
+        command,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env,
+    )
+    if result.returncode != 0:
+        output = "\n".join(part for part in (result.stderr.strip(), result.stdout.strip()) if part)
+        raise RuntimeError(f"KWOK integration command failed: {command}\n{output}")
+
+
+def _wait_for_kubernetes_api(cluster: KwokCluster, timeout_seconds: float = 60.0) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    last_output = ""
+
+    while time.monotonic() < deadline:
+        result = subprocess.run(
+            ["kubectl", "get", "--raw=/readyz"],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=cluster.env,
+        )
+        if result.returncode == 0 and result.stdout.strip() == "ok":
+            return
+        last_output = "\n".join(
+            part for part in (result.stderr.strip(), result.stdout.strip()) if part
+        )
+        time.sleep(0.5)
+
+    raise RuntimeError(f"Timed out waiting for KWOK Kubernetes API readiness:\n{last_output}")
+
+
+def _seed_kwok_node(cluster: KwokCluster) -> None:
+    node_manifest = cluster.kubeconfig.parent / "kwok-node.yaml"
+    node_manifest.write_text(
+        """apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    node.alpha.kubernetes.io/ttl: "0"
+    kwok.x-k8s.io/node: fake
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: kwok-node-0
+    kubernetes.io/os: linux
+    kubernetes.io/role: agent
+    node-role.kubernetes.io/agent: ""
+    type: kwok
+  name: kwok-node-0
+spec:
+  taints:
+    - effect: NoSchedule
+      key: kwok.x-k8s.io/node
+      value: fake
+status:
+  allocatable:
+    cpu: "32"
+    memory: 256Gi
+    pods: "110"
+  capacity:
+    cpu: "32"
+    memory: 256Gi
+    pods: "110"
+  nodeInfo:
+    architecture: amd64
+    bootID: ""
+    containerRuntimeVersion: ""
+    kernelVersion: ""
+    kubeProxyVersion: fake
+    kubeletVersion: fake
+    machineID: ""
+    operatingSystem: linux
+    osImage: ""
+    systemUUID: ""
+  phase: Running
+""",
+        encoding="utf-8",
+    )
+    _run_kwok_command(
+        ["kubectl", "apply", "--validate=false", "-f", str(node_manifest)],
+        env=cluster.env,
+    )
+    _run_kwok_command(
+        ["kubectl", "wait", "--for=condition=Ready", "node/kwok-node-0", "--timeout=60s"],
+        env=cluster.env,
+    )
+
+
+@pytest.fixture(scope="session")
+def kwok_cluster(tmp_path_factory: pytest.TempPathFactory) -> Iterator[KwokCluster]:
+    for binary in ("docker", "kwokctl", "kubectl", "helm"):
+        _require_kwok_binary(binary)
+
+    base_dir = tmp_path_factory.mktemp("kwok")
+    cluster = KwokCluster(
+        name=f"devops-agent-kwok-{uuid.uuid4().hex[:8]}",
+        kubeconfig=base_dir / "kubeconfig.yaml",
+    )
+    env = cluster.env
+
+    try:
+        _run_kwok_command(["docker", "info"], env=env)
+        _run_kwok_command(
+            [
+                "kwokctl",
+                "--name",
+                cluster.name,
+                "create",
+                "cluster",
+                "--runtime=docker",
+                "--kubeconfig",
+                str(cluster.kubeconfig),
+                "--wait=2m",
+            ],
+            env=env,
+        )
+        _wait_for_kubernetes_api(cluster)
+        _seed_kwok_node(cluster)
+        yield cluster
+    finally:
+        subprocess.run(
+            ["kwokctl", "--name", cluster.name, "delete", "cluster"],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
 
 
 @pytest.fixture
