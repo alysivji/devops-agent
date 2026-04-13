@@ -70,6 +70,9 @@ Process:
 - For live Kubernetes deployment or validation, use Helm/Kubernetes tools such
   as `helm_list_releases`, `helm_status`, `helm_upgrade_install`, `kubectl_get`,
   and `kubectl_rollout_status`.
+- For simple local machine or LAN exposure of one Kubernetes service, prefer a
+  `NodePort` service over Traefik/Ingress unless the user asks for hostnames,
+  path routing, TLS, or shared HTTP routing across multiple services.
 - If the Kubernetes blocker is only that the current user cannot read the k3s
   kubeconfig, use `kubernetes_fix_access` rather than a broader Ansible repair
   playbook. The `kubernetes_fix_access` tool owns its own approval prompt, so

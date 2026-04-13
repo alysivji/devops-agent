@@ -36,6 +36,8 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "Load and follow `kubernetes-troubleshooting` instead" in MAIN_SYSTEM_PROMPT
     assert "`helm_create_chart` or `helm_edit_chart`" in MAIN_SYSTEM_PROMPT
     assert "For live Kubernetes deployment" in MAIN_SYSTEM_PROMPT
+    assert "prefer a\n  `NodePort` service over Traefik/Ingress" in MAIN_SYSTEM_PROMPT
+    assert "hostnames,\n  path routing, TLS" in MAIN_SYSTEM_PROMPT
     assert "Repo-owned charts live under\n  `helm/charts`" in MAIN_SYSTEM_PROMPT
     assert "deploy the\n  chart path instead of a public chart reference" in MAIN_SYSTEM_PROMPT
     assert "call the tool instead of asking for approval in prose" in MAIN_SYSTEM_PROMPT
