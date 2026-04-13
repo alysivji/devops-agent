@@ -42,5 +42,34 @@ def test_build_agent_passes_session_manager(monkeypatch) -> None:
         "model": model,
         "system_prompt": "system",
         "tools": ["tool"],
+        "plugins": [],
         "session_manager": session_manager,
+    }
+
+
+def test_build_agent_passes_plugins(monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeAgent:
+        def __init__(self, **kwargs: Any) -> None:
+            captured.update(kwargs)
+
+    model = cast(OpenAIModel, object())
+    plugin = object()
+    monkeypatch.setattr(factory_module, "Agent", FakeAgent)
+
+    agent = build_agent(
+        model=model,
+        system_prompt="system",
+        tools=["tool"],
+        plugins=[cast(Any, plugin)],
+    )
+
+    assert isinstance(agent, FakeAgent)
+    assert captured == {
+        "model": model,
+        "system_prompt": "system",
+        "tools": ["tool"],
+        "plugins": [plugin],
+        "session_manager": None,
     }

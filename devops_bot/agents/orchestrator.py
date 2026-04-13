@@ -1,6 +1,8 @@
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any
 
+from strands import AgentSkills
 from strands.hooks.events import (
     AfterInvocationEvent,
     AfterToolCallEvent,
@@ -26,6 +28,7 @@ from ..tools.kubernetes import (
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
 ThinkingLevel = str
+SKILLS_DIR = Path("skills")
 
 MAIN_SYSTEM_PROMPT = """
 You orchestrate DevOps workflow tools for this repository.
@@ -163,6 +166,7 @@ class OrchestratorAgent:
                 kubectl_get,
                 kubectl_rollout_status,
             ],
+            plugins=[AgentSkills(skills=[SKILLS_DIR], strict=True)],
             session_manager=session_manager,
         )
         self.agent.add_hook(self._on_before_invocation, BeforeInvocationEvent)

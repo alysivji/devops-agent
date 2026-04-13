@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kubernetes Troubleshooting"
+  short_description: "Diagnose Kubernetes access and workload issues"
+  default_prompt: "Use $kubernetes-troubleshooting to diagnose why my Kubernetes or Helm workflow is failing."

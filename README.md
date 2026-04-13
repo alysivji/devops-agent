@@ -51,6 +51,10 @@ apply the workload to the cluster. Existing charts are edited through a
 chart-aware agent that can update values, templates, helpers, and related files
 together before running Helm lint.
 
+Kubernetes and Helm failure handling is also available as a Strands skill under
+`skills/kubernetes-troubleshooting/`; the orchestrator loads repo skills via the
+Strands `AgentSkills` plugin.
+
 The first generation tool supports these inventory targets:
 
 - `control` for local playbooks

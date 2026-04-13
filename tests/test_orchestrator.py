@@ -75,6 +75,9 @@ def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
         "kubectl_get",
         "kubectl_rollout_status",
     }.issubset(tool_names)
+    plugins = captured["build_agent"]["plugins"]
+    assert len(plugins) == 1
+    assert plugins[0].get_available_skills()[0].name == "kubernetes-troubleshooting"
 
 
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:
