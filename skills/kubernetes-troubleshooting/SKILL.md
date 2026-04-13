@@ -60,6 +60,12 @@ turning an application deploy into host repair.
 6. Report service access accurately.
    - Do not tell the user to connect to `0.0.0.0`; it is a bind address, not a
      usable client destination.
+   - For simple local machine/LAN exposure, prefer a `NodePort` service over
+     adding Traefik/Ingress unless the user asks for hostnames, path routing,
+     TLS, or shared HTTP routing across multiple services.
+   - Treat Traefik as an ingress-controller path: use it when the desired
+     access model is an `Ingress`, not just when a single service needs to be
+     reachable from the node.
    - For `LoadBalancer` services with external IP `<pending>` on local k3s,
      recommend a port-forward such as `kubectl port-forward svc/<name>
      8080:80`.
