@@ -4,6 +4,7 @@ import yaml
 from pydantic import BaseModel, Field, field_validator
 
 from ..factory import build_agent, build_model
+from ..tools.web import http_get, search_web
 
 SYSTEM_PROMPT = """
 You edit existing Ansible playbooks for this repository.
@@ -60,6 +61,16 @@ Editing Rules:
   slow-booting hosts, follow it with `ansible.builtin.wait_for_connection`,
   refresh facts with `ansible.builtin.setup`, and assert the boot id changed
   before post-reboot desired-state validation.
+
+Research Guidance:
+- When a repair involves module syntax, CLI flags, installation methods,
+  package names, chart values, or version-specific behavior, use `search_web`
+  to find current official documentation, then use `http_get` to read the
+  relevant page before editing.
+- Prefer official upstream/vendor documentation over examples, blog posts, or
+  forum answers.
+- Use `http_get` only for reading documentation.
+- Never use HTTP for mutating system state.
 """
 
 
@@ -82,6 +93,7 @@ class EditAnsiblePlaybookAgent:
         self.agent = build_agent(
             model=build_model(model_id="gpt-5.4"),
             system_prompt=SYSTEM_PROMPT,
+            tools=[search_web, http_get],
         )
 
     def run(

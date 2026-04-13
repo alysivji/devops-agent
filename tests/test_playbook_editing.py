@@ -1,8 +1,13 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from devops_bot.agents.playbook_editor import SYSTEM_PROMPT, EditedAnsiblePlaybook
+from devops_bot.agents.playbook_editor import (
+    SYSTEM_PROMPT,
+    EditAnsiblePlaybookAgent,
+    EditedAnsiblePlaybook,
+)
 from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
 from devops_bot.tools.playbooks import (
     EditAnsiblePlaybook,
@@ -207,3 +212,26 @@ def test_editor_prompt_preserves_restart_or_reload_after_service_config_changes(
     assert "`restarted`" in SYSTEM_PROMPT
     assert "registered file-change results" in SYSTEM_PROMPT
     assert "Use `started` only as the steady" in SYSTEM_PROMPT
+
+
+def test_editor_prompt_requires_official_docs_research() -> None:
+    assert "When a repair involves module syntax" in SYSTEM_PROMPT
+    assert "use `search_web`\n  to find current official documentation" in SYSTEM_PROMPT
+    assert "use `http_get` to read the\n  relevant page before editing" in SYSTEM_PROMPT
+    assert "Prefer official upstream/vendor documentation" in SYSTEM_PROMPT
+
+
+def test_editor_agent_has_web_research_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_build_agent(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr("devops_bot.agents.playbook_editor.build_model", lambda **_: object())
+    monkeypatch.setattr("devops_bot.agents.playbook_editor.build_agent", fake_build_agent)
+
+    EditAnsiblePlaybookAgent()
+
+    tool_names = [tool.tool_name for tool in captured["tools"]]
+    assert tool_names == ["search_web", "http_get"]
