@@ -13,7 +13,14 @@ from ..factory import build_agent, build_model
 from ..history import record_event
 from ..session import build_session_manager
 from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
-from ..tools.kubernetes import kubectl_describe, kubectl_get, kubectl_logs
+from ..tools.kubernetes import (
+    helm_list_releases,
+    helm_status,
+    helm_upgrade_install,
+    kubectl_describe,
+    kubectl_get,
+    kubectl_logs,
+)
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
 ThinkingLevel = str
@@ -29,6 +36,9 @@ Available tools:
 - `kubectl_get`: inspect Kubernetes resources through the local kubeconfig context
 - `kubectl_describe`: inspect Kubernetes object details through the local kubeconfig context
 - `kubectl_logs`: read Kubernetes pod logs through the local kubeconfig context
+- `helm_list_releases`: inspect Helm releases through the local kubeconfig context
+- `helm_status`: inspect Helm release details through the local kubeconfig context
+- `helm_upgrade_install`: deploy or update a Helm release after explicit approval
 
 Process:
 - Start by inspecting the current playbook registry when the request might map
@@ -36,6 +46,10 @@ Process:
 - For Kubernetes state inspection, prefer the read-only `kubectl_*` tools over
   creating a playbook. These tools use the current local kubeconfig context and
   must not be used for mutating cluster state.
+- For Kubernetes application deployment, prefer Helm when a chart exists. Use
+  `helm_list_releases` and `helm_status` for release inspection, then use
+  `helm_upgrade_install` for installs or upgrades. The Helm deployment tool owns
+  the approval prompt for mutating cluster state.
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts. If the requested state is already true, report
   success instead of continuing through prerequisite or repair automation.
@@ -115,6 +129,9 @@ class OrchestratorAgent:
                 kubectl_get,
                 kubectl_describe,
                 kubectl_logs,
+                helm_list_releases,
+                helm_status,
+                helm_upgrade_install,
             ],
             session_manager=session_manager,
         )

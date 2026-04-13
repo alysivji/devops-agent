@@ -10,7 +10,14 @@ from .git import (
     git_push,
     git_status,
 )
-from .kubernetes import kubectl_describe, kubectl_get, kubectl_logs
+from .kubernetes import (
+    helm_list_releases,
+    helm_status,
+    helm_upgrade_install,
+    kubectl_describe,
+    kubectl_get,
+    kubectl_logs,
+)
 from .web import http_get, search_web
 
 __all__ = [
@@ -20,6 +27,9 @@ __all__ = [
     "ansible_list_playbooks",
     "git_push",
     "git_status",
+    "helm_list_releases",
+    "helm_status",
+    "helm_upgrade_install",
     "kubectl_describe",
     "kubectl_get",
     "kubectl_logs",
