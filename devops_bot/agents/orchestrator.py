@@ -71,7 +71,8 @@ Process:
   and `kubectl_rollout_status`.
 - If the Kubernetes blocker is only that the current user cannot read the k3s
   kubeconfig, use `kubernetes_fix_access` rather than a broader Ansible repair
-  playbook.
+  playbook. The `kubernetes_fix_access` tool owns its own approval prompt, so
+  call the tool instead of asking for approval in prose.
 - If the Ansible registry already contains the right playbook, run it with `ansible_run_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next

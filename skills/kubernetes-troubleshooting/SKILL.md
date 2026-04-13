@@ -28,18 +28,19 @@ turning an application deploy into host repair.
      current user cannot read the k3s admin kubeconfig.
    - Prefer making a user-readable kubeconfig available to the agent user over
      running Helm as root.
-   - For the k3s kubeconfig case, use the `kubernetes_fix_access` tool only
-     after explicit user approval. It copies `/etc/rancher/k3s/k3s.yaml` to
-     `~/.kube/config` with `sudo install -D -m 600 -o <current-user> -g
-     <current-group>`, then verifies `kubectl cluster-info` and `helm list
-     --all-namespaces` with that kubeconfig.
+   - For the k3s kubeconfig case, call the `kubernetes_fix_access` tool. The
+     tool owns the explicit approval prompt before it writes anything. It copies
+     `/etc/rancher/k3s/k3s.yaml` to `~/.kube/config` with `sudo install -D -m
+     600 -o <current-user> -g <current-group>`, then verifies `kubectl
+     cluster-info` and `helm list --all-namespaces` with that kubeconfig.
 
 4. Report blockers clearly.
    - Name the failing command/tool and the exact error.
-   - If a registry playbook can repair the prerequisite, identify it as an
-     available repair path rather than running it automatically.
-   - For app deploy, chart edit, rollout, or status requests, stop at the
-     boundary and use direct wording:
+   - If the known k3s kubeconfig access repair applies, do not stop with a
+     natural-language next step. Call `kubernetes_fix_access`, then return to
+     the original Helm/Kubernetes task if the repair succeeds.
+   - If a broader registry playbook is the only available repair path, identify
+     it with direct wording:
      `Next step: repair cluster access with <playbook>, then retry <original task>.`
    - Do not end with soft phrasing like `If you want me to proceed...`.
 

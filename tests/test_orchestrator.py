@@ -37,6 +37,7 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "`helm_create_chart` or `helm_edit_chart`" in MAIN_SYSTEM_PROMPT
     assert "For live Kubernetes deployment" in MAIN_SYSTEM_PROMPT
     assert "Repo-owned charts live under\n  `helm/charts`" in MAIN_SYSTEM_PROMPT
+    assert "call the tool instead of asking for approval in prose" in MAIN_SYSTEM_PROMPT
 
 
 def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
@@ -76,13 +77,16 @@ def test_kubernetes_troubleshooting_skill_uses_direct_blocker_wording() -> None:
     assert "Next step: repair cluster access with <playbook>" in skill_text
     assert "Do not end with soft phrasing" in skill_text
     assert "If you want me to proceed" in skill_text
+    assert "do not stop with a\n     natural-language next step" in skill_text
+    assert "stop at the\n     boundary" not in skill_text
 
 
 def test_kubernetes_troubleshooting_skill_uses_kubeconfig_repair_tool() -> None:
     skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
 
     assert "kubernetes_fix_access" in skill_text
-    assert "sudo install -D -m 600" in skill_text
+    assert "tool owns the explicit approval prompt" in skill_text
+    assert "sudo install -D -m\n     600" in skill_text
 
 
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:
