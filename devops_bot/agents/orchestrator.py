@@ -67,9 +67,16 @@ Process:
   `helm_create_chart` or `helm_edit_chart`. Repo-owned charts live under
   `helm/charts`. If a repo-owned chart exists for the requested app, deploy the
   chart path instead of a public chart reference.
+- After creating, editing, or validating a repo-owned chart, update that chart's
+  README when the user-facing access path, service name, namespace, ports, or
+  manual validation steps change.
 - For live Kubernetes deployment or validation, use Helm/Kubernetes tools such
   as `helm_list_releases`, `helm_status`, `helm_upgrade_install`, `kubectl_get`,
   and `kubectl_rollout_status`.
+- Validate Kubernetes service availability with rollout/status, service, and
+  endpoint or pod readiness checks before reporting that a service is up. When
+  exposure is user-facing and network access is available, also check the actual
+  access URL.
 - For simple local machine or LAN exposure of one Kubernetes service, prefer a
   `NodePort` service over Traefik/Ingress unless the user asks for hostnames,
   path routing, TLS, or shared HTTP routing across multiple services.

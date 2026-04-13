@@ -35,7 +35,11 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "Do not call `ansible_create_playbook`" in MAIN_SYSTEM_PROMPT
     assert "Load and follow `kubernetes-troubleshooting` instead" in MAIN_SYSTEM_PROMPT
     assert "`helm_create_chart` or `helm_edit_chart`" in MAIN_SYSTEM_PROMPT
+    assert "update that chart's\n  README" in MAIN_SYSTEM_PROMPT
+    assert "service name, namespace, ports" in MAIN_SYSTEM_PROMPT
     assert "For live Kubernetes deployment" in MAIN_SYSTEM_PROMPT
+    assert "rollout/status, service, and\n  endpoint or pod readiness checks" in MAIN_SYSTEM_PROMPT
+    assert "also check the actual\n  access URL" in MAIN_SYSTEM_PROMPT
     assert "prefer a\n  `NodePort` service over Traefik/Ingress" in MAIN_SYSTEM_PROMPT
     assert "hostnames,\n  path routing, TLS" in MAIN_SYSTEM_PROMPT
     assert "Repo-owned charts live under\n  `helm/charts`" in MAIN_SYSTEM_PROMPT
