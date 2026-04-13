@@ -13,22 +13,37 @@ from ..factory import build_agent, build_model
 from ..history import record_event
 from ..session import build_session_manager
 from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
+from ..tools.kubernetes import (
+    helm_create_chart,
+    helm_list_releases,
+    helm_status,
+    helm_upgrade_install,
+    kubectl_get,
+    kubectl_rollout_status,
+)
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
 ThinkingLevel = str
 
 MAIN_SYSTEM_PROMPT = """
-You orchestrate Ansible playbook tools for this repository.
+You orchestrate DevOps workflow tools for this repository.
 
 Available tools:
 - `ansible_list_playbooks`: inspect the validated playbook registry
 - `ansible_run_playbook`: execute an existing registry playbook by path
 - `ansible_create_playbook`: generate and write a new playbook through the agent-backed tool
 - `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
+- `helm_create_chart`: create a repo-owned Helm chart scaffold with explicit approval
+- `helm_list_releases`: inspect Helm releases in the configured Kubernetes cluster
+- `helm_status`: inspect one Helm release in the configured Kubernetes cluster
+- `helm_upgrade_install`: install or upgrade a Helm release with explicit approval
+- `kubectl_get`: inspect Kubernetes resources through the configured cluster API
+- `kubectl_rollout_status`: validate Kubernetes workload rollout readiness
 
 Process:
-- Start by inspecting the current playbook registry when the request might map
-  to existing automation.
+- Start by routing the request to the right workflow boundary. Inspect the
+  current playbook registry when the request might map to existing Ansible
+  host/substrate automation.
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts. If the requested state is already true, report
   success instead of continuing through prerequisite or repair automation.
@@ -43,10 +58,24 @@ Process:
   or systemd services directly on the control or worker hosts. Use host-level
   package/service automation only when the user explicitly asks for a host
   service, node prerequisite, or local control-plane utility.
+- Route requests before choosing tools. Use Ansible for host/substrate state,
+  node-local durable service state, and cluster prerequisites. Use Helm or
+  Kubernetes tools for schedulable application workloads, especially ephemeral
+  workloads such as nginx. For stateful ambiguous requests such as postgres,
+  minio, or logging, ask whether the desired lifecycle is host-managed durable
+  infrastructure or cluster-managed workload before mutating anything.
+- For application workloads where the user asks to create, add, scaffold, or
+  store desired state in the repository, use `helm_create_chart` instead of
+  `ansible_create_playbook`. Use `helm_upgrade_install` for live cluster
+  install/upgrade requests.
 - If the registry already contains the right playbook, run it with `ansible_run_playbook`.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
   corrective action available through the tools, then try again.
+- If a Helm/Kubernetes workflow fails because cluster prerequisites are missing
+  or broken, such as kubeconfig or Helm installation, use the Ansible registry
+  and playbook tools for that prerequisite repair before retrying the original
+  Helm/Kubernetes validation or deployment.
 - For failed playbook executions, decide whether the next corrective action is
   editing the existing playbook, creating missing prerequisite automation, or
   running another suitable registry playbook. After the corrective action, retry
@@ -77,10 +106,11 @@ Process:
   tool can perform a necessary next step.
 - Do not edit inventory, Python code, docs, or arbitrary files while handling
   an Ansible playbook execution failure.
-- If the registry does not contain the needed deployment automation, create a
-  new playbook with `ansible_create_playbook`, but preserve the deployment
-  boundary above: generate Kubernetes/Helm automation for application workloads
-  instead of host package installation.
+- If the registry does not contain the needed Ansible host/substrate
+  automation, create a new playbook with `ansible_create_playbook`.
+- Do not call `ansible_create_playbook` for missing Helm/Kubernetes application
+  deployment automation. Use the Helm/Kubernetes tools directly, or ask for the
+  missing chart/release/namespace details when they are required.
 - After creating a new playbook, inspect the registry again and run the appropriate playbook.
 - For simple registry lookup questions, answer using the registry without
   creating or running anything.
@@ -113,6 +143,12 @@ class OrchestratorAgent:
                 ansible_run_playbook,
                 ansible_create_playbook,
                 ansible_edit_playbook,
+                helm_create_chart,
+                helm_list_releases,
+                helm_status,
+                helm_upgrade_install,
+                kubectl_get,
+                kubectl_rollout_status,
             ],
             session_manager=session_manager,
         )

@@ -31,8 +31,22 @@ See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectatio
 - Generate playbooks
 - Decide when to run them
 - React to failures
+- Route host/substrate work to Ansible and schedulable app workloads to Helm/Kubernetes
 
 ## Human-In-The-Loop Playbook Generation
+
+Ansible playbook generation is for host/substrate automation, node-local durable
+services, and cluster prerequisites such as k3s, kubeconfig, and Helm
+installation. Ephemeral or schedulable application workloads should use the
+Helm/Kubernetes tool path instead. For stateful services such as Postgres,
+MinIO, or logging, choose the workflow based on lifecycle and storage ownership:
+host-managed durable services belong in Ansible, while cluster-managed workloads
+belong in Helm/Kubernetes.
+
+For Kubernetes application desired state, prefer repo-owned Helm charts under
+`charts/` when the user asks to create or store deployable artifacts. Use live
+Helm install/upgrade only when the user asks to apply the workload to the
+cluster.
 
 The first generation tool supports these inventory targets:
 

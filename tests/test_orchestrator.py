@@ -26,11 +26,44 @@ def test_orchestrator_prompt_prefers_goal_state_validation() -> None:
 
 
 def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
+    assert "You orchestrate DevOps workflow tools" in MAIN_SYSTEM_PROMPT
+    assert "Start by routing the request" in MAIN_SYSTEM_PROMPT
     assert "application/service deployment requests" in MAIN_SYSTEM_PROMPT
     assert 'For prompts such as "set up nginx"' in MAIN_SYSTEM_PROMPT
     assert "prefer Helm or Kubernetes" in MAIN_SYSTEM_PROMPT
     assert "over installing packages" in MAIN_SYSTEM_PROMPT
-    assert "host package installation" in MAIN_SYSTEM_PROMPT
+    assert "needed Ansible host/substrate" in MAIN_SYSTEM_PROMPT
+    assert "Route requests before choosing tools" in MAIN_SYSTEM_PROMPT
+    assert "Do not call `ansible_create_playbook`" in MAIN_SYSTEM_PROMPT
+    assert "stateful ambiguous requests such as postgres" in MAIN_SYSTEM_PROMPT
+    assert "If a Helm/Kubernetes workflow fails" in MAIN_SYSTEM_PROMPT
+    assert "use `helm_create_chart`" in MAIN_SYSTEM_PROMPT
+    assert "Use `helm_upgrade_install` for live cluster" in MAIN_SYSTEM_PROMPT
+
+
+def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+    fake_agent = FakeAgent()
+
+    def fake_build_agent(**kwargs: Any) -> FakeAgent:
+        captured["build_agent"] = kwargs
+        return fake_agent
+
+    monkeypatch.setattr(orchestrator_module, "build_model", lambda model_id: object())
+    monkeypatch.setattr(orchestrator_module, "build_agent", fake_build_agent)
+
+    orchestrator = OrchestratorAgent()
+
+    tool_names = {tool.tool_name for tool in captured["build_agent"]["tools"]}
+    assert orchestrator.agent is fake_agent
+    assert {
+        "helm_create_chart",
+        "helm_list_releases",
+        "helm_status",
+        "helm_upgrade_install",
+        "kubectl_get",
+        "kubectl_rollout_status",
+    }.issubset(tool_names)
 
 
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:
