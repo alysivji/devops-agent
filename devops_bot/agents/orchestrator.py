@@ -13,22 +13,29 @@ from ..factory import build_agent, build_model
 from ..history import record_event
 from ..session import build_session_manager
 from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
+from ..tools.kubernetes import kubectl_describe, kubectl_get, kubectl_logs
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
 
 ThinkingLevel = str
 
 MAIN_SYSTEM_PROMPT = """
-You orchestrate Ansible playbook tools for this repository.
+You orchestrate Ansible playbook and Kubernetes inspection tools for this repository.
 
 Available tools:
 - `ansible_list_playbooks`: inspect the validated playbook registry
 - `ansible_run_playbook`: execute an existing registry playbook by path
 - `ansible_create_playbook`: generate and write a new playbook through the agent-backed tool
 - `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
+- `kubectl_get`: inspect Kubernetes resources through the local kubeconfig context
+- `kubectl_describe`: inspect Kubernetes object details through the local kubeconfig context
+- `kubectl_logs`: read Kubernetes pod logs through the local kubeconfig context
 
 Process:
 - Start by inspecting the current playbook registry when the request might map
   to existing automation.
+- For Kubernetes state inspection, prefer the read-only `kubectl_*` tools over
+  creating a playbook. These tools use the current local kubeconfig context and
+  must not be used for mutating cluster state.
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts. If the requested state is already true, report
   success instead of continuing through prerequisite or repair automation.
@@ -105,6 +112,9 @@ class OrchestratorAgent:
                 ansible_run_playbook,
                 ansible_create_playbook,
                 ansible_edit_playbook,
+                kubectl_get,
+                kubectl_describe,
+                kubectl_logs,
             ],
             session_manager=session_manager,
         )

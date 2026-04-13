@@ -25,6 +25,13 @@ def test_orchestrator_prompt_prefers_goal_state_validation() -> None:
     assert "cluster/API health" in MAIN_SYSTEM_PROMPT
 
 
+def test_orchestrator_prompt_includes_kubectl_inspection_tools() -> None:
+    assert "kubectl_get" in MAIN_SYSTEM_PROMPT
+    assert "kubectl_describe" in MAIN_SYSTEM_PROMPT
+    assert "kubectl_logs" in MAIN_SYSTEM_PROMPT
+    assert "must not be used for mutating cluster state" in MAIN_SYSTEM_PROMPT
+
+
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:
     captured: dict[str, Any] = {}
     fake_session_manager = object()
@@ -47,3 +54,5 @@ def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None
     assert orchestrator.agent is fake_agent
     assert captured["session_id"] == "run-123"
     assert captured["build_agent"]["session_manager"] is fake_session_manager
+    tool_names = {tool.__name__ for tool in captured["build_agent"]["tools"]}
+    assert {"kubectl_get", "kubectl_describe", "kubectl_logs"}.issubset(tool_names)
