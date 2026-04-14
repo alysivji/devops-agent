@@ -1,10 +1,15 @@
+from pathlib import Path
+
 import yaml
 from pydantic import BaseModel, Field, field_validator
+from strands import AgentSkills
 
 from ..factory import build_agent, build_model
 from ..history import record_event
 from ..tools.ansible import ansible_list_inventory_groups, check_ansible_playbook_syntax
 from ..tools.web import http_get, search_web
+
+SKILLS_DIR = Path("skills")
 
 SYSTEM_PROMPT = """
 ## Execution Contract
@@ -19,6 +24,9 @@ You generate Ansible playbooks that are safe, idempotent, and verifiable.
 ## Operational Guarantees
 - Prefer idempotent tasks and Ansible modules over shell commands.
 - Avoid shell unless no suitable module exists.
+- Do not add approval gates, approval variables, or approval assertions such as
+  `*_approve`; playbook execution approval is owned by the validated registry
+  metadata and `ansible_run_playbook` tool prompt.
 - Treat application/service deployment requests as Kubernetes workloads by
   default. For prompts such as "set up nginx", deploy to the cluster with Helm
   or Kubernetes resources and validate the release/workload through the
@@ -34,12 +42,23 @@ You generate Ansible playbooks that are safe, idempotent, and verifiable.
   with explicit `helm upgrade --install`, namespace creation flags, bounded
   waits/timeouts, and follow-up `kubectl`/`helm` validation. Avoid free-form
   shell pipelines for Helm/Kubernetes operations.
+- When an Ansible playbook configures or validates the k3s cluster with
+  `kubectl` or Helm, set an explicit kubeconfig instead of relying on the
+  subprocess environment: use `kubectl --kubeconfig {{ k3s_admin_kubeconfig }}
+  ...` for kubectl and either `helm --kubeconfig {{ k3s_admin_kubeconfig }}
+  ...` or `KUBECONFIG: "{{ k3s_admin_kubeconfig }}"` for Helm. Use
+  `become: true` when the kubeconfig is `/etc/rancher/k3s/k3s.yaml`.
+- For playbooks that use k3s, kubectl, Helm, kubeconfig files, or sudo/become,
+  load and follow the `playbook-configuration` skill before drafting YAML.
 - Ensure tasks are safe to re-run without causing unintended changes.
 - If a playbook needs a sensitive value such as a password, token, key, or
   credential, read it from a runtime environment variable with
   `lookup('ansible.builtin.env', 'NAME', default='')`. Do not hardcode real
   secrets, secret-looking sample values, or generated passwords in playbook
   vars, tasks, comments, or debug output.
+- Use literal environment variable names in `lookup('ansible.builtin.env', ...)`
+  calls whenever possible so follow-up tooling can document them in
+  `.env.example`.
 - For every required sensitive environment variable, add an early
   `ansible.builtin.assert` before remote-changing tasks. The assertion must
   check that the value is present and meets any minimum safety requirements, and
@@ -57,6 +76,17 @@ You generate Ansible playbooks that are safe, idempotent, and verifiable.
   not every intermediate implementation detail.
 - Prefer cheap, goal-oriented validation before remediation. If the requested
   end state is already true, skip disruptive or unnecessary mutation.
+- For Prometheus Kubernetes scraping, validate target discovery through the
+  Prometheus HTTP API, such as `/api/v1/targets?state=any` or
+  `/api/v1/targets?state=active`, and assert that Kubernetes scrape jobs have
+  discovered or active targets. Do not validate this end state only by checking
+  that `job_name: kubernetes-*` appears in the config file.
+- For host-level Prometheus scraping a Kubernetes cluster, do not assume
+  in-cluster service account paths like
+  `/var/run/secrets/kubernetes.io/serviceaccount/token` exist or are valid.
+  Make Kubernetes API credentials explicitly readable by the Prometheus service
+  user through safe files under the Prometheus configuration directory, and
+  validate that service discovery can use them.
 - For clustered services, use the cluster/API-level health signal as the primary
   success check when one exists. For example, a k3s install should verify that
   all expected nodes report `Ready`; service restarts, boot flags, package
@@ -138,6 +168,7 @@ class GeneratePlaybookAgent:
             model=build_model(model_id="gpt-5.4"),
             system_prompt=SYSTEM_PROMPT,
             tools=[ansible_list_inventory_groups, search_web, http_get],
+            plugins=[AgentSkills(skills=[SKILLS_DIR], strict=True)],
         )
 
     def run(self, prompt: str) -> GeneratedPlaybookYaml:

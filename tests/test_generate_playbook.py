@@ -1,11 +1,16 @@
 import shutil
 from contextlib import chdir
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
-from devops_bot.agents.playbook_generator import SYSTEM_PROMPT, GeneratedPlaybookYaml
+from devops_bot.agents.playbook_generator import (
+    SYSTEM_PROMPT,
+    GeneratedPlaybookYaml,
+    GeneratePlaybookAgent,
+)
 
 
 class TestGeneratedPlaybookYaml:
@@ -78,10 +83,33 @@ def test_generator_prompt_requires_goal_oriented_validation() -> None:
     assert "diagnostics only" in SYSTEM_PROMPT
 
 
+def test_generator_prompt_requires_prometheus_target_discovery_validation() -> None:
+    assert "For Prometheus Kubernetes scraping" in SYSTEM_PROMPT
+    assert "/api/v1/targets?state=any" in SYSTEM_PROMPT
+    assert "/api/v1/targets?state=active" in SYSTEM_PROMPT
+    assert "Do not validate this end state only by checking" in SYSTEM_PROMPT
+    assert "`job_name: kubernetes-*`" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_avoids_in_cluster_prometheus_auth_for_host_service() -> None:
+    assert "For host-level Prometheus scraping a Kubernetes cluster" in SYSTEM_PROMPT
+    assert "/var/run/secrets/kubernetes.io/serviceaccount/token" in SYSTEM_PROMPT
+    assert "readable by the Prometheus service\n  user" in SYSTEM_PROMPT
+    assert "validate that service discovery can use them" in SYSTEM_PROMPT
+
+
+def test_generator_prompt_avoids_internal_approval_gates() -> None:
+    assert "Do not add approval gates" in SYSTEM_PROMPT
+    assert "`*_approve`" in SYSTEM_PROMPT
+    assert "`ansible_run_playbook` tool prompt" in SYSTEM_PROMPT
+
+
 def test_generator_prompt_requires_env_backed_sensitive_values() -> None:
     assert "sensitive value" in SYSTEM_PROMPT
     assert "lookup('ansible.builtin.env', 'NAME', default='')" in SYSTEM_PROMPT
     assert "Do not hardcode real" in SYSTEM_PROMPT
+    assert "literal environment variable names" in SYSTEM_PROMPT
+    assert "`.env.example`" in SYSTEM_PROMPT
     assert "ansible.builtin.assert" in SYSTEM_PROMPT
     assert "untracked `.env` file" in SYSTEM_PROMPT
 
@@ -102,6 +130,14 @@ def test_generator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "helm upgrade --install" in SYSTEM_PROMPT
 
 
+def test_generator_prompt_loads_playbook_configuration_for_k3s_commands() -> None:
+    assert "load and follow the `playbook-configuration` skill" in SYSTEM_PROMPT
+    assert "k3s, kubectl, Helm, kubeconfig files, or sudo/become" in SYSTEM_PROMPT
+    assert "kubectl --kubeconfig {{ k3s_admin_kubeconfig }}" in SYSTEM_PROMPT
+    assert "helm --kubeconfig {{ k3s_admin_kubeconfig }}" in SYSTEM_PROMPT
+    assert "Use\n  `become: true`" in SYSTEM_PROMPT
+
+
 def test_generator_prompt_requires_official_docs_research() -> None:
     assert "Before generating install or configuration automation" in SYSTEM_PROMPT
     assert "use `search_web` to find current\n  official documentation" in SYSTEM_PROMPT
@@ -116,3 +152,21 @@ def test_generator_prompt_routes_grafana_metrics_to_control_node() -> None:
     assert "Grafana" in SYSTEM_PROMPT
     assert "Kubernetes metrics to go" in SYSTEM_PROMPT
     assert "Only deploy those services into Kubernetes" in SYSTEM_PROMPT
+
+
+def test_generator_agent_exposes_playbook_configuration_skill(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_build_agent(**kwargs: Any) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr("devops_bot.agents.playbook_generator.build_model", lambda **_: object())
+    monkeypatch.setattr("devops_bot.agents.playbook_generator.build_agent", fake_build_agent)
+
+    GeneratePlaybookAgent()
+
+    skill_names = {skill.name for skill in captured["plugins"][0].get_available_skills()}
+    assert "playbook-configuration" in skill_names

@@ -128,6 +128,31 @@ def _kubernetes_command_env() -> dict[str, str]:
     return env
 
 
+def _configured_kubeconfig() -> str | None:
+    kubeconfig = DEFAULT_KUBECONFIG.expanduser()
+    if kubeconfig.is_file():
+        return str(kubeconfig)
+    return os.environ.get("KUBECONFIG") or None
+
+
+def _kubectl_command(*args: str) -> list[str]:
+    command = ["kubectl"]
+    kubeconfig = _configured_kubeconfig()
+    if kubeconfig:
+        command.extend(["--kubeconfig", kubeconfig])
+    command.extend(args)
+    return command
+
+
+def _helm_cluster_command(*args: str) -> list[str]:
+    command = ["helm"]
+    kubeconfig = _configured_kubeconfig()
+    if kubeconfig:
+        command.extend(["--kubeconfig", kubeconfig])
+    command.extend(args)
+    return command
+
+
 def _tail_lines(output: str, line_count: int) -> str:
     lines = [line for line in output.strip().splitlines() if line.strip()]
     return "\n".join(lines[-line_count:])
@@ -544,7 +569,7 @@ def kubernetes_fix_access(
 @tool
 def helm_list_releases(namespace: str | None = None, all_namespaces: bool = True) -> str:
     """List Helm releases from the configured Kubernetes cluster."""
-    command = ["helm", "list", "-o", "json"]
+    command = _helm_cluster_command("list", "-o", "json")
     if all_namespaces:
         command.append("--all-namespaces")
     elif namespace:
@@ -564,7 +589,7 @@ def helm_list_releases(namespace: str | None = None, all_namespaces: bool = True
 @tool
 def helm_status(release: str, namespace: str = "default") -> str:
     """Return Helm status for a release in the configured Kubernetes cluster."""
-    command = ["helm", "status", release, "--namespace", namespace, "-o", "json"]
+    command = _helm_cluster_command("status", release, "--namespace", namespace, "-o", "json")
     return _run_command(
         command,
         event_kind="helm_status",
@@ -594,8 +619,7 @@ def helm_upgrade_install(
         timeout: Helm wait timeout, such as `5m`.
         create_namespace: Whether Helm should create the namespace if needed.
     """
-    command = [
-        "helm",
+    command = _helm_cluster_command(
         "upgrade",
         "--install",
         release,
@@ -605,7 +629,7 @@ def helm_upgrade_install(
         "--wait",
         "--timeout",
         timeout,
-    ]
+    )
     if create_namespace:
         command.append("--create-namespace")
     if repo_url:
@@ -663,7 +687,7 @@ def helm_upgrade_install(
 @tool
 def kubectl_get(resource: str, namespace: str | None = None) -> str:
     """Get Kubernetes resources from the configured cluster."""
-    command = ["kubectl", "get", resource, "-o", "wide"]
+    command = _kubectl_command("get", resource, "-o", "wide")
     if namespace:
         command.extend(["--namespace", namespace])
 
@@ -682,15 +706,14 @@ def kubectl_rollout_status(
     timeout: str = "120s",
 ) -> str:
     """Validate rollout status for a Kubernetes workload resource."""
-    command = [
-        "kubectl",
+    command = _kubectl_command(
         "rollout",
         "status",
         resource,
         "--namespace",
         namespace,
         f"--timeout={timeout}",
-    ]
+    )
     return _run_command(
         command,
         event_kind="kubectl_rollout_status",

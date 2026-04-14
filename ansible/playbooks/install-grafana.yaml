@@ -18,11 +18,61 @@
     grafana_reset: false
     grafana_default_port: 3000
     grafana_service_name: grafana-server
-    grafana_repo_url_map:
-      Debian: "https://packages.grafana.com/oss/deb"
-      RedHat: "https://packages.grafana.com/oss/rpm"
-    grafana_repo_gpgkey: "https://packages.grafana.com/gpg.key"
   tasks:
+    - name: Document required Grafana environment variables for operators
+      ansible.builtin.debug:
+        msg:
+          - "Set required environment variables in your untracked .env file before running this playbook."
+          - "Required: GRAFANA_ADMIN_USER, GRAFANA_ADMIN_PASSWORD"
+          - "Optional: GRAFANA_HTTP_PORT, GRAFANA_HTTP_ADDR, GRAFANA_REPO_URL_DEBIAN, GRAFANA_REPO_URL_REDHAT, GRAFANA_REPO_GPGKEY"
+      changed_when: false
+
+    - name: Collect runtime-configurable Grafana settings from environment variables
+      ansible.builtin.set_fact:
+        grafana_admin_user: "{{ lookup('ansible.builtin.env', 'GRAFANA_ADMIN_USER', default='') | trim }}"
+        grafana_admin_password: "{{ lookup('ansible.builtin.env', 'GRAFANA_ADMIN_PASSWORD', default='') }}"
+        grafana_http_port: "{{ lookup('ansible.builtin.env', 'GRAFANA_HTTP_PORT', default=(grafana_default_port | string)) | trim }}"
+        grafana_http_addr: "{{ lookup('ansible.builtin.env', 'GRAFANA_HTTP_ADDR', default='127.0.0.1') | trim }}"
+        grafana_repo_url_map:
+          Debian: "{{ lookup('ansible.builtin.env', 'GRAFANA_REPO_URL_DEBIAN', default='https://packages.grafana.com/oss/deb') | trim }}"
+          RedHat: "{{ lookup('ansible.builtin.env', 'GRAFANA_REPO_URL_REDHAT', default='https://packages.grafana.com/oss/rpm') | trim }}"
+        grafana_repo_gpgkey: "{{ lookup('ansible.builtin.env', 'GRAFANA_REPO_GPGKEY', default='https://packages.grafana.com/gpg.key') | trim }}"
+        grafana_required_env_vars_missing: >-
+          {{
+            [
+              'GRAFANA_ADMIN_USER',
+              'GRAFANA_ADMIN_PASSWORD'
+            ]
+            | reject('in',
+              {
+                'GRAFANA_ADMIN_USER': lookup('ansible.builtin.env', 'GRAFANA_ADMIN_USER', default='') | trim,
+                'GRAFANA_ADMIN_PASSWORD': lookup('ansible.builtin.env', 'GRAFANA_ADMIN_PASSWORD', default='')
+              }
+              | dict2items
+              | selectattr('value', 'truthy')
+              | map(attribute='key')
+              | list
+            )
+            | list
+          }}
+
+    - name: Fail early when required Grafana environment variables are not set
+      ansible.builtin.assert:
+        that:
+          - grafana_required_env_vars_missing | length == 0
+          - grafana_admin_password | length >= 8
+          - grafana_http_port is match('^[0-9]+$')
+          - (grafana_http_port | int) > 0
+          - (grafana_http_port | int) < 65536
+          - grafana_http_addr | length > 0
+          - grafana_repo_url_map['Debian'] | length > 0
+          - grafana_repo_url_map['RedHat'] | length > 0
+          - grafana_repo_gpgkey | length > 0
+        fail_msg: >-
+          Missing or invalid Grafana environment configuration. Set these environment variables in your untracked .env file before running: {{ grafana_required_env_vars_missing | join(', ') }}{% if grafana_required_env_vars_missing | length == 0 %} Required variables: GRAFANA_ADMIN_USER and GRAFANA_ADMIN_PASSWORD. GRAFANA_ADMIN_PASSWORD must be at least 8 characters. Optional variables: GRAFANA_HTTP_PORT, GRAFANA_HTTP_ADDR, GRAFANA_REPO_URL_DEBIAN, GRAFANA_REPO_URL_REDHAT, GRAFANA_REPO_GPGKEY.{% endif %}
+        success_msg: >-
+          Grafana environment configuration loaded successfully from environment variables. Required variables present: GRAFANA_ADMIN_USER, GRAFANA_ADMIN_PASSWORD.
+
     - name: Gather currently installed package facts
       ansible.builtin.package_facts:
         manager: auto
@@ -30,10 +80,33 @@
     - name: Check current Grafana service state when systemd service exists
       ansible.builtin.service_facts:
 
-    - name: Check whether Grafana is already listening on the default port
+    - name: Check current Grafana configuration file
+      ansible.builtin.stat:
+        path: /etc/grafana/grafana.ini
+      register: grafana_ini_stat
+
+    - name: Read current Grafana configuration file when present
+      ansible.builtin.slurp:
+        path: /etc/grafana/grafana.ini
+      register: grafana_ini_slurp
+      when: grafana_ini_stat.stat.exists | default(false)
+
+    - name: Determine whether current Grafana configuration matches requested settings
+      ansible.builtin.set_fact:
+        grafana_ini_content: "{{ (grafana_ini_slurp.content | default('') | b64decode) }}"
+        grafana_config_already_desired: >-
+          {{
+            ((grafana_ini_slurp.content | default('') | b64decode)
+             is search('(?m)^http_addr=' ~ (grafana_http_addr | regex_escape) ~ '$'))
+            and
+            ((grafana_ini_slurp.content | default('') | b64decode)
+             is search('(?m)^http_port=' ~ (grafana_http_port | regex_escape) ~ '$'))
+          }}
+
+    - name: Check whether Grafana is already listening on the configured port
       ansible.builtin.wait_for:
         host: "127.0.0.1"
-        port: "{{ grafana_default_port }}"
+        port: "{{ grafana_http_port | int }}"
         timeout: 1
       register: grafana_port_precheck
       ignore_errors: true
@@ -41,7 +114,7 @@
 
     - name: Query Grafana HTTP health endpoint when port is already listening
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ grafana_default_port }}/api/health"
+        url: "http://127.0.0.1:{{ grafana_http_port | int }}/api/health"
         method: GET
         return_content: true
         status_code: 200
@@ -59,7 +132,8 @@
             ansible_facts.services[grafana_service_name + '.service'].status == 'enabled' and
             grafana_port_precheck is succeeded and
             (grafana_health_precheck.status | default(0)) == 200 and
-            (grafana_health_precheck.json.database | default('')) == 'ok'
+            (grafana_health_precheck.json.database | default('')) == 'ok' and
+            (grafana_config_already_desired | default(false) | bool)
           }}
 
     - name: Reset Grafana packages and repository configuration when explicitly requested
@@ -78,40 +152,40 @@
             state: absent
             purge: true
             update_cache: true
-          when: ansible_os_family == 'Debian'
+          when: ansible_facts.os_family == 'Debian'
 
         - name: Remove Grafana apt repository during reset
           ansible.builtin.apt_repository:
             repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] {{ grafana_repo_url_map['Debian'] }} stable main"
             state: absent
             filename: grafana
-          when: ansible_os_family == 'Debian'
+          when: ansible_facts.os_family == 'Debian'
 
         - name: Remove Grafana apt keyring during reset
           ansible.builtin.file:
             path: /etc/apt/keyrings/grafana.gpg
             state: absent
-          when: ansible_os_family == 'Debian'
+          when: ansible_facts.os_family == 'Debian'
 
         - name: Remove Grafana package on RedHat-family systems during reset
           ansible.builtin.dnf:
             name: grafana
             state: absent
-          when: ansible_os_family == 'RedHat'
+          when: ansible_facts.os_family == 'RedHat'
 
         - name: Remove Grafana yum repository during reset
           ansible.builtin.yum_repository:
             name: grafana
             state: absent
-          when: ansible_os_family == 'RedHat'
+          when: ansible_facts.os_family == 'RedHat'
 
     - name: Ensure supported operating system family for host-level Grafana installation
       ansible.builtin.assert:
         that:
-          - ansible_os_family in ['Debian', 'RedHat']
+          - ansible_facts.os_family in ['Debian', 'RedHat']
         fail_msg: >-
-          Unsupported OS family {{ ansible_os_family }}. This playbook supports Debian and RedHat families for host-level Grafana installation.
-        success_msg: "Supported OS family detected: {{ ansible_os_family }}"
+          Unsupported OS family {{ ansible_facts.os_family }}. This playbook supports Debian and RedHat families for host-level Grafana installation.
+        success_msg: "Supported OS family detected: {{ ansible_facts.os_family }}"
 
     - name: Install and configure Grafana when end state is not already satisfied
       when: not grafana_already_healthy | bool
@@ -121,14 +195,14 @@
             path: /etc/apt/keyrings
             state: directory
             mode: '0755'
-          when: ansible_os_family == 'Debian'
+          when: ansible_facts.os_family == 'Debian'
 
         - name: Download Grafana repository GPG key for Debian-family systems
           ansible.builtin.get_url:
             url: "{{ grafana_repo_gpgkey }}"
             dest: /etc/apt/keyrings/grafana.gpg
             mode: '0644'
-          when: ansible_os_family == 'Debian'
+          when: ansible_facts.os_family == 'Debian'
 
         - name: Ensure Grafana apt repository is configured on Debian-family systems
           ansible.builtin.apt_repository:
@@ -136,14 +210,14 @@
             state: present
             filename: grafana
             update_cache: true
-          when: ansible_os_family == 'Debian'
+          when: ansible_facts.os_family == 'Debian'
 
         - name: Ensure Grafana package is installed on Debian-family systems
           ansible.builtin.apt:
             name: grafana
             state: present
             update_cache: true
-          when: ansible_os_family == 'Debian'
+          when: ansible_facts.os_family == 'Debian'
 
         - name: Ensure Grafana yum repository is configured on RedHat-family systems
           ansible.builtin.yum_repository:
@@ -154,37 +228,65 @@
             gpgkey: "{{ grafana_repo_gpgkey }}"
             enabled: true
             state: present
-          when: ansible_os_family == 'RedHat'
+          when: ansible_facts.os_family == 'RedHat'
 
         - name: Ensure Grafana package is installed on RedHat-family systems
           ansible.builtin.dnf:
             name: grafana
             state: present
             update_cache: true
-          when: ansible_os_family == 'RedHat'
+          when: ansible_facts.os_family == 'RedHat'
+
+        - name: Configure Grafana admin credentials and HTTP listen settings
+          ansible.builtin.ini_file:
+            path: /etc/grafana/grafana.ini
+            section: "{{ item.section }}"
+            option: "{{ item.option }}"
+            value: "{{ item.value }}"
+            no_extra_spaces: true
+            mode: '0644'
+          loop:
+            - section: security
+              option: admin_user
+              value: "{{ grafana_admin_user }}"
+            - section: security
+              option: admin_password
+              value: "{{ grafana_admin_password }}"
+            - section: server
+              option: http_port
+              value: "{{ grafana_http_port | string }}"
+            - section: server
+              option: http_addr
+              value: "{{ grafana_http_addr }}"
+          register: grafana_config_result
+
+        - name: Reload systemd daemon when Grafana configuration may have changed
+          ansible.builtin.systemd:
+            daemon_reload: true
+          when: grafana_config_result is changed
 
         - name: Ensure Grafana server service is enabled and running
           ansible.builtin.systemd:
             name: "{{ grafana_service_name }}"
             enabled: true
-            state: started
+            state: "{{ 'restarted' if (grafana_config_result is changed) else 'started' }}"
 
     - name: Validate Grafana service, listener, and health endpoint
       block:
         - name: Refresh service facts after Grafana installation or startup
           ansible.builtin.service_facts:
 
-        - name: Wait for Grafana to listen on the default TCP port
+        - name: Wait for Grafana to listen on the configured TCP port
           ansible.builtin.wait_for:
             host: "127.0.0.1"
-            port: "{{ grafana_default_port }}"
+            port: "{{ grafana_http_port | int }}"
             timeout: 120
           register: grafana_port_wait
           changed_when: false
 
         - name: Query Grafana health endpoint until it reports healthy database status
           ansible.builtin.uri:
-            url: "http://127.0.0.1:{{ grafana_default_port }}/api/health"
+            url: "http://127.0.0.1:{{ grafana_http_port | int }}/api/health"
             method: GET
             return_content: true
             status_code: 200
@@ -212,9 +314,9 @@
               - grafana_health_check.status == 200
               - (grafana_health_check.json.database | default('')) == 'ok'
             fail_msg: >-
-              Grafana is not in the requested state. Expected enabled/running service, listening on port {{ grafana_default_port }}, and healthy HTTP endpoint at /api/health.
+              Grafana is not in the requested state. Expected enabled/running service, listening on port {{ grafana_http_port | int }}, and healthy HTTP endpoint at /api/health.
             success_msg: >-
-              Grafana is enabled, running, listening on port {{ grafana_default_port }}, and reports healthy status.
+              Grafana is enabled, running, listening on port {{ grafana_http_port | int }}, and reports healthy status.
       rescue:
         - name: Collect Grafana journal logs after validation failure
           ansible.builtin.command:
@@ -245,7 +347,7 @@
 
     - name: Compute Grafana access URL
       ansible.builtin.set_fact:
-        grafana_access_url: "http://{{ ansible_default_ipv4.address | default(ansible_host | default(inventory_hostname)) }}:{{ grafana_default_port }}"
+        grafana_access_url: "http://{{ ansible_facts.default_ipv4.address | default(ansible_host | default(inventory_hostname)) }}:{{ grafana_http_port | int }}"
 
     - name: Emit structured debug output summarizing final Grafana state
       ansible.builtin.debug:
@@ -253,7 +355,7 @@
           service_name: "{{ grafana_service_name }}"
           service_state: "{{ ansible_facts.services[grafana_service_name + '.service'].state | default('unknown') }}"
           service_status: "{{ ansible_facts.services[grafana_service_name + '.service'].status | default('unknown') }}"
-          listen_port: "{{ grafana_default_port }}"
+          listen_port: "{{ grafana_http_port | int }}"
           health_status: "{{ grafana_health_check.json | default({}) }}"
           access_url: "{{ grafana_access_url }}"
           reset_requested: "{{ grafana_reset | bool }}"

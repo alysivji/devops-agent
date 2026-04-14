@@ -1,0 +1,144 @@
+# name: uninstall_grafana
+# description: Uninstall host-level Grafana from the control node, stop and disable its service, remove package repository configuration, and validate that Grafana is no longer installed.
+# target: control
+# requires_approval: true
+# tags:
+#   - grafana
+#   - uninstall
+#   - service
+#   - monitoring
+
+---
+- name: Uninstall host-level Grafana from the control node
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    grafana_service_name: grafana-server
+    grafana_package_name: grafana
+    grafana_http_port: "{{ lookup('ansible.builtin.env', 'GRAFANA_HTTP_PORT', default='3000') | trim }}"
+    grafana_repo_url_map:
+      Debian: "{{ lookup('ansible.builtin.env', 'GRAFANA_REPO_URL_DEBIAN', default='https://packages.grafana.com/oss/deb') | trim }}"
+      RedHat: "{{ lookup('ansible.builtin.env', 'GRAFANA_REPO_URL_REDHAT', default='https://packages.grafana.com/oss/rpm') | trim }}"
+    grafana_purge_data: false
+    grafana_managed_datasource_file: /etc/grafana/provisioning/datasources/ansible-prometheus.yaml
+    grafana_data_paths:
+      - /etc/grafana
+      - /var/lib/grafana
+      - /var/log/grafana
+  tasks:
+    - name: Validate Grafana uninstall settings
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.os_family in ['Debian', 'RedHat']
+          - grafana_http_port is match('^[0-9]+$')
+          - (grafana_http_port | int) > 0
+          - (grafana_http_port | int) < 65536
+          - grafana_repo_url_map['Debian'] | length > 0
+          - grafana_repo_url_map['RedHat'] | length > 0
+        fail_msg: >-
+          Unsupported or invalid Grafana uninstall settings. This playbook supports
+          Debian and RedHat families, and GRAFANA_HTTP_PORT must be a valid TCP port.
+
+    - name: Gather service facts before Grafana uninstall
+      ansible.builtin.service_facts:
+
+    - name: Stop and disable Grafana service when present
+      ansible.builtin.systemd:
+        name: "{{ grafana_service_name }}"
+        enabled: false
+        state: stopped
+      failed_when: false
+      when: (grafana_service_name + '.service') in ansible_facts.services
+
+    - name: Remove Grafana package on Debian-family systems
+      ansible.builtin.apt:
+        name: "{{ grafana_package_name }}"
+        state: absent
+        purge: true
+        update_cache: true
+      when: ansible_facts.os_family == 'Debian'
+
+    - name: Remove Grafana apt repository on Debian-family systems
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] {{ grafana_repo_url_map['Debian'] }} stable main"
+        state: absent
+        filename: grafana
+        update_cache: true
+      when: ansible_facts.os_family == 'Debian'
+
+    - name: Remove Grafana apt keyring on Debian-family systems
+      ansible.builtin.file:
+        path: /etc/apt/keyrings/grafana.gpg
+        state: absent
+      when: ansible_facts.os_family == 'Debian'
+
+    - name: Remove Grafana package on RedHat-family systems
+      ansible.builtin.dnf:
+        name: "{{ grafana_package_name }}"
+        state: absent
+      when: ansible_facts.os_family == 'RedHat'
+
+    - name: Remove Grafana yum repository on RedHat-family systems
+      ansible.builtin.yum_repository:
+        name: grafana
+        state: absent
+      when: ansible_facts.os_family == 'RedHat'
+
+    - name: Remove managed Grafana Prometheus datasource file when present
+      ansible.builtin.file:
+        path: "{{ grafana_managed_datasource_file }}"
+        state: absent
+
+    - name: Remove Grafana data and configuration paths when explicitly requested
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ grafana_data_paths }}"
+      when: grafana_purge_data | bool
+
+    - name: Reload systemd after Grafana package removal
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Refresh package facts after Grafana uninstall
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Refresh service facts after Grafana uninstall
+      ansible.builtin.service_facts:
+
+    - name: Check whether Grafana port is still listening
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ grafana_http_port | int }}"
+        state: stopped
+        timeout: 3
+      register: grafana_port_stopped
+      failed_when: false
+      changed_when: false
+
+    - name: Assert Grafana package and service are removed
+      ansible.builtin.assert:
+        that:
+          - grafana_package_name not in ansible_facts.packages
+          - (grafana_service_name + '.service') not in ansible_facts.services
+            or ansible_facts.services[grafana_service_name + '.service'].state != 'running'
+          - grafana_port_stopped is succeeded
+        fail_msg: >-
+          Grafana uninstall did not reach the expected state. Package should be absent,
+          service should not be running, and port {{ grafana_http_port | int }} should be stopped.
+        success_msg: >-
+          Grafana package is absent, service is not running, and port
+          {{ grafana_http_port | int }} is stopped.
+
+    - name: Emit Grafana uninstall summary
+      ansible.builtin.debug:
+        msg:
+          service_name: "{{ grafana_service_name }}"
+          package_absent: "{{ grafana_package_name not in ansible_facts.packages }}"
+          service_known: "{{ (grafana_service_name + '.service') in ansible_facts.services }}"
+          service_state: "{{ ansible_facts.services[grafana_service_name + '.service'].state | default('absent') }}"
+          port: "{{ grafana_http_port | int }}"
+          port_stopped: "{{ grafana_port_stopped is succeeded }}"
+          purged_data_paths: "{{ grafana_purge_data | bool }}"

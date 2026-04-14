@@ -15,6 +15,7 @@ from ..factory import build_agent, build_model
 from ..history import record_event
 from ..session import build_session_manager
 from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook, systemd_restart_service
+from ..tools.env import env_example_update, env_list_loaded_keys
 from ..tools.kubernetes import (
     helm_create_chart,
     helm_edit_chart,
@@ -40,6 +41,8 @@ Available tools:
 - `systemd_restart_service`: restart an allowlisted local/control-node systemd service
 - `ansible_create_playbook`: generate and write a new playbook through the agent-backed tool
 - `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
+- `env_list_loaded_keys`: inspect which env var keys are available from process env or `.env`
+- `env_example_update`: document environment variables in the local `.env.example`
 - `helm_create_chart`: create a repo-owned Helm chart scaffold with explicit approval
 - `helm_edit_chart`: edit files inside an existing Helm chart with explicit approval
 - `helm_list_charts`: inspect the repo-owned Helm chart registry under helm/charts
@@ -66,6 +69,9 @@ Process:
   the Ansible-vs-Helm boundary and blocker reporting.
 - For Ansible requests, inspect the current playbook registry when the request
   might map to existing host/substrate automation.
+- For Ansible playbook creation or editing, load the `playbook-configuration`
+  skill when the request involves k3s, kubectl, Helm, kubeconfig files,
+  sudo/become, registry metadata, or host/cluster inventory targeting.
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts or cluster state. If the requested state is already
   true, report success instead of continuing through prerequisite or repair
@@ -84,6 +90,16 @@ Process:
   endpoint or pod readiness checks before reporting that a service is up. When
   exposure is user-facing and network access is available, also check the actual
   access URL.
+- For observability requests, distinguish the layers explicitly. A Grafana
+  datasource check only proves Grafana can reach Prometheus; it does not prove
+  Kubernetes metrics are being scraped. Do not report Kubernetes metrics
+  ingestion as complete unless Prometheus target discovery shows Kubernetes
+  scrape jobs with discovered or active targets.
+- When validating Prometheus Kubernetes scraping, query Prometheus target state
+  such as `/api/v1/targets?state=any` or `/api/v1/targets?state=active` and use
+  Kubernetes job labels or scrape-pool names to confirm Kubernetes targets. Do
+  not treat config text containing `job_name: kubernetes-*` as sufficient by
+  itself.
 - For simple local machine or LAN exposure of one Kubernetes service, prefer a
   `NodePort` service over Traefik/Ingress unless the user asks for hostnames,
   path routing, TLS, or shared HTTP routing across multiple services.
@@ -103,6 +119,11 @@ Process:
   editing the existing playbook, creating missing prerequisite automation, or
   running another suitable registry playbook. After the corrective action, retry
   the playbook or tool action needed for the original request.
+- If a failed playbook execution reports an internal approval assertion such as
+  `-e *_approve=true` or "after review and approval" after the
+  `ansible_run_playbook` approval prompt was accepted, treat that as a redundant
+  in-playbook approval gate. Use `ansible_edit_playbook` to remove the internal
+  approval variable/assertion, then inspect the registry and retry the playbook.
 - If a playbook failure reveals missing host prerequisites, package
   dependencies, kernel or boot configuration, service configuration, or other
   environment preparation needed for the original request, treat that as missing
@@ -134,6 +155,24 @@ Process:
 - Do not call `ansible_create_playbook` for missing Helm/Kubernetes application
   deployment automation. Load and follow `kubernetes-troubleshooting` instead.
 - After creating a new playbook, inspect the registry again and run the appropriate playbook.
+- Call `env_example_update` only when the user asks to update env
+  documentation, or immediately after creating or editing a playbook that adds
+  or changes runtime environment variables. Do not call `env_example_update`
+  merely because a playbook run exposed, used, or reported environment variable
+  names. For documentation updates, pass the playbook path as `source_path` so
+  `.env.example` documents the required variables with placeholder values. Pass
+  `optional_variable_names` for environment variables that have safe defaults,
+  and pass `section_name` when you know the matching `.env.example` section. Use
+  explicit `variable_names` when the variable name is built dynamically and
+  cannot be found by scanning the playbook.
+- Treat `env_example_update` as documentation repair, not a prerequisite or
+  follow-up for execution. Do not call it before or after a requested playbook
+  run unless the user's request specifically includes updating `.env.example`.
+- When a user is unsure which environment variables a playbook needs, or says
+  they already added variables to `.env`, use `env_list_loaded_keys` with the
+  playbook path as `source_path` to inspect key availability without exposing
+  secret values. If required keys are present, continue to the requested run
+  instead of calling `env_example_update`.
 - For simple registry lookup questions, answer using the registry without
   creating or running anything.
 - Do not invent playbook names or paths. Use the registry.
@@ -164,6 +203,8 @@ class OrchestratorAgent:
                 ansible_list_playbooks,
                 ansible_run_playbook,
                 systemd_restart_service,
+                env_list_loaded_keys,
+                env_example_update,
                 ansible_create_playbook,
                 ansible_edit_playbook,
                 helm_create_chart,

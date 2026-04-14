@@ -198,10 +198,20 @@ def test_editor_prompt_preserves_goal_oriented_validation() -> None:
     assert "diagnostics when that signal is failing" in SYSTEM_PROMPT
 
 
+def test_editor_prompt_loads_playbook_configuration_for_k3s_repairs() -> None:
+    assert "load and follow the `playbook-configuration` skill" in SYSTEM_PROMPT
+    assert "k3s, kubectl, Helm, kubeconfig files" in SYSTEM_PROMPT
+    assert "kubectl --kubeconfig {{ k3s_admin_kubeconfig }}" in SYSTEM_PROMPT
+    assert "helm --kubeconfig {{ k3s_admin_kubeconfig }}" in SYSTEM_PROMPT
+    assert "Use `become: true`" in SYSTEM_PROMPT
+
+
 def test_editor_prompt_preserves_env_backed_sensitive_values() -> None:
     assert "sensitive value" in SYSTEM_PROMPT
     assert "lookup('ansible.builtin.env', 'NAME', default='')" in SYSTEM_PROMPT
     assert "Do not hardcode real" in SYSTEM_PROMPT
+    assert "literal environment variable names" in SYSTEM_PROMPT
+    assert "`.env.example`" in SYSTEM_PROMPT
     assert "ansible.builtin.assert" in SYSTEM_PROMPT
     assert "untracked `.env` file" in SYSTEM_PROMPT
 
@@ -235,3 +245,5 @@ def test_editor_agent_has_web_research_tools(monkeypatch: pytest.MonkeyPatch) ->
 
     tool_names = [tool.tool_name for tool in captured["tools"]]
     assert tool_names == ["search_web", "http_get"]
+    skill_names = {skill.name for skill in captured["plugins"][0].get_available_skills()}
+    assert "playbook-configuration" in skill_names

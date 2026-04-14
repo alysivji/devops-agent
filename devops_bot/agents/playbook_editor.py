@@ -2,9 +2,12 @@ from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
+from strands import AgentSkills
 
 from ..factory import build_agent, build_model
 from ..tools.web import http_get, search_web
+
+SKILLS_DIR = Path("skills")
 
 SYSTEM_PROMPT = """
 You edit existing Ansible playbooks for this repository.
@@ -27,6 +30,9 @@ Editing Rules:
   `lookup('ansible.builtin.env', 'NAME', default='')`. Do not hardcode real
   secrets, secret-looking sample values, or generated passwords in playbook
   vars, tasks, comments, or debug output.
+- Use literal environment variable names in `lookup('ansible.builtin.env', ...)`
+  calls whenever possible so follow-up tooling can document them in
+  `.env.example`.
 - For every required sensitive environment variable, preserve or add an early
   `ansible.builtin.assert` before remote-changing tasks. The assertion must
   check that the value is present and meets any minimum safety requirements, and
@@ -48,6 +54,15 @@ Editing Rules:
 - Preserve explicit failure messages and structured debug context.
 - If repairing JSON/Jinja access, prefer bracket lookup for dictionary keys that
   can collide with Python method names, such as `items`.
+- If editing Ansible tasks that call kubectl or Helm against k3s, preserve or
+  add an explicit kubeconfig instead of relying on the subprocess environment:
+  use `kubectl --kubeconfig {{ k3s_admin_kubeconfig }} ...` for kubectl and
+  either `helm --kubeconfig {{ k3s_admin_kubeconfig }} ...` or
+  `KUBECONFIG: "{{ k3s_admin_kubeconfig }}"` for Helm. Use `become: true` when
+  the kubeconfig is `/etc/rancher/k3s/k3s.yaml`.
+- If editing a playbook that uses k3s, kubectl, Helm, kubeconfig files, or
+  sudo/become, load and follow the `playbook-configuration` skill before
+  returning the edited content.
 - If repairing a playbook that starts or restarts long-running remote services,
   keep the service operation bounded. Do not use `async`/`poll` as a timeout
   wrapper around `ansible.builtin.systemd`. Prefer module-native nonblocking
@@ -94,6 +109,7 @@ class EditAnsiblePlaybookAgent:
             model=build_model(model_id="gpt-5.4"),
             system_prompt=SYSTEM_PROMPT,
             tools=[search_web, http_get],
+            plugins=[AgentSkills(skills=[SKILLS_DIR], strict=True)],
         )
 
     def run(
