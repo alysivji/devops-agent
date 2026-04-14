@@ -13,6 +13,10 @@ turning an application deploy into host repair.
 1. Classify the request.
    - App workload deploy/status/rollout/chart work: stay on Helm/Kubernetes tools.
    - Host/substrate setup or explicit repair request: use Ansible registry/playbooks.
+   - Foundation services for this repo, including control panels,
+     observability sinks, and management services such as Grafana for
+     Kubernetes metrics, are control-node Ansible work unless the user
+     explicitly asks to deploy them inside Kubernetes.
    - Ambiguous stateful service: ask whether lifecycle/storage is host-managed or cluster-managed.
 
 2. Start with read-only cluster checks.

@@ -1,0 +1,590 @@
+# name: provision_grafana_prometheus_datasource
+# description: This playbook updates the host-level Grafana to provision a local Prometheus datasource, including health checks and validation steps to ensure safety before execution and rollback capabilities if needed.
+# target: control
+# requires_approval: true
+# tags:
+#   - grafana
+#   - prometheus
+#   - datasource
+#   - configuration
+#   - update
+
+---
+- name: Update host-level Grafana to provision local Prometheus datasource
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    grafana_prometheus_reset: false
+    grafana_prometheus_datasource_name: Prometheus
+    grafana_prometheus_datasource_uid: prometheus
+    grafana_prometheus_default_url: http://127.0.0.1:9090
+    grafana_prometheus_allowed_users:
+      - grafana
+      - root
+    grafana_prometheus_candidate_dirs:
+      - /etc/grafana/provisioning
+      - /usr/share/grafana/conf/provisioning
+      - /var/lib/grafana/provisioning
+    grafana_prometheus_candidate_service_names:
+      - grafana-server
+      - grafana
+    grafana_prometheus_candidate_prometheus_configs:
+      - /etc/prometheus/prometheus.yml
+      - /etc/prometheus.yml
+    grafana_prometheus_health_paths:
+      - /api/health
+      - /api/healthz
+  tasks:
+    - name: Discover installed services
+      ansible.builtin.service_facts:
+
+    - name: Select Grafana service name
+      ansible.builtin.set_fact:
+        grafana_service_name: >-
+          {{
+            (grafana_prometheus_candidate_service_names
+            | select('in', ansible_facts.services.keys() | list)
+            | list
+            | first) | default('')
+          }}
+
+    - name: Assert a Grafana service is installed
+      ansible.builtin.assert:
+        that:
+          - grafana_service_name | length > 0
+        fail_msg: >-
+          No host-level Grafana systemd service was found. Expected one of:
+          {{ grafana_prometheus_candidate_service_names }}.
+
+    - name: Gather Grafana service unit details
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - show
+          - "--property=User,FragmentPath,EnvironmentFiles,ExecStart,SubState,ActiveState"
+          - "{{ grafana_service_name }}"
+      register: grafana_service_show
+      changed_when: false
+
+    - name: Parse Grafana service details
+      ansible.builtin.set_fact:
+        grafana_service_properties: >-
+          {{
+            dict(
+              (grafana_service_show.stdout_lines | default([]))
+              | select('search', '=')
+              | map('split', '=', 1)
+            )
+          }}
+        grafana_service_user: >-
+          {{
+            (grafana_service_properties['User'] | default('') | trim)
+            if (grafana_service_properties is defined) else ''
+          }}
+        grafana_service_effective_user: >-
+          {{
+            ((grafana_service_properties['User'] | default('') | trim)
+            if (grafana_service_properties is defined) else '')
+            or 'root'
+          }}
+        grafana_service_fragment: >-
+          {{
+            (grafana_service_properties['FragmentPath'] | default('') | trim)
+            if (grafana_service_properties is defined) else ''
+          }}
+        grafana_service_environmentfiles: >-
+          {{
+            (grafana_service_properties['EnvironmentFiles'] | default('') | trim)
+            if (grafana_service_properties is defined) else ''
+          }}
+        grafana_service_execstart: >-
+          {{
+            (grafana_service_properties['ExecStart'] | default('') | trim)
+            if (grafana_service_properties is defined) else ''
+          }}
+        grafana_service_substate: >-
+          {{
+            (grafana_service_properties['SubState'] | default('') | trim)
+            if (grafana_service_properties is defined) else ''
+          }}
+        grafana_service_activestate: >-
+          {{
+            (grafana_service_properties['ActiveState'] | default('') | trim)
+            if (grafana_service_properties is defined) else ''
+          }}
+
+    - name: Assert Grafana service user is acceptable
+      ansible.builtin.assert:
+        that:
+          - grafana_service_effective_user in grafana_prometheus_allowed_users
+        fail_msg: >-
+          Unable to safely determine Grafana service user or discovered unsupported user
+          '{{ grafana_service_user if (grafana_service_user | length > 0) else "<systemd default: root>" }}'.
+          Allowed users: {{ grafana_prometheus_allowed_users }}.
+
+    - name: Check candidate Grafana provisioning directories
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ grafana_prometheus_candidate_dirs }}"
+      register: grafana_candidate_dir_stats
+
+    - name: Select Grafana provisioning directory
+      ansible.builtin.set_fact:
+        grafana_provisioning_dir: >-
+          {{
+            (
+              grafana_candidate_dir_stats.results
+              | selectattr('stat.exists', 'defined')
+              | selectattr('stat.exists')
+              | selectattr('stat.isdir')
+              | map(attribute='stat.path')
+              | list
+              | first
+            ) | default('')
+          }}
+
+    - name: Assert Grafana provisioning directory was discovered
+      ansible.builtin.assert:
+        that:
+          - grafana_provisioning_dir | length > 0
+        fail_msg: >-
+          Failed to locate Grafana provisioning directory. Checked:
+          {{ grafana_prometheus_candidate_dirs }}.
+
+    - name: Ensure Grafana datasource provisioning directory exists
+      ansible.builtin.file:
+        path: "{{ grafana_provisioning_dir }}/datasources"
+        state: directory
+        owner: root
+        group: "{{ grafana_service_effective_user }}"
+        mode: '0750'
+
+    - name: Check candidate Prometheus configuration files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ grafana_prometheus_candidate_prometheus_configs }}"
+      register: prometheus_config_stats
+
+    - name: Select Prometheus configuration file when present
+      ansible.builtin.set_fact:
+        prometheus_config_file: >-
+          {{
+            (
+              prometheus_config_stats.results
+              | selectattr('stat.exists', 'defined')
+              | selectattr('stat.exists')
+              | selectattr('stat.isreg')
+              | map(attribute='stat.path')
+              | list
+              | first
+            ) | default('')
+          }}
+
+    - name: Read Prometheus configuration file when present
+      ansible.builtin.slurp:
+        path: "{{ prometheus_config_file }}"
+      register: prometheus_config_slurp
+      when: prometheus_config_file | length > 0
+
+    - name: Discover local Prometheus listen address from configuration
+      ansible.builtin.set_fact:
+        grafana_prometheus_discovered_url: >-
+          {% set cfg = (prometheus_config_slurp.content | default('') | b64decode) %}
+          {% set listen_line = (
+            cfg.splitlines()
+            | select('match', '^\s*web\.listen-address\s*:')
+            | list
+            | first
+            | default('')
+          ) %}
+          {% set addr = (
+            listen_line
+            | regex_replace('^\s*web\.listen-address\s*:\s*', '')
+            | regex_replace('\s+#.*$', '')
+            | trim
+            | regex_replace('^"(.*)"$', '\1')
+            | regex_replace("^'(.*)'$", '\1')
+          ) %}
+          {% if addr | length == 0 %}
+          {{ grafana_prometheus_default_url }}
+          {% elif addr.startswith(':') %}
+          http://127.0.0.1{{ addr }}
+          {% elif addr.startswith('127.0.0.1:') or addr.startswith('localhost:') %}
+          http://{{ addr }}
+          {% elif addr.startswith('0.0.0.0:') %}
+          http://127.0.0.1:{{ addr.split(':')[-1] }}
+          {% elif addr.startswith('[') %}
+          http://{{ addr }}
+          {% elif ':' in addr and not addr.startswith('http://') and not addr.startswith('https://') %}
+          http://{{ addr }}
+          {% elif addr.startswith('http://') or addr.startswith('https://') %}
+          {{ addr }}
+          {% else %}
+          {{ grafana_prometheus_default_url }}
+          {% endif %}
+      when: prometheus_config_file | length > 0
+
+    - name: Set Prometheus datasource URL preference
+      ansible.builtin.set_fact:
+        grafana_prometheus_url: >-
+          {{ grafana_prometheus_discovered_url | default(grafana_prometheus_default_url, true) }}
+
+    - name: Validate Prometheus endpoint is reachable from control node before changes
+      block:
+        - name: Probe local Prometheus readiness endpoint
+          ansible.builtin.uri:
+            url: "{{ grafana_prometheus_url }}/-/ready"
+            method: GET
+            status_code: [200]
+            return_content: true
+            timeout: 5
+          register: prometheus_ready_check
+          retries: 12
+          delay: 5
+          until: prometheus_ready_check.status == 200
+          changed_when: false
+
+        - name: Assert local Prometheus endpoint is reachable
+          ansible.builtin.assert:
+            that:
+              - prometheus_ready_check.status == 200
+            fail_msg: >-
+              Prometheus is not reachable at {{ grafana_prometheus_url }} from the control node.
+      rescue:
+        - name: Capture Prometheus probe failure context
+          ansible.builtin.debug:
+            msg:
+              prometheus_url: "{{ grafana_prometheus_url }}"
+              prometheus_config_file: "{{ prometheus_config_file | default('') }}"
+              ready_probe_result: "{{ prometheus_ready_check | default({}) }}"
+        - name: Fail due to unreachable Prometheus
+          ansible.builtin.fail:
+            msg: >-
+              Cannot proceed because local Prometheus is unreachable at
+              {{ grafana_prometheus_url }}.
+
+    - name: Define Grafana datasource provisioning file path
+      ansible.builtin.set_fact:
+        grafana_prometheus_datasource_file: "{{ grafana_provisioning_dir }}/datasources/ansible-prometheus.yaml"
+
+    - name: Remove managed Grafana datasource provisioning file when reset is requested
+      ansible.builtin.file:
+        path: "{{ grafana_prometheus_datasource_file }}"
+        state: absent
+      register: grafana_datasource_reset_result
+      when: grafana_prometheus_reset | bool
+
+    - name: Write managed Grafana Prometheus datasource provisioning file
+      ansible.builtin.copy:
+        dest: "{{ grafana_prometheus_datasource_file }}"
+        owner: root
+        group: "{{ grafana_service_effective_user }}"
+        mode: '0640'
+        content: |
+          apiVersion: 1
+          deleteDatasources: []
+          datasources:
+            - name: {{ grafana_prometheus_datasource_name }}
+              uid: {{ grafana_prometheus_datasource_uid }}
+              type: prometheus
+              access: proxy
+              url: {{ grafana_prometheus_url }}
+              isDefault: true
+              editable: false
+              jsonData:
+                httpMethod: GET
+      register: grafana_datasource_copy_result
+      when: not (grafana_prometheus_reset | bool)
+
+    - name: Read managed Grafana datasource provisioning file when present
+      ansible.builtin.slurp:
+        path: "{{ grafana_prometheus_datasource_file }}"
+      register: grafana_datasource_slurp
+      when: not (grafana_prometheus_reset | bool)
+
+    - name: Validate datasource provisioning file contents
+      ansible.builtin.assert:
+        that:
+          - grafana_datasource_slurp is defined
+          - (grafana_datasource_slurp.content | b64decode) is search('apiVersion:\s*1')
+          - (grafana_datasource_slurp.content | b64decode) is search('name:\s*' ~ grafana_prometheus_datasource_name)
+          - (grafana_datasource_slurp.content | b64decode) is search('uid:\s*' ~ grafana_prometheus_datasource_uid)
+          - (grafana_datasource_slurp.content | b64decode) is search('type:\s*prometheus')
+          - (grafana_datasource_slurp.content | b64decode) is search('url:\s*' ~ (grafana_prometheus_url | regex_escape))
+          - (grafana_datasource_slurp.content | b64decode) is search('isDefault:\s*true')
+        fail_msg: >-
+          The managed Grafana datasource provisioning file does not contain the expected
+          Prometheus datasource configuration at {{ grafana_prometheus_datasource_file }}.
+      when: not (grafana_prometheus_reset | bool)
+
+    - name: Reload systemd daemon state if unit metadata changed externally
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      changed_when: false
+
+    - name: Apply Grafana service state after datasource change
+      ansible.builtin.systemd_service:
+        name: "{{ grafana_service_name }}"
+        state: restarted
+      when:
+        - not (grafana_prometheus_reset | bool)
+        - grafana_datasource_copy_result is defined
+        - grafana_datasource_copy_result.changed
+
+    - name: Apply Grafana service state after datasource reset
+      ansible.builtin.systemd_service:
+        name: "{{ grafana_service_name }}"
+        state: restarted
+      when:
+        - grafana_prometheus_reset | bool
+        - grafana_datasource_reset_result is defined
+        - grafana_datasource_reset_result.changed
+
+    - name: Ensure Grafana service is running
+      ansible.builtin.systemd_service:
+        name: "{{ grafana_service_name }}"
+        state: started
+
+    - name: Determine Grafana HTTP settings from defaults file when available
+      block:
+        - name: Check Grafana defaults file
+          ansible.builtin.stat:
+            path: /etc/grafana/grafana.ini
+          register: grafana_ini_stat
+
+        - name: Read Grafana defaults file
+          ansible.builtin.slurp:
+            path: /etc/grafana/grafana.ini
+          register: grafana_ini_slurp
+          when: grafana_ini_stat.stat.exists | default(false)
+
+        - name: Derive Grafana HTTP bind and port
+          ansible.builtin.set_fact:
+            grafana_http_port: >-
+              {% set ini = (grafana_ini_slurp.content | default('') | b64decode) %}
+              {% set http_port_line = (
+                ini.splitlines()
+                | select('match', '^\s*http_port\s*=')
+                | list
+                | first
+                | default('')
+              ) %}
+              {% set http_port_value = (
+                http_port_line
+                | regex_replace('^\s*http_port\s*=\s*', '')
+                | regex_replace('\s*[#;].*$', '')
+                | trim
+              ) %}
+              {% if http_port_value is match('^[0-9]+$') %}{{ http_port_value }}{% else %}3000{% endif %}
+            grafana_http_addr: >-
+              {% set ini = (grafana_ini_slurp.content | default('') | b64decode) %}
+              {% set http_addr_line = (
+                ini.splitlines()
+                | select('match', '^\s*http_addr\s*=')
+                | list
+                | first
+                | default('')
+              ) %}
+              {% set http_addr_value = (
+                http_addr_line
+                | regex_replace('^\s*http_addr\s*=\s*', '')
+                | regex_replace('\s*[#;].*$', '')
+                | trim
+              ) %}
+              {% if http_addr_value | length > 0 %}{{ http_addr_value }}{% else %}127.0.0.1{% endif %}
+      rescue:
+        - name: Fallback Grafana HTTP bind and port
+          ansible.builtin.set_fact:
+            grafana_http_port: '3000'
+            grafana_http_addr: '127.0.0.1'
+
+    - name: Normalize Grafana health URL
+      ansible.builtin.set_fact:
+        grafana_health_base_url: >-
+          {% set normalized_addr = (grafana_http_addr | default('127.0.0.1') | string | regex_replace('\s+', '') | trim) %}
+          {% set normalized_port = (grafana_http_port | default('3000') | string | regex_replace('\s+', '') | trim) %}
+          {% if normalized_addr in ['', '0.0.0.0', '::'] %}
+          http://127.0.0.1:{{ normalized_port }}
+          {% elif ':' in normalized_addr and not normalized_addr.startswith('[') %}
+          http://[{{ normalized_addr }}]:{{ normalized_port }}
+          {% else %}
+          http://{{ normalized_addr }}:{{ normalized_port }}
+          {% endif %}
+
+    - name: Wait for Grafana readiness
+      block:
+        - name: Probe Grafana health endpoint candidates
+          ansible.builtin.uri:
+            url: "{{ grafana_health_base_url }}{{ item }}"
+            method: GET
+            status_code: [200, 401]
+            return_content: true
+            timeout: 5
+          loop: "{{ grafana_prometheus_health_paths }}"
+          register: grafana_health_probe_results
+          retries: 24
+          delay: 5
+          until: >-
+            (
+              grafana_health_probe_results.results | default([])
+              | selectattr('status', 'defined')
+              | selectattr('status', 'in', [200, 401])
+              | list
+              | length
+            ) > 0
+          changed_when: false
+          failed_when: false
+
+        - name: Select successful Grafana health response
+          ansible.builtin.set_fact:
+            grafana_successful_health_probe: >-
+              {{
+                (
+                  grafana_health_probe_results.results | default([])
+                  | selectattr('status', 'defined')
+                  | selectattr('status', 'equalto', 200)
+                  | list
+                  | first
+                )
+                | default(
+                    (
+                      grafana_health_probe_results.results | default([])
+                      | selectattr('status', 'defined')
+                      | selectattr('status', 'equalto', 401)
+                      | list
+                      | first
+                    )
+                    | default({})
+                  )
+              }}
+
+        - name: Assert Grafana health endpoint reports readiness
+          ansible.builtin.assert:
+            that:
+              - grafana_successful_health_probe | length > 0
+              - grafana_successful_health_probe.status in [200, 401]
+              - >-
+                grafana_successful_health_probe.status == 401
+                or ((grafana_successful_health_probe.json | default({})).database | default('ok')) in ['ok']
+            fail_msg: >-
+              Grafana did not report healthy readiness at {{ grafana_health_base_url }}.
+      rescue:
+        - name: Refresh Grafana service facts on readiness failure
+          ansible.builtin.service_facts:
+
+        - name: Gather current Grafana service unit details on readiness failure
+          ansible.builtin.command:
+            argv:
+              - systemctl
+              - show
+              - "--property=ActiveState,SubState,ExecMainStatus,ExecMainCode,Result,StateChangeTimestamp,MainPID"
+              - "{{ grafana_service_name }}"
+          register: grafana_failure_service_show
+          changed_when: false
+          failed_when: false
+
+        - name: Gather current Grafana service status on readiness failure
+          ansible.builtin.command:
+            argv:
+              - systemctl
+              - status
+              - "{{ grafana_service_name }}"
+              - --no-pager
+              - --lines=100
+          register: grafana_systemctl_status
+          changed_when: false
+          failed_when: false
+
+        - name: Gather current Grafana journal logs on readiness failure
+          ansible.builtin.command:
+            argv:
+              - journalctl
+              - -u
+              - "{{ grafana_service_name }}"
+              - --since
+              - '-5 min'
+              - -n
+              - '100'
+              - --no-pager
+          register: grafana_journal_logs
+          changed_when: false
+          failed_when: false
+
+        - name: Emit Grafana readiness failure context
+          ansible.builtin.debug:
+            msg:
+              grafana_service_name: "{{ grafana_service_name }}"
+              grafana_health_base_url: "{{ grafana_health_base_url }}"
+              health_probe_results: "{{ grafana_health_probe_results | default({}) }}"
+              service_show: "{{ grafana_failure_service_show.stdout | default('') }}"
+              systemctl_status: "{{ grafana_systemctl_status.stdout | default('') }}"
+              journal_tail: "{{ grafana_journal_logs.stdout | default('') }}"
+
+        - name: Fail because Grafana did not become ready
+          ansible.builtin.fail:
+            msg: >-
+              Grafana did not become healthy after datasource provisioning changes.
+
+    - name: Re-validate Prometheus is reachable from control node at completion
+      block:
+        - name: Query Prometheus targets API
+          ansible.builtin.uri:
+            url: "{{ grafana_prometheus_url }}/api/v1/targets"
+            method: GET
+            status_code: [200]
+            return_content: true
+            timeout: 5
+          register: prometheus_targets_check
+          retries: 6
+          delay: 5
+          until: prometheus_targets_check.status == 200
+          changed_when: false
+
+        - name: Assert Prometheus API reports success
+          ansible.builtin.assert:
+            that:
+              - prometheus_targets_check.status == 200
+              - prometheus_targets_check.json.status | default('') == 'success'
+            fail_msg: >-
+              Prometheus API validation failed at {{ grafana_prometheus_url }}/api/v1/targets.
+      rescue:
+        - name: Emit Prometheus completion validation context
+          ansible.builtin.debug:
+            msg:
+              prometheus_url: "{{ grafana_prometheus_url }}"
+              prometheus_targets_check: "{{ prometheus_targets_check | default({}) }}"
+        - name: Fail because Prometheus validation did not succeed
+          ansible.builtin.fail:
+            msg: >-
+              Prometheus remained unreachable or unhealthy after Grafana datasource provisioning.
+
+    - name: Summarize final Grafana and Prometheus state
+      ansible.builtin.debug:
+        msg:
+          grafana_service:
+            name: "{{ grafana_service_name }}"
+            active_state: "{{ grafana_service_activestate }}"
+            sub_state: "{{ grafana_service_substate }}"
+            user: "{{ grafana_service_effective_user }}"
+            provisioning_dir: "{{ grafana_provisioning_dir }}"
+            datasource_file: "{{ grafana_prometheus_datasource_file }}"
+            health_url: "{{ grafana_health_base_url }}"
+          prometheus:
+            datasource_url: "{{ grafana_prometheus_url }}"
+            config_file: "{{ prometheus_config_file | default('') }}"
+            targets_api_status: "{{ prometheus_targets_check.json.status | default('success') }}"
+          datasource:
+            name: "{{ grafana_prometheus_datasource_name }}"
+            uid: "{{ grafana_prometheus_datasource_uid }}"
+            reset: "{{ grafana_prometheus_reset | bool }}"
+            file_changed: >-
+              {{
+                (grafana_datasource_copy_result.changed
+                 if (grafana_datasource_copy_result is defined)
+                 else false)
+                or
+                (grafana_datasource_reset_result.changed
+                 if (grafana_datasource_reset_result is defined)
+                 else false)
+              }}

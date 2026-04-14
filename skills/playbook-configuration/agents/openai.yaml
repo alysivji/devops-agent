@@ -1,0 +1,4 @@
+interface:
+  display_name: "Playbook Configuration"
+  short_description: "Configure Ansible playbooks for this repo"
+  default_prompt: "Use $playbook-configuration to create or update an Ansible playbook for this repo."

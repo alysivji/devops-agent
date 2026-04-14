@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo PR Creation"
+  short_description: "Open PRs from this repo checkout"
+  default_prompt: "Use $repo-pr-creation to open a draft PR from the current repo branch."

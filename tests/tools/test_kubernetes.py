@@ -36,6 +36,14 @@ class StubChartEditor:
         return self.edited
 
 
+def _isolate_missing_default_kubeconfig(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        "devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG",
+        tmp_path / "missing-kubeconfig",
+    )
+    monkeypatch.delenv("KUBECONFIG", raising=False)
+
+
 def _write_minimal_chart(chart_path: Path) -> None:
     chart_path.mkdir(parents=True)
     (chart_path / "Chart.yaml").write_text(
@@ -308,8 +316,9 @@ class TestHelmListCharts:
 
 class TestHelmListReleases:
     def test_helm_list_releases_defaults_to_all_namespaces(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
+        _isolate_missing_default_kubeconfig(monkeypatch, tmp_path)
         recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -323,7 +332,10 @@ class TestHelmListReleases:
         assert result == "[]\n"
         assert recorded["args"] == (["helm", "list", "-o", "json", "--all-namespaces"],)
 
-    def test_helm_list_releases_can_target_namespace(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_helm_list_releases_can_target_namespace(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        _isolate_missing_default_kubeconfig(monkeypatch, tmp_path)
         recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -354,6 +366,34 @@ class TestHelmListReleases:
         helm_list_releases()
 
         assert recorded["env"]["KUBECONFIG"] == str(kubeconfig)
+
+    def test_helm_list_releases_includes_repaired_user_kubeconfig(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        kubeconfig = tmp_path / "config"
+        kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
+        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        recorded: dict[str, Any] = {}
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            recorded["args"] = args
+            return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="[]\n", stderr="")
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        helm_list_releases()
+
+        assert recorded["args"] == (
+            [
+                "helm",
+                "--kubeconfig",
+                str(kubeconfig),
+                "list",
+                "-o",
+                "json",
+                "--all-namespaces",
+            ],
+        )
 
 
 class TestKubernetesFixAccess:
@@ -442,7 +482,10 @@ class TestKubernetesFixAccess:
 
 
 class TestHelmStatus:
-    def test_helm_status_uses_json_output(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_helm_status_uses_json_output(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        _isolate_missing_default_kubeconfig(monkeypatch, tmp_path)
         recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -457,6 +500,38 @@ class TestHelmStatus:
 
         assert recorded["args"] == (
             ["helm", "status", "nginx", "--namespace", "apps", "-o", "json"],
+        )
+
+    def test_helm_status_includes_repaired_user_kubeconfig(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        kubeconfig = tmp_path / "config"
+        kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
+        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        recorded: dict[str, Any] = {}
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            recorded["args"] = args
+            return subprocess.CompletedProcess(
+                args=args[0], returncode=0, stdout='{"info":{}}\n', stderr=""
+            )
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        helm_status("nginx", namespace="apps")
+
+        assert recorded["args"] == (
+            [
+                "helm",
+                "--kubeconfig",
+                str(kubeconfig),
+                "status",
+                "nginx",
+                "--namespace",
+                "apps",
+                "-o",
+                "json",
+            ],
         )
 
 
@@ -480,8 +555,9 @@ class TestHelmUpgradeInstall:
         assert run_history.session.events[-1].kind == "helm_release_mutation_declined"
 
     def test_helm_upgrade_install_builds_upgrade_command(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
+        _isolate_missing_default_kubeconfig(monkeypatch, tmp_path)
         monkeypatch.setattr("builtins.input", lambda _: "y")
         recorded: dict[str, object] = {}
 
@@ -545,6 +621,7 @@ class TestHelmUpgradeInstall:
     def test_helm_upgrade_install_builds_dependencies_for_local_chart(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
+        _isolate_missing_default_kubeconfig(monkeypatch, tmp_path)
         chart_path = tmp_path / "helm" / "charts" / "nginx"
         chart_path.mkdir(parents=True)
         (chart_path / "Chart.yaml").write_text(
@@ -591,9 +668,52 @@ class TestHelmUpgradeInstall:
             ],
         ]
 
+    def test_helm_upgrade_install_includes_repaired_user_kubeconfig(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        kubeconfig = tmp_path / "config"
+        kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
+        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        recorded: dict[str, Any] = {}
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            recorded["args"] = args
+            return subprocess.CompletedProcess(
+                args=args[0],
+                returncode=0,
+                stdout="Release upgraded\n",
+                stderr="",
+            )
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        helm_upgrade_install(release="nginx", chart="nginx", namespace="apps")
+
+        assert recorded["args"] == (
+            [
+                "helm",
+                "--kubeconfig",
+                str(kubeconfig),
+                "upgrade",
+                "--install",
+                "nginx",
+                "nginx",
+                "--namespace",
+                "apps",
+                "--wait",
+                "--timeout",
+                "5m",
+                "--create-namespace",
+            ],
+        )
+
 
 class TestKubectlGet:
-    def test_kubectl_get_builds_namespace_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_kubectl_get_builds_namespace_command(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        _isolate_missing_default_kubeconfig(monkeypatch, tmp_path)
         recorded: dict[str, object] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -631,11 +751,44 @@ class TestKubectlGet:
 
         assert recorded["env"]["KUBECONFIG"] == str(kubeconfig)
 
+    def test_kubectl_get_includes_repaired_user_kubeconfig(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        kubeconfig = tmp_path / "config"
+        kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
+        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        recorded: dict[str, Any] = {}
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            recorded["args"] = args
+            return subprocess.CompletedProcess(
+                args=args[0], returncode=0, stdout="pods\n", stderr=""
+            )
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        kubectl_get("pods", namespace="apps")
+
+        assert recorded["args"] == (
+            [
+                "kubectl",
+                "--kubeconfig",
+                str(kubeconfig),
+                "get",
+                "pods",
+                "-o",
+                "wide",
+                "--namespace",
+                "apps",
+            ],
+        )
+
 
 class TestKubectlRolloutStatus:
     def test_kubectl_rollout_status_builds_timeout_command(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
+        _isolate_missing_default_kubeconfig(monkeypatch, tmp_path)
         recorded: dict[str, object] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -654,6 +807,41 @@ class TestKubectlRolloutStatus:
         assert recorded["args"] == (
             [
                 "kubectl",
+                "rollout",
+                "status",
+                "deployment/nginx",
+                "--namespace",
+                "apps",
+                "--timeout=300s",
+            ],
+        )
+
+    def test_kubectl_rollout_status_includes_repaired_user_kubeconfig(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        kubeconfig = tmp_path / "config"
+        kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
+        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        recorded: dict[str, Any] = {}
+
+        def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            recorded["args"] = args
+            return subprocess.CompletedProcess(
+                args=args[0],
+                returncode=0,
+                stdout="deployment successfully rolled out\n",
+                stderr="",
+            )
+
+        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+
+        kubectl_rollout_status("deployment/nginx", namespace="apps", timeout="300s")
+
+        assert recorded["args"] == (
+            [
+                "kubectl",
+                "--kubeconfig",
+                str(kubeconfig),
                 "rollout",
                 "status",
                 "deployment/nginx",

@@ -1,0 +1,583 @@
+# name: install_prometheus
+# description: Install and validate Prometheus as a host-level service on the control node, ensuring prerequisite packages, user, and directories exist, with configuration validation and readiness checks before activation via systemd.
+# target: control
+# requires_approval: true
+# tags:
+#   - prometheus
+#   - installation
+#   - configuration
+#   - kubernetes
+#   - service
+
+---
+- name: Install and validate Prometheus as a host-level service on control
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    prometheus_reset: false
+    prometheus_version: "2.54.1"
+    prometheus_user: prometheus
+    prometheus_group: prometheus
+    prometheus_install_dir: /opt/prometheus
+    prometheus_config_dir: /etc/prometheus
+    prometheus_data_dir: /var/lib/prometheus
+    prometheus_bin: /opt/prometheus/prometheus
+    prometheus_tool: /opt/prometheus/promtool
+    prometheus_config_file: /etc/prometheus/prometheus.yml
+    prometheus_service_name: prometheus
+    prometheus_service_unit: /etc/systemd/system/prometheus.service
+    prometheus_listen_address: 0.0.0.0:9090
+    prometheus_web_url: "http://127.0.0.1:9090/-/ready"
+    prometheus_tarball: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+    prometheus_extract_dir: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64"
+    prometheus_download_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+    prometheus_kubeconfig: /etc/rancher/k3s/k3s.yaml
+    prometheus_required_k8s_jobs:
+      - kubernetes-apiservers
+      - kubernetes-nodes
+      - kubernetes-cadvisor
+      - kubernetes-service-endpoints
+      - kubernetes-pods
+    prometheus_packages_common:
+      - tar
+      - gzip
+      - curl
+    prometheus_packages_debian:
+      - ca-certificates
+    prometheus_packages_redhat:
+      - ca-certificates
+    prometheus_config_content: |
+      global:
+        scrape_interval: 30s
+        evaluation_interval: 30s
+        external_labels:
+          monitor: control-node-prometheus
+
+      scrape_configs:
+        - job_name: prometheus
+          static_configs:
+            - targets:
+                - 127.0.0.1:9090
+
+        - job_name: kubernetes-apiservers
+          kubernetes_sd_configs:
+            - role: endpoints
+              kubeconfig_file: {{ prometheus_kubeconfig }}
+          scheme: https
+          tls_config:
+            insecure_skip_verify: true
+          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+              action: keep
+              regex: default;kubernetes;https
+
+        - job_name: kubernetes-nodes
+          kubernetes_sd_configs:
+            - role: node
+              kubeconfig_file: {{ prometheus_kubeconfig }}
+          scheme: https
+          tls_config:
+            insecure_skip_verify: true
+          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+          relabel_configs:
+            - action: labelmap
+              regex: __meta_kubernetes_node_label_(.+)
+            - target_label: __address__
+              replacement: kubernetes.default.svc:443
+            - source_labels: [__meta_kubernetes_node_name]
+              target_label: __metrics_path__
+              replacement: /api/v1/nodes/$1/proxy/metrics
+
+        - job_name: kubernetes-cadvisor
+          kubernetes_sd_configs:
+            - role: node
+              kubeconfig_file: {{ prometheus_kubeconfig }}
+          scheme: https
+          tls_config:
+            insecure_skip_verify: true
+          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+          relabel_configs:
+            - action: labelmap
+              regex: __meta_kubernetes_node_label_(.+)
+            - target_label: __address__
+              replacement: kubernetes.default.svc:443
+            - source_labels: [__meta_kubernetes_node_name]
+              target_label: __metrics_path__
+              replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+
+        - job_name: kubernetes-service-endpoints
+          kubernetes_sd_configs:
+            - role: endpoints
+              kubeconfig_file: {{ prometheus_kubeconfig }}
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+              action: replace
+              target_label: __scheme__
+              regex: (https?)
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+              action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_service_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: kubernetes_namespace
+            - source_labels: [__meta_kubernetes_service_name]
+              action: replace
+              target_label: kubernetes_name
+
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+              kubeconfig_file: {{ prometheus_kubeconfig }}
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+              action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: kubernetes_namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: kubernetes_pod_name
+  tasks:
+    - name: Gather package facts for host-level prerequisite management
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Validate control node kubeconfig exists before Prometheus configuration
+      ansible.builtin.stat:
+        path: "{{ prometheus_kubeconfig }}"
+      register: prometheus_kubeconfig_stat
+
+    - name: Assert control node kubeconfig is present for Kubernetes service discovery
+      ansible.builtin.assert:
+        that:
+          - prometheus_kubeconfig_stat.stat.exists
+          - prometheus_kubeconfig_stat.stat.isreg | default(false)
+        fail_msg: "Expected kubeconfig at {{ prometheus_kubeconfig }} for Prometheus Kubernetes service discovery, but it was not found on the control node."
+        success_msg: "Control node kubeconfig is present for Prometheus Kubernetes service discovery."
+
+    - name: Check whether Prometheus is already installed
+      ansible.builtin.stat:
+        path: "{{ prometheus_bin }}"
+      register: prometheus_bin_stat
+
+    - name: Check whether promtool is already installed
+      ansible.builtin.stat:
+        path: "{{ prometheus_tool }}"
+      register: prometheus_tool_stat
+
+    - name: Validate existing Prometheus configuration before remediation when service is already installed
+      block:
+        - name: Check whether Prometheus configuration file already exists
+          ansible.builtin.stat:
+            path: "{{ prometheus_config_file }}"
+          register: prometheus_existing_config_stat
+
+        - name: Read existing Prometheus configuration when present
+          ansible.builtin.slurp:
+            path: "{{ prometheus_config_file }}"
+          register: prometheus_existing_config_slurp
+          when:
+            - prometheus_bin_stat.stat.exists
+            - prometheus_tool_stat.stat.exists
+            - prometheus_existing_config_stat.stat.exists
+
+        - name: Validate existing Prometheus configuration syntax when present
+          ansible.builtin.command:
+            argv:
+              - "{{ prometheus_tool }}"
+              - check
+              - config
+              - "{{ prometheus_config_file }}"
+          register: prometheus_existing_config_check
+          changed_when: false
+          when:
+            - prometheus_bin_stat.stat.exists
+            - prometheus_tool_stat.stat.exists
+            - prometheus_existing_config_stat.stat.exists
+
+        - name: Collect existing Prometheus service state when installed
+          ansible.builtin.systemd:
+            name: "{{ prometheus_service_name }}"
+          register: prometheus_existing_service_status
+          changed_when: false
+          when: prometheus_bin_stat.stat.exists
+
+        - name: Determine whether requested end state is already satisfied
+          ansible.builtin.set_fact:
+            prometheus_end_state_already_valid: >-
+              {{
+                (prometheus_bin_stat.stat.exists | bool)
+                and (prometheus_tool_stat.stat.exists | bool)
+                and (prometheus_existing_config_stat.stat.exists | default(false))
+                and ((prometheus_existing_config_check.rc | default(1)) == 0)
+                and ('job_name: kubernetes-apiservers' in ((prometheus_existing_config_slurp.content | default('')) | b64decode))
+                and ('job_name: kubernetes-nodes' in ((prometheus_existing_config_slurp.content | default('')) | b64decode))
+                and ('job_name: kubernetes-cadvisor' in ((prometheus_existing_config_slurp.content | default('')) | b64decode))
+                and ('job_name: kubernetes-service-endpoints' in ((prometheus_existing_config_slurp.content | default('')) | b64decode))
+                and ('job_name: kubernetes-pods' in ((prometheus_existing_config_slurp.content | default('')) | b64decode))
+                and ((prometheus_existing_service_status.status.ActiveState | default('')) == 'active')
+              }}
+
+        - name: Emit existing Prometheus validation summary before remediation decision
+          ansible.builtin.debug:
+            msg:
+              prometheus_installed: "{{ prometheus_bin_stat.stat.exists | bool }}"
+              promtool_installed: "{{ prometheus_tool_stat.stat.exists | bool }}"
+              config_present: "{{ prometheus_existing_config_stat.stat.exists | default(false) }}"
+              config_valid: "{{ (prometheus_existing_config_check.rc | default(1)) == 0 }}"
+              service_active: "{{ (prometheus_existing_service_status.status.ActiveState | default('')) == 'active' }}"
+              end_state_already_valid: "{{ prometheus_end_state_already_valid | default(false) }}"
+      rescue:
+        - name: Emit structured debug state when pre-validation fails
+          ansible.builtin.debug:
+            msg:
+              prometheus_bin_present: "{{ prometheus_bin_stat.stat.exists | default(false) }}"
+              promtool_present: "{{ prometheus_tool_stat.stat.exists | default(false) }}"
+              kubeconfig_present: "{{ prometheus_kubeconfig_stat.stat.exists | default(false) }}"
+              config_check_stdout: "{{ prometheus_existing_config_check.stdout | default('') }}"
+              config_check_stderr: "{{ prometheus_existing_config_check.stderr | default('') }}"
+              service_status: "{{ prometheus_existing_service_status.status | default({}) }}"
+        - name: Mark existing end state as not yet valid after validation rescue
+          ansible.builtin.set_fact:
+            prometheus_end_state_already_valid: false
+
+    - name: Reset Prometheus installation when explicitly requested
+      when: prometheus_reset | bool
+      block:
+        - name: Stop and disable Prometheus service during reset
+          ansible.builtin.systemd:
+            name: "{{ prometheus_service_name }}"
+            enabled: false
+            state: stopped
+            daemon_reload: true
+          failed_when: false
+
+        - name: Remove Prometheus systemd unit during reset
+          ansible.builtin.file:
+            path: "{{ prometheus_service_unit }}"
+            state: absent
+
+        - name: Remove Prometheus installation directory during reset
+          ansible.builtin.file:
+            path: "{{ prometheus_install_dir }}"
+            state: absent
+
+        - name: Remove Prometheus configuration directory during reset
+          ansible.builtin.file:
+            path: "{{ prometheus_config_dir }}"
+            state: absent
+
+        - name: Remove Prometheus data directory during reset
+          ansible.builtin.file:
+            path: "{{ prometheus_data_dir }}"
+            state: absent
+
+        - name: Reload systemd after Prometheus reset
+          ansible.builtin.systemd:
+            daemon_reload: true
+
+    - name: Ensure Prometheus prerequisite packages are installed on Debian-family systems
+      ansible.builtin.package:
+        name: "{{ prometheus_packages_common + prometheus_packages_debian }}"
+        state: present
+      when:
+        - ansible_facts.os_family == 'Debian'
+        - not (prometheus_end_state_already_valid | default(false))
+
+    - name: Ensure Prometheus prerequisite packages are installed on RedHat-family systems
+      ansible.builtin.package:
+        name: "{{ prometheus_packages_common + prometheus_packages_redhat }}"
+        state: present
+      when:
+        - ansible_facts.os_family == 'RedHat'
+        - not (prometheus_end_state_already_valid | default(false))
+
+    - name: Ensure Prometheus group exists
+      ansible.builtin.group:
+        name: "{{ prometheus_group }}"
+        system: true
+        state: present
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Ensure Prometheus user exists
+      ansible.builtin.user:
+        name: "{{ prometheus_user }}"
+        group: "{{ prometheus_group }}"
+        system: true
+        shell: /usr/sbin/nologin
+        home: "{{ prometheus_data_dir }}"
+        create_home: false
+        state: present
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Ensure Prometheus installation and data directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ prometheus_install_dir }}", owner: "root", group: "root", mode: "0755" }
+        - { path: "{{ prometheus_config_dir }}", owner: "root", group: "{{ prometheus_group }}", mode: "0755" }
+        - { path: "{{ prometheus_data_dir }}", owner: "{{ prometheus_user }}", group: "{{ prometheus_group }}", mode: "0755" }
+        - { path: "{{ prometheus_config_dir }}/consoles", owner: "root", group: "{{ prometheus_group }}", mode: "0755" }
+        - { path: "{{ prometheus_config_dir }}/console_libraries", owner: "root", group: "{{ prometheus_group }}", mode: "0755" }
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Download Prometheus release archive
+      ansible.builtin.get_url:
+        url: "{{ prometheus_download_url }}"
+        dest: "{{ prometheus_tarball }}"
+        mode: '0644'
+        force: false
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Remove temporary extracted Prometheus release directory before extraction
+      ansible.builtin.file:
+        path: "{{ prometheus_extract_dir }}"
+        state: absent
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Extract Prometheus release archive
+      ansible.builtin.unarchive:
+        src: "{{ prometheus_tarball }}"
+        dest: /tmp
+        remote_src: true
+        creates: "{{ prometheus_extract_dir }}/prometheus"
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Install Prometheus server binary
+      ansible.builtin.copy:
+        src: "{{ prometheus_extract_dir }}/prometheus"
+        dest: "{{ prometheus_bin }}"
+        remote_src: true
+        owner: root
+        group: root
+        mode: '0755'
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Install Prometheus promtool binary
+      ansible.builtin.copy:
+        src: "{{ prometheus_extract_dir }}/promtool"
+        dest: "{{ prometheus_tool }}"
+        remote_src: true
+        owner: root
+        group: root
+        mode: '0755'
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Install Prometheus console assets
+      ansible.builtin.copy:
+        src: "{{ item.src }}/"
+        dest: "{{ item.dest }}/"
+        remote_src: true
+        owner: root
+        group: "{{ prometheus_group }}"
+        mode: preserve
+      loop:
+        - { src: "{{ prometheus_extract_dir }}/consoles", dest: "{{ prometheus_config_dir }}/consoles" }
+        - { src: "{{ prometheus_extract_dir }}/console_libraries", dest: "{{ prometheus_config_dir }}/console_libraries" }
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Ensure compatibility token path exists for Prometheus kube SD auth configuration
+      ansible.builtin.file:
+        path: /var/run/secrets/kubernetes.io/serviceaccount
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Mirror k3s API token to Kubernetes serviceaccount token path for Prometheus API access
+      ansible.builtin.copy:
+        src: /var/lib/rancher/k3s/server/token
+        dest: /var/run/secrets/kubernetes.io/serviceaccount/token
+        remote_src: true
+        owner: root
+        group: root
+        mode: '0600'
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Install Prometheus configuration for Kubernetes scraping
+      ansible.builtin.copy:
+        dest: "{{ prometheus_config_file }}"
+        content: "{{ prometheus_config_content }}"
+        owner: root
+        group: "{{ prometheus_group }}"
+        mode: '0640'
+      register: prometheus_config_write
+      when: not (prometheus_end_state_already_valid | default(false))
+
+    - name: Validate Prometheus configuration syntax with promtool before service activation
+      ansible.builtin.command:
+        argv:
+          - "{{ prometheus_tool }}"
+          - check
+          - config
+          - "{{ prometheus_config_file }}"
+      register: prometheus_promtool_check
+      changed_when: false
+
+    - name: Assert Prometheus configuration syntax is valid
+      ansible.builtin.assert:
+        that:
+          - prometheus_promtool_check.rc == 0
+        fail_msg: "Prometheus configuration validation failed for {{ prometheus_config_file }}. Review promtool output in debug state."
+        success_msg: "Prometheus configuration syntax is valid."
+
+    - name: Install Prometheus systemd service unit
+      ansible.builtin.copy:
+        dest: "{{ prometheus_service_unit }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Prometheus Monitoring
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User={{ prometheus_user }}
+          Group={{ prometheus_group }}
+          Type=simple
+          ExecStart={{ prometheus_bin }} \
+            --config.file={{ prometheus_config_file }} \
+            --storage.tsdb.path={{ prometheus_data_dir }} \
+            --web.console.templates={{ prometheus_config_dir }}/consoles \
+            --web.console.libraries={{ prometheus_config_dir }}/console_libraries \
+            --web.listen-address={{ prometheus_listen_address }}
+          ExecReload=/bin/kill -HUP $MAINPID
+          Restart=on-failure
+          RestartSec=5s
+          LimitNOFILE=65536
+          NoNewPrivileges=true
+          ProtectSystem=full
+          ProtectHome=true
+          ReadWritePaths={{ prometheus_data_dir }}
+
+          [Install]
+          WantedBy=multi-user.target
+      register: prometheus_service_unit_write
+
+    - name: Reload systemd when Prometheus unit changed
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: prometheus_service_unit_write.changed | bool
+
+    - name: Restart Prometheus when configuration or service unit changed
+      ansible.builtin.systemd:
+        name: "{{ prometheus_service_name }}"
+        state: restarted
+        enabled: true
+      when:
+        - (prometheus_config_write is defined and prometheus_config_write.changed) or (prometheus_service_unit_write.changed | bool)
+
+    - name: Ensure Prometheus service is enabled and running
+      ansible.builtin.systemd:
+        name: "{{ prometheus_service_name }}"
+        state: started
+        enabled: true
+      register: prometheus_service_start
+
+    - name: Validate Prometheus service readiness and configuration content
+      block:
+        - name: Wait for Prometheus readiness endpoint to report ready
+          ansible.builtin.uri:
+            url: "{{ prometheus_web_url }}"
+            method: GET
+            status_code: 200
+            return_content: true
+          register: prometheus_ready_check
+          retries: 30
+          delay: 5
+          until: prometheus_ready_check.status == 200
+          changed_when: false
+
+        - name: Query final Prometheus systemd service state
+          ansible.builtin.systemd:
+            name: "{{ prometheus_service_name }}"
+          register: prometheus_final_service_status
+          changed_when: false
+
+        - name: Read final Prometheus configuration file
+          ansible.builtin.slurp:
+            path: "{{ prometheus_config_file }}"
+          register: prometheus_final_config_slurp
+
+        - name: Assert Prometheus service is active and configuration includes Kubernetes scrape jobs
+          ansible.builtin.assert:
+            that:
+              - prometheus_final_service_status.status.ActiveState == 'active'
+              - "'job_name: kubernetes-apiservers' in (prometheus_final_config_slurp.content | b64decode)"
+              - "'job_name: kubernetes-nodes' in (prometheus_final_config_slurp.content | b64decode)"
+              - "'job_name: kubernetes-cadvisor' in (prometheus_final_config_slurp.content | b64decode)"
+              - "'job_name: kubernetes-service-endpoints' in (prometheus_final_config_slurp.content | b64decode)"
+              - "'job_name: kubernetes-pods' in (prometheus_final_config_slurp.content | b64decode)"
+            fail_msg: "Prometheus is not active or the expected Kubernetes scrape jobs are missing from {{ prometheus_config_file }}. Review debug output for service and config state."
+            success_msg: "Prometheus is active and the expected Kubernetes scrape jobs are present."
+      rescue:
+        - name: Collect Prometheus service logs after validation failure
+          ansible.builtin.command:
+            argv:
+              - journalctl
+              - --unit={{ prometheus_service_name }}
+              - --no-pager
+              - -n
+              - '100'
+          register: prometheus_journal
+          changed_when: false
+          failed_when: false
+
+        - name: Emit structured debug context for Prometheus validation failure
+          ansible.builtin.debug:
+            msg:
+              readiness_status: "{{ prometheus_ready_check.status | default('unavailable') }}"
+              readiness_content: "{{ prometheus_ready_check.content | default('') }}"
+              service_status: "{{ prometheus_final_service_status.status | default({}) }}"
+              promtool_stdout: "{{ prometheus_promtool_check.stdout | default('') }}"
+              promtool_stderr: "{{ prometheus_promtool_check.stderr | default('') }}"
+              journal_tail: "{{ prometheus_journal.stdout | default('') }}"
+
+        - name: Fail when Prometheus validation does not reach requested end state
+          ansible.builtin.fail:
+            msg: "Prometheus host-level deployment validation failed on the control node. Review the emitted debug context for readiness, configuration, and systemd service details."
+
+    - name: Emit final structured Prometheus state summary
+      ansible.builtin.debug:
+        msg:
+          prometheus_service: "{{ prometheus_service_name }}"
+          prometheus_version: "{{ prometheus_version }}"
+          prometheus_binary: "{{ prometheus_bin }}"
+          prometheus_config: "{{ prometheus_config_file }}"
+          prometheus_data_dir: "{{ prometheus_data_dir }}"
+          prometheus_ready_url: "{{ prometheus_web_url }}"
+          prometheus_active_state: "{{ prometheus_final_service_status.status.ActiveState | default('unknown') }}"
+          kubeconfig_used: "{{ prometheus_kubeconfig }}"
+          kubernetes_scrape_jobs: "{{ prometheus_required_k8s_jobs }}"

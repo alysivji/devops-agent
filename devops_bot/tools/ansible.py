@@ -60,6 +60,28 @@ class AnsibleFailureDiagnosis(TypedDict):
     stdout_tail: str
 
 
+class SystemdServiceRestartResult(TypedDict):
+    service_name: str
+    restarted: bool
+    active_state: str
+    enabled_state: str
+    status_summary: str
+
+
+ALLOWED_SYSTEMD_SERVICES: Final[frozenset[str]] = frozenset(
+    {
+        "devops-agent",
+        "devops-agent-worker",
+        "devops-agent-web",
+        "grafana-server",
+        "k3s",
+        "k3s-agent",
+        "minio",
+        "prometheus",
+    }
+)
+
+
 def _serialize_registry_entry(
     entry: AnsiblePlaybookRegistryEntry,
 ) -> AnsiblePlaybookRegistryEntryDict:
@@ -76,6 +98,11 @@ def _serialize_registry_entry(
 def _confirm_playbook_execution(entry: AnsiblePlaybookRegistryEntry) -> bool:
     response = input(f"Run playbook '{entry.name}' at {entry.path}? [y/N]: ").strip().lower()
     return response in {"y", "yes"}
+
+
+def _confirm_systemd_restart(service_name: str) -> bool:
+    response = input(f"Restart systemd service '{service_name}' on this machine? [y/N]: ")
+    return response.strip().lower() in {"y", "yes"}
 
 
 def _ansible_env() -> dict[str, str]:
@@ -352,6 +379,132 @@ def ansible_run_playbook(playbook_path: str) -> str:
         if details:
             raise RuntimeError(f"Ansible playbook execution failed:\n{details}") from exc
         raise RuntimeError("Ansible playbook execution failed") from exc
+
+
+@tool
+def systemd_restart_service(service_name: str) -> SystemdServiceRestartResult:
+    """Restart an allowlisted systemd service on the local control machine.
+
+    Args:
+        service_name: One of the repo-managed systemd service names in the
+            hard-coded allowlist.
+
+    Returns:
+        A JSON-serializable restart and status summary.
+
+    Raises:
+        ValueError: If the service is not allowlisted.
+        PermissionError: If the restart was not approved.
+        RuntimeError: If systemctl exits with a non-zero status.
+    """
+    if service_name not in ALLOWED_SYSTEMD_SERVICES:
+        allowed = ", ".join(sorted(ALLOWED_SYSTEMD_SERVICES))
+        raise ValueError(f"systemd service is not allowlisted: {service_name}. Allowed: {allowed}")
+
+    record_event(
+        kind="systemd_service_restart_requested",
+        status="started",
+        what=f"Requested restart for systemd service `{service_name}`.",
+        why="Restart an allowlisted repo-managed service on the local control machine.",
+        details={
+            "service_name": service_name,
+            "allowed_services": sorted(ALLOWED_SYSTEMD_SERVICES),
+        },
+    )
+    if not _confirm_systemd_restart(service_name):
+        record_event(
+            kind="systemd_service_restart_declined",
+            status="declined",
+            what=f"Declined restart for systemd service `{service_name}`.",
+            why="The tool requires explicit human approval before restarting local services.",
+            details={"service_name": service_name, "approved": False},
+        )
+        raise PermissionError(f"Systemd service restart not approved: {service_name}")
+
+    record_event(
+        kind="systemd_service_restart_approved",
+        status="approved",
+        what=f"Approved restart for systemd service `{service_name}`.",
+        why="The local systemd service restart was explicitly approved.",
+        details={"service_name": service_name, "approved": True},
+    )
+
+    started_at = time.monotonic()
+    restart_command = ["sudo", "-n", "systemctl", "restart", service_name]
+    record_event(
+        kind="systemd_service_restart_started",
+        status="started",
+        what=f"Started restart for systemd service `{service_name}`.",
+        why="Apply the requested service restart through systemctl on the local control machine.",
+        details={"service_name": service_name, "command": restart_command},
+    )
+    try:
+        subprocess.run(
+            restart_command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        active_state = _run_systemctl_query("is-active", service_name)
+        enabled_state = _run_systemctl_query("is-enabled", service_name)
+        status_summary = _run_systemctl_query("status", service_name, "--no-pager", "--lines=20")
+    except subprocess.CalledProcessError as exc:
+        stdout = _decode_output(exc.stdout).strip()
+        stderr = _decode_output(exc.stderr).strip()
+        details = "\n".join(part for part in (stderr, stdout) if part)
+        elapsed_seconds = round(time.monotonic() - started_at, 3)
+        record_event(
+            kind="systemd_service_restart_failed",
+            status="failed",
+            what=f"Restart for systemd service `{service_name}` failed.",
+            why="Capture systemctl output so the agent can choose the next corrective action.",
+            details={
+                "service_name": service_name,
+                "command": exc.cmd,
+                "return_code": exc.returncode,
+                "elapsed_seconds": elapsed_seconds,
+                "stdout_tail": _tail_lines(stdout, ANSIBLE_OUTPUT_TAIL_LINES),
+                "stderr_tail": _tail_lines(stderr, ANSIBLE_OUTPUT_TAIL_LINES),
+            },
+        )
+        if details:
+            raise RuntimeError(f"Systemd service restart failed:\n{details}") from exc
+        raise RuntimeError("Systemd service restart failed") from exc
+
+    elapsed_seconds = round(time.monotonic() - started_at, 3)
+    result: SystemdServiceRestartResult = {
+        "service_name": service_name,
+        "restarted": True,
+        "active_state": active_state,
+        "enabled_state": enabled_state,
+        "status_summary": status_summary,
+    }
+    record_event(
+        kind="systemd_service_restart_succeeded",
+        status="completed",
+        what=f"Restart for systemd service `{service_name}` completed.",
+        why="Capture the post-restart service state for validation and reporting.",
+        details={
+            "service_name": service_name,
+            "elapsed_seconds": elapsed_seconds,
+            "active_state": active_state,
+            "enabled_state": enabled_state,
+            "status_summary": _tail_lines(status_summary, 20),
+        },
+    )
+    return result
+
+
+def _run_systemctl_query(*args: str) -> str:
+    result = subprocess.run(
+        ["systemctl", *args],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    return _decode_output(result.stdout).strip()
 
 
 def _summarize_ansible_output(output: str) -> str:

@@ -26,6 +26,51 @@ def test_orchestrator_prompt_prefers_goal_state_validation() -> None:
     assert "report success instead of continuing" in MAIN_SYSTEM_PROMPT
 
 
+def test_orchestrator_prompt_distinguishes_grafana_from_prometheus_scraping() -> None:
+    assert "Grafana\n  datasource check only proves Grafana can reach Prometheus" in (
+        MAIN_SYSTEM_PROMPT
+    )
+    assert "does not prove\n  Kubernetes metrics are being scraped" in MAIN_SYSTEM_PROMPT
+    assert "Prometheus target discovery shows Kubernetes\n  scrape jobs" in MAIN_SYSTEM_PROMPT
+
+
+def test_orchestrator_prompt_requires_prometheus_target_validation() -> None:
+    assert "/api/v1/targets?state=any" in MAIN_SYSTEM_PROMPT
+    assert "/api/v1/targets?state=active" in MAIN_SYSTEM_PROMPT
+    assert "Do\n  not treat config text containing `job_name: kubernetes-*` as sufficient" in (
+        MAIN_SYSTEM_PROMPT
+    )
+
+
+def test_orchestrator_prompt_repairs_redundant_playbook_approval_gates() -> None:
+    assert "`-e *_approve=true`" in MAIN_SYSTEM_PROMPT
+    assert "redundant\n  in-playbook approval gate" in MAIN_SYSTEM_PROMPT
+    assert "Use `ansible_edit_playbook`" in MAIN_SYSTEM_PROMPT
+    assert "retry the playbook" in MAIN_SYSTEM_PROMPT
+
+
+def test_orchestrator_prompt_updates_env_example_for_runtime_env_vars() -> None:
+    assert "`env_example_update`" in MAIN_SYSTEM_PROMPT
+    assert "`env_list_loaded_keys`" in MAIN_SYSTEM_PROMPT
+    assert "Call `env_example_update` only when the user asks to update env" in (MAIN_SYSTEM_PROMPT)
+    assert "after creating or editing a playbook that adds" in MAIN_SYSTEM_PROMPT
+    assert "Do not call `env_example_update`\n  merely because a playbook run" in (
+        MAIN_SYSTEM_PROMPT
+    )
+    assert "pass the playbook path as `source_path`" in MAIN_SYSTEM_PROMPT
+    assert "Pass\n  `optional_variable_names`" in MAIN_SYSTEM_PROMPT
+    assert "pass `section_name`" in MAIN_SYSTEM_PROMPT
+    assert "Use\n  explicit `variable_names`" in MAIN_SYSTEM_PROMPT
+    assert "`env_example_update` as documentation repair, not a prerequisite or" in (
+        MAIN_SYSTEM_PROMPT
+    )
+    assert "Do not call it before or after a requested playbook" in MAIN_SYSTEM_PROMPT
+    assert "use `env_list_loaded_keys` with the\n  playbook path as `source_path`" in (
+        MAIN_SYSTEM_PROMPT
+    )
+    assert "If required keys are present, continue to the requested run" in MAIN_SYSTEM_PROMPT
+
+
 def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "You orchestrate DevOps workflow tools" in MAIN_SYSTEM_PROMPT
     assert "Start by routing the request" in MAIN_SYSTEM_PROMPT
@@ -45,6 +90,29 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "Repo-owned charts live under\n  `helm/charts`" in MAIN_SYSTEM_PROMPT
     assert "deploy the\n  chart path instead of a public chart reference" in MAIN_SYSTEM_PROMPT
     assert "call the tool instead of asking for approval in prose" in MAIN_SYSTEM_PROMPT
+
+
+def test_orchestrator_prompt_loads_playbook_configuration_skill() -> None:
+    assert "load the `playbook-configuration`\n  skill" in MAIN_SYSTEM_PROMPT
+    assert "k3s, kubectl, Helm, kubeconfig files" in MAIN_SYSTEM_PROMPT
+    assert "registry metadata, or host/cluster inventory targeting" in MAIN_SYSTEM_PROMPT
+
+
+def test_orchestrator_prompt_prefers_restart_tool_for_local_systemd_services() -> None:
+    assert "`systemd_restart_service`" in MAIN_SYSTEM_PROMPT
+    assert "explicit local/control-node service restart requests" in MAIN_SYSTEM_PROMPT
+    assert "Use Ansible playbooks for remote cluster-node service changes" in MAIN_SYSTEM_PROMPT
+
+
+def test_orchestrator_prompt_routes_grafana_metrics_to_control_node() -> None:
+    assert "foundation services" in MAIN_SYSTEM_PROMPT
+    assert "observability\n  sinks" in MAIN_SYSTEM_PROMPT
+    assert '"set up Grafana"' in MAIN_SYSTEM_PROMPT
+    assert '"send metrics from Kubernetes\n  somewhere"' in MAIN_SYSTEM_PROMPT
+    assert "inspect the Ansible playbook registry" in MAIN_SYSTEM_PROMPT
+    assert "unless the user explicitly asks to deploy that\n  service inside Kubernetes" in (
+        MAIN_SYSTEM_PROMPT
+    )
 
 
 def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
@@ -72,10 +140,14 @@ def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
         "kubernetes_fix_access",
         "kubectl_get",
         "kubectl_rollout_status",
+        "systemd_restart_service",
+        "env_example_update",
+        "env_list_loaded_keys",
     }.issubset(tool_names)
     plugins = captured["build_agent"]["plugins"]
     assert len(plugins) == 1
-    assert plugins[0].get_available_skills()[0].name == "kubernetes-troubleshooting"
+    skill_names = {skill.name for skill in plugins[0].get_available_skills()}
+    assert {"kubernetes-troubleshooting", "playbook-configuration"}.issubset(skill_names)
 
 
 def test_kubernetes_troubleshooting_skill_uses_direct_blocker_wording() -> None:
@@ -86,6 +158,15 @@ def test_kubernetes_troubleshooting_skill_uses_direct_blocker_wording() -> None:
     assert "If you want me to proceed" in skill_text
     assert "do not stop with a\n     natural-language next step" in skill_text
     assert "stop at the\n     boundary" not in skill_text
+
+
+def test_kubernetes_troubleshooting_skill_routes_foundation_services_to_ansible() -> None:
+    skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
+
+    assert "Foundation services for this repo" in skill_text
+    assert "observability sinks" in skill_text
+    assert "Grafana for\n     Kubernetes metrics" in skill_text
+    assert "control-node Ansible work" in skill_text
 
 
 def test_kubernetes_troubleshooting_skill_uses_kubeconfig_repair_tool() -> None:
@@ -109,6 +190,17 @@ def test_kubernetes_troubleshooting_skill_reports_service_access_safely() -> Non
     assert "Do not tell the user to connect to `0.0.0.0`" in skill_text
     assert "recommend a port-forward" in skill_text
     assert "`nodes` resource and report `<node-ip>:<node-port>`" in skill_text
+
+
+def test_playbook_configuration_skill_describes_k3s_sudo_kubeconfig_pattern() -> None:
+    skill_text = Path("skills/playbook-configuration/SKILL.md").read_text(encoding="utf-8")
+
+    assert "k3s keeps its admin kubeconfig at `/etc/rancher/k3s/k3s.yaml`" in skill_text
+    assert "use `become: true`" in skill_text
+    assert "kubectl --kubeconfig {{ k3s_admin_kubeconfig }}" in skill_text
+    assert "helm --kubeconfig {{ k3s_admin_kubeconfig }}" in skill_text
+    assert 'KUBECONFIG: "{{ k3s_admin_kubeconfig }}"' in skill_text
+    assert "metadata header" in skill_text
 
 
 def test_orchestrator_builds_session_manager_for_session_id(monkeypatch) -> None:

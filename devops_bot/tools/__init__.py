@@ -2,7 +2,9 @@ from .ansible import (
     ansible_list_inventory_groups,
     ansible_list_playbooks,
     ansible_run_playbook,
+    systemd_restart_service,
 )
+from .env import env_example_update, env_list_loaded_keys
 from .git import (
     git_create_branch,
     git_create_commit,
@@ -28,12 +30,15 @@ __all__ = [
     "git_create_commit",
     "ansible_list_inventory_groups",
     "ansible_list_playbooks",
+    "env_example_update",
+    "env_list_loaded_keys",
     "git_push",
     "git_status",
     "http_get",
     "git_list_commits",
     "ansible_run_playbook",
     "search_web",
+    "systemd_restart_service",
     "helm_create_chart",
     "helm_edit_chart",
     "helm_list_charts",
