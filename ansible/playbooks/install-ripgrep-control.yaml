@@ -1,0 +1,72 @@
+# name: install_ripgrep_control
+# description: Install ripgrep on the control node if it is not already present, validating rg availability post-installation and failing with a detailed context in case of errors, ensuring reliable setup.
+# target: control
+# requires_approval: true
+# tags:
+#   - ripgrep
+#   - package
+#   - install
+
+---
+- name: "Registry metadata | Install ripgrep on control node"
+  hosts: localhost
+  gather_facts: false
+  vars:
+    registry_metadata:
+      name: install-ripgrep-control
+      description: Install ripgrep on the control node if it is not already present and validate rg availability.
+      target: control
+      requires_approval: true
+      tags:
+        - ripgrep
+        - package
+        - install
+  tasks:
+    - name: Check whether rg command is already present
+      ansible.builtin.command: which rg
+      register: rg_which
+      changed_when: false
+      failed_when: false
+
+    - name: Install ripgrep package when rg is not present
+      become: true
+      ansible.builtin.package:
+        name: ripgrep
+        state: present
+      when: rg_which.rc != 0
+
+    - name: Validate rg --version succeeds
+      block:
+        - name: Run rg --version
+          ansible.builtin.command: rg --version
+          register: rg_version
+          changed_when: false
+
+        - name: Assert rg is available after installation check
+          ansible.builtin.assert:
+            that:
+              - rg_version.rc == 0
+              - rg_version.stdout is search('ripgrep')
+            fail_msg: rg is not available on the control node. Ensure the ripgrep package can be installed from configured repositories.
+            success_msg: rg is available on the control node.
+      rescue:
+        - name: Emit ripgrep validation failure context
+          ansible.builtin.debug:
+            msg:
+              validation: ripgrep_failed
+              which_rc: "{{ rg_which.rc | default('unknown') }}"
+              which_stdout: "{{ rg_which.stdout | default('') }}"
+              which_stderr: "{{ rg_which.stderr | default('') }}"
+              version_rc: "{{ rg_version.rc | default('unknown') }}"
+              version_stdout: "{{ rg_version.stdout | default('') }}"
+              version_stderr: "{{ rg_version.stderr | default('') }}"
+        - name: Fail because ripgrep validation did not succeed
+          ansible.builtin.fail:
+            msg: ripgrep installation validation failed on the control node.
+
+    - name: Emit final ripgrep state summary
+      ansible.builtin.debug:
+        msg:
+          tool: rg
+          present_before_install: "{{ rg_which.rc == 0 }}"
+          version_output: "{{ rg_version.stdout_lines | default([]) }}"
