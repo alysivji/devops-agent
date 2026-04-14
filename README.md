@@ -58,6 +58,11 @@ Kubernetes and Helm failure handling is also available as a Strands skill under
 `skills/kubernetes-troubleshooting/`; the orchestrator loads repo skills via the
 Strands `AgentSkills` plugin.
 
+The service discovery registry plan lives in
+`docs/service-discovery-registry-plan.md`. The intended registry is static
+repo-owned state for known service identities and endpoints, separate from live
+Helm, kubectl, or Ansible health checks.
+
 The first generation tool supports these inventory targets:
 
 - `control` for local playbooks
