@@ -47,6 +47,12 @@ def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "call the tool instead of asking for approval in prose" in MAIN_SYSTEM_PROMPT
 
 
+def test_orchestrator_prompt_prefers_restart_tool_for_local_systemd_services() -> None:
+    assert "`systemd_restart_service`" in MAIN_SYSTEM_PROMPT
+    assert "explicit local/control-node service restart requests" in MAIN_SYSTEM_PROMPT
+    assert "Use Ansible playbooks for remote cluster-node service changes" in MAIN_SYSTEM_PROMPT
+
+
 def test_orchestrator_prompt_routes_grafana_metrics_to_control_node() -> None:
     assert "foundation services" in MAIN_SYSTEM_PROMPT
     assert "observability\n  sinks" in MAIN_SYSTEM_PROMPT
@@ -83,6 +89,7 @@ def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
         "kubernetes_fix_access",
         "kubectl_get",
         "kubectl_rollout_status",
+        "systemd_restart_service",
     }.issubset(tool_names)
     plugins = captured["build_agent"]["plugins"]
     assert len(plugins) == 1

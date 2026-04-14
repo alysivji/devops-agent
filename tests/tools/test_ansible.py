@@ -9,6 +9,7 @@ from devops_bot.tools import (
     ansible_list_inventory_groups,
     ansible_list_playbooks,
     ansible_run_playbook,
+    systemd_restart_service,
 )
 
 
@@ -306,3 +307,71 @@ class TestGetAnsibleInventoryGroups:
         groups = ansible_list_inventory_groups()
 
         assert groups == ["cluster", "control"]
+
+
+class TestSystemdRestartService:
+    def test_systemd_restart_service_rejects_non_allowlisted_service(self):
+        with pytest.raises(ValueError, match="not allowlisted"):
+            systemd_restart_service("ssh")
+
+    def test_systemd_restart_service_requires_approval(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr("builtins.input", lambda _: "n")
+        run_history = RunHistory(prompt="restart prometheus")
+        token = set_active_run_history(run_history)
+
+        try:
+            with pytest.raises(PermissionError, match="restart not approved"):
+                systemd_restart_service("prometheus")
+        finally:
+            reset_active_run_history(token)
+
+        assert run_history.session.events[-1].kind == "systemd_service_restart_declined"
+
+    def test_systemd_restart_service_runs_systemctl_and_returns_status(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        commands: list[list[str]] = []
+
+        def fake_run(command, *args, **kwargs):
+            commands.append(command)
+            if command == ["systemctl", "is-active", "prometheus"]:
+                stdout = "active\n"
+            elif command == ["systemctl", "is-enabled", "prometheus"]:
+                stdout = "enabled\n"
+            elif command == ["systemctl", "status", "prometheus", "--no-pager", "--lines=20"]:
+                stdout = "prometheus.service - Prometheus\n   Active: active (running)\n"
+            else:
+                stdout = ""
+            return subprocess.CompletedProcess(args=command, returncode=0, stdout=stdout, stderr="")
+
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+
+        result = systemd_restart_service("prometheus")
+
+        assert commands[0] == ["sudo", "-n", "systemctl", "restart", "prometheus"]
+        assert result == {
+            "service_name": "prometheus",
+            "restarted": True,
+            "active_state": "active",
+            "enabled_state": "enabled",
+            "status_summary": "prometheus.service - Prometheus\n   Active: active (running)",
+        }
+
+    def test_systemd_restart_service_failure_includes_systemctl_output(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+
+        def fake_run(command, *args, **kwargs):
+            raise subprocess.CalledProcessError(
+                returncode=1,
+                cmd=command,
+                output="",
+                stderr="sudo: a password is required",
+            )
+
+        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+
+        with pytest.raises(RuntimeError, match="sudo: a password is required"):
+            systemd_restart_service("prometheus")

@@ -2,6 +2,7 @@ from .ansible import (
     ansible_list_inventory_groups,
     ansible_list_playbooks,
     ansible_run_playbook,
+    systemd_restart_service,
 )
 from .git import (
     git_create_branch,
@@ -34,6 +35,7 @@ __all__ = [
     "git_list_commits",
     "ansible_run_playbook",
     "search_web",
+    "systemd_restart_service",
     "helm_create_chart",
     "helm_edit_chart",
     "helm_list_charts",

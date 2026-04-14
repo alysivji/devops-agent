@@ -14,7 +14,7 @@ from strands.hooks.events import (
 from ..factory import build_agent, build_model
 from ..history import record_event
 from ..session import build_session_manager
-from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook
+from ..tools.ansible import ansible_list_playbooks, ansible_run_playbook, systemd_restart_service
 from ..tools.kubernetes import (
     helm_create_chart,
     helm_edit_chart,
@@ -37,6 +37,7 @@ You orchestrate DevOps workflow tools for this repository.
 Available tools:
 - `ansible_list_playbooks`: inspect the validated playbook registry
 - `ansible_run_playbook`: execute an existing registry playbook by path
+- `systemd_restart_service`: restart an allowlisted local/control-node systemd service
 - `ansible_create_playbook`: generate and write a new playbook through the agent-backed tool
 - `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
 - `helm_create_chart`: create a repo-owned Helm chart scaffold with explicit approval
@@ -91,6 +92,10 @@ Process:
   playbook. The `kubernetes_fix_access` tool owns its own approval prompt, so
   call the tool instead of asking for approval in prose.
 - If the Ansible registry already contains the right playbook, run it with `ansible_run_playbook`.
+- For explicit local/control-node service restart requests after a job or host
+  configuration change, prefer `systemd_restart_service` when the target service
+  is allowlisted. Use Ansible playbooks for remote cluster-node service changes
+  or broader host remediation.
 - If a tool fails while working toward the user's requested end state, do not
   stop after describing the failure. Use the failure details to choose the next
   corrective action available through the tools or active skill, then try again.
@@ -158,6 +163,7 @@ class OrchestratorAgent:
             tools=[
                 ansible_list_playbooks,
                 ansible_run_playbook,
+                systemd_restart_service,
                 ansible_create_playbook,
                 ansible_edit_playbook,
                 helm_create_chart,
