@@ -6,7 +6,7 @@ from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.screen import ModalScreen
-from textual.widgets import Button, Footer, Header, Input, Label, OptionList, RichLog
+from textual.widgets import Button, Footer, Header, Input, Label, OptionList, TextArea
 from textual.widgets.option_list import Option
 
 from .approval import ApprovalRequest
@@ -63,7 +63,7 @@ class DevopsAgentApp(App[None]):
         layout: vertical;
     }
 
-    RichLog {
+    TextArea {
         height: 1fr;
         border: solid $primary;
     }
@@ -98,29 +98,39 @@ class DevopsAgentApp(App[None]):
     }
     """
 
-    BINDINGS = [("ctrl+c", "quit", "Quit")]
+    BINDINGS = [("ctrl+q", "quit", "Quit"), ("super+q", "quit", "Quit")]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        yield RichLog(id="chat-log", wrap=True)
+        yield TextArea(
+            "",
+            id="chat-log",
+            read_only=True,
+            show_cursor=False,
+            soft_wrap=True,
+            highlight_cursor_line=False,
+        )
         yield Label("", id="status")
         yield OptionList(id="command-menu")
         yield Input(placeholder="Ask the devops agent...", id="prompt-input")
         yield Footer()
 
     def on_mount(self) -> None:
-        self._chat_log = self.query_one("#chat-log", RichLog)
+        self._chat_log = self.query_one("#chat-log", TextArea)
         self._status = self.query_one("#status", Label)
         self._command_menu = self.query_one("#command-menu", OptionList)
         self._prompt = self.query_one("#prompt-input", Input)
         self._workflow = AgentWorkflow()
         self._adapter: InteractiveAdapter = TextualAdapter(self)
         self._busy = False
+        self._chat_history: list[str] = []
         self._prompt.focus()
         self._hide_command_menu()
 
     def write_message(self, role: str, text: str) -> None:
-        self._chat_log.write(f"{role}> {text}")
+        self._chat_history.append(f"{role}> {text}")
+        self._chat_log.load_text("\n".join(self._chat_history))
+        self._chat_log.scroll_end(animate=False, immediate=True)
 
     def set_status_text(self, text: str) -> None:
         self._status.update(text)
@@ -160,6 +170,11 @@ class DevopsAgentApp(App[None]):
         self._update_command_menu(event.value)
 
     def on_key(self, event: events.Key) -> None:
+        if self.screen.focused is self._prompt and event.key in {"tab", "shift+tab"}:
+            event.stop()
+            event.prevent_default()
+            return
+
         if self.screen.focused is not self._prompt or not self._command_menu.display:
             return
 
