@@ -10,6 +10,11 @@ devops-agent chat
   /reset  start a new session (clears conversation history)
   /exit   quit  (also Ctrl-D)
 """
+COMMANDS = {
+    "/exit": "quit  (also Ctrl-D)",
+    "/quit": "quit",
+    "/reset": "start a new session (clears conversation history)",
+}
 
 RESET = "\033[0m"
 DIM = "\033[2m"
@@ -35,6 +40,25 @@ def _colorize(text: str, color: str, *, stream: object) -> str:
     return f"{color}{text}{RESET}"
 
 
+def _complete_command(text: str, state: int) -> str | None:
+    buffer = readline.get_line_buffer()
+    if not buffer.startswith("/"):
+        return None
+
+    matches = [command for command in COMMANDS if command.startswith(buffer)]
+    if state >= len(matches):
+        return None
+    return matches[state]
+
+
+def _print_command_help() -> None:
+    print()
+    print("Commands")
+    for command, description in COMMANDS.items():
+        print(f"  {command:<7} {description}")
+    print()
+
+
 class CliUI(UIProtocol):
     def post_message(self, role: str, text: str) -> None:
         stream = sys.stderr if role == "error" else sys.stdout
@@ -56,6 +80,8 @@ class CliUI(UIProtocol):
 
 
 def main() -> int:
+    readline.set_completer(_complete_command)
+    readline.parse_and_bind("tab: complete")
     print(BANNER)
     ui = CliUI()
     runner = AgentRunner(ui)
@@ -72,6 +98,9 @@ def main() -> int:
             continue
 
         if not user_input:
+            continue
+        if user_input == "/":
+            _print_command_help()
             continue
         if user_input in ("/exit", "/quit"):
             break
