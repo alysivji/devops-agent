@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import threading
 
+from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.screen import ModalScreen
-from textual.widgets import Button, Footer, Header, Input, Label, RichLog
+from textual.widgets import Button, Footer, Header, Input, Label, OptionList, RichLog
+from textual.widgets.option_list import Option
 
 from .runner import AgentRunner
 from .ui import UIProtocol
+
+COMMANDS = {
+    "/exit": "Quit the app.",
+    "/quit": "Quit the app.",
+    "/reset": "Start a new session.",
+}
 
 
 class TextualUI(UIProtocol):
@@ -72,6 +80,14 @@ class DevopsAgentApp(App[None]):
         padding: 0 1;
     }
 
+    #command-menu {
+        display: none;
+        height: auto;
+        max-height: 6;
+        border: solid $accent;
+        margin: 0 0 1 0;
+    }
+
     #approval-prompt {
         padding: 1 2;
     }
@@ -94,22 +110,49 @@ class DevopsAgentApp(App[None]):
         yield Header(show_clock=True)
         yield RichLog(id="chat-log", wrap=True)
         yield Label("", id="status")
+        yield OptionList(id="command-menu")
         yield Input(placeholder="Ask the devops agent...", id="prompt-input")
         yield Footer()
 
     def on_mount(self) -> None:
         self._chat_log = self.query_one("#chat-log", RichLog)
         self._status = self.query_one("#status", Label)
+        self._command_menu = self.query_one("#command-menu", OptionList)
         self._prompt = self.query_one("#prompt-input", Input)
         self._ui = TextualUI(self)
         self._runner = AgentRunner(self._ui)
         self._prompt.focus()
+        self._hide_command_menu()
 
     def write_message(self, role: str, text: str) -> None:
         self._chat_log.write(f"{role}> {text}")
 
     def set_status_text(self, text: str) -> None:
         self._status.update(text)
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input is not self._prompt:
+            return
+        self._update_command_menu(event.value)
+
+    def on_key(self, event: events.Key) -> None:
+        if self.screen.focused is not self._prompt or not self._command_menu.display:
+            return
+
+        if event.key == "down":
+            self._command_menu.action_cursor_down()
+            event.stop()
+            event.prevent_default()
+            return
+        if event.key == "up":
+            self._command_menu.action_cursor_up()
+            event.stop()
+            event.prevent_default()
+            return
+        if event.key == "enter":
+            self._apply_highlighted_command()
+            event.stop()
+            event.prevent_default()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
@@ -126,6 +169,31 @@ class DevopsAgentApp(App[None]):
 
         self.write_message("you", text)
         self.run_worker(lambda: self._runner.run(text), thread=True)
+
+    def _update_command_menu(self, value: str) -> None:
+        if not value.startswith("/"):
+            self._hide_command_menu()
+            return
+
+        matches = [command for command in COMMANDS if command.startswith(value)] or list(COMMANDS)
+        options = [Option(f"{command}  {COMMANDS[command]}", id=command) for command in matches]
+        self._command_menu.set_options(options)
+        self._command_menu.highlighted = 0 if options else None
+        self._command_menu.display = bool(options)
+
+    def _hide_command_menu(self) -> None:
+        self._command_menu.display = False
+        self._command_menu.clear_options()
+
+    def _apply_highlighted_command(self) -> None:
+        option = self._command_menu.highlighted_option
+        if option is None or option.id is None:
+            return
+
+        with self.prevent(Input.Changed):
+            self._prompt.value = option.id
+        self._hide_command_menu()
+        self._prompt.focus()
 
 
 def main() -> int:
