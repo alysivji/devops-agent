@@ -144,6 +144,39 @@ service that can:
 - Persist a new `PendingApproval` and raise a controlled pause signal when approval is needed.
 - Return declined or raise a controlled denial when the user rejects the approval.
 
+## Why `contextvars` Here
+
+The current agent package now has two different kinds of state:
+
+- Durable workflow state that should live in Django models and queues.
+- Execution-local services needed by shared agent/tool code while one run is active.
+
+The execution-local part is where `contextvars` fits. Shared functions such as
+the playbook and Helm tools, plus orchestrator hooks, are invoked from
+framework-managed call paths and do not naturally receive a workflow/runtime
+object as an argument. A `ContextVar` gives those functions access to the
+current run's approval service and event sink without falling back to a
+process-global singleton.
+
+This is specifically not a persistence mechanism and not a replacement for
+Django tables or Strands session storage:
+
+- Django should persist workflow rows, jobs, approvals, and UI-visible state.
+- Strands should persist model/session state in the S3-compatible session store.
+- `contextvars` should hold only execution-local services for the active Python
+  run.
+
+This matters even if today's terminal path feels single-threaded. Module globals
+break once the runtime moves behind Django/Gunicorn, starts serving overlapping
+requests, or uses async streaming for partial replies. `ContextVar` values track
+the active execution context, including async task context, rather than only OS
+thread identity.
+
+References:
+
+- Python `contextvars`: https://docs.python.org/3/library/contextvars.html
+- PEP 567: https://peps.python.org/pep-0567/
+
 ## State Machine Shape
 
 The Django side should have an explicit state machine, even if the first implementation is a small

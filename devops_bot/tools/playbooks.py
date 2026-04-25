@@ -15,6 +15,7 @@ from ..agents.playbook_generator import GeneratePlaybookAgent
 from ..agents.playbook_metadata import GeneratedPlaybookMetadata, PlaybookMetadataAgent
 from ..approval import get_approval
 from ..history import record_event
+from ..workflow import emit_notice, emit_preview
 from .ansible import (
     ansible_list_playbooks,
     check_ansible_playbook_syntax,
@@ -94,7 +95,7 @@ class CreateAnsiblePlaybook:
             metadata=generated_metadata,
         )
 
-        print_preview(
+        emit_playbook_preview(
             path=playbook_path,
             metadata=generated_metadata,
             rendered_playbook=rendered_playbook,
@@ -109,7 +110,7 @@ class CreateAnsiblePlaybook:
 
         written = confirm_write(playbook_path)
         if not written:
-            print("Playbook not written.")
+            emit_notice("Playbook not written.")
             record_event(
                 kind="playbook_write_declined",
                 status="declined",
@@ -134,7 +135,7 @@ class CreateAnsiblePlaybook:
             details={"path": str(playbook_path), "approved": True},
         )
         playbook_path.write_text(rendered_playbook, encoding="utf-8")
-        print(f"Wrote playbook to {playbook_path}.")
+        emit_notice(f"Wrote playbook to {playbook_path}.")
         record_event(
             kind="playbook_written",
             status="completed",
@@ -179,20 +180,34 @@ def render_playbook_file(*, yaml: str, metadata: GeneratedPlaybookMetadata) -> s
     return "\n".join(lines)
 
 
-def print_preview(
+def emit_playbook_preview(
     *, path: Path, metadata: GeneratedPlaybookMetadata, rendered_playbook: str
 ) -> None:
-    print(f"Path: {path}")
-    print("Metadata:")
-    print(f"  name: {metadata.name}")
-    print(f"  description: {metadata.description}")
-    print(f"  target: {metadata.target}")
-    print(f"  requires_approval: {str(metadata.requires_approval).lower()}")
-    print("  tags:")
-    for tag in metadata.tags:
-        print(f"    - {tag}")
-    print()
-    print(rendered_playbook)
+    tag_lines = "\n".join(f"    - {tag}" for tag in metadata.tags) or "    -"
+    body = "\n".join(
+        [
+            f"Path: {path}",
+            "Metadata:",
+            f"  name: {metadata.name}",
+            f"  description: {metadata.description}",
+            f"  target: {metadata.target}",
+            f"  requires_approval: {str(metadata.requires_approval).lower()}",
+            "  tags:",
+            tag_lines,
+            "",
+            rendered_playbook,
+        ]
+    )
+    emit_preview(
+        preview_type="ansible_playbook_create",
+        title=f"Generated playbook preview for {path}",
+        body=body,
+        metadata={
+            "path": str(path),
+            "target": metadata.target,
+            "requires_approval": metadata.requires_approval,
+        },
+    )
 
 
 def summarize_generated_playbook(yaml_text: str) -> dict[str, str | int | list[str]]:
@@ -298,7 +313,7 @@ class EditAnsiblePlaybook:
         self.syntax_checker(edited.content)
         validate_playbook_file_content(edited.content)
 
-        print_edit_preview(path=target_path, edited=edited)
+        emit_playbook_edit_preview(path=target_path, edited=edited)
         record_event(
             kind="playbook_edit_preview_presented",
             status="completed",
@@ -313,7 +328,7 @@ class EditAnsiblePlaybook:
 
         written = confirm_edit(target_path)
         if not written:
-            print("Playbook edit not written.")
+            emit_notice("Playbook edit not written.")
             record_event(
                 kind="playbook_edit_declined",
                 status="declined",
@@ -331,7 +346,7 @@ class EditAnsiblePlaybook:
             )
 
         target_path.write_text(_normalize_file_content(edited.content), encoding="utf-8")
-        print(f"Edited playbook at {target_path}.")
+        emit_notice(f"Edited playbook at {target_path}.")
         record_event(
             kind="playbook_edit_written",
             status="completed",
@@ -375,12 +390,25 @@ def confirm_edit(path: Path) -> bool:
     return get_approval(f"Write edited playbook to {path}? [y/N]: ")
 
 
-def print_edit_preview(*, path: Path, edited: EditedAnsiblePlaybook) -> None:
-    print(f"Path: {path}")
-    print(f"Summary: {edited.summary}")
-    print(f"Requires remote rerun: {str(edited.requires_remote_rerun).lower()}")
-    print()
-    print(edited.content)
+def emit_playbook_edit_preview(*, path: Path, edited: EditedAnsiblePlaybook) -> None:
+    body = "\n".join(
+        [
+            f"Path: {path}",
+            f"Summary: {edited.summary}",
+            f"Requires remote rerun: {str(edited.requires_remote_rerun).lower()}",
+            "",
+            edited.content,
+        ]
+    )
+    emit_preview(
+        preview_type="ansible_playbook_edit",
+        title=f"Edited playbook preview for {path}",
+        body=body,
+        metadata={
+            "path": str(path),
+            "requires_remote_rerun": edited.requires_remote_rerun,
+        },
+    )
 
 
 def _normalize_file_content(content: str) -> str:

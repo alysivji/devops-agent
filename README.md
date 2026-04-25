@@ -127,6 +127,32 @@ The JSONL run history remains a compact summary and audit artifact. Optional
 Strands session storage persists the agent's messages and state for object-level
 inspection and future backend experiments. It is disabled by default.
 
+## Runtime Context
+
+Interactive chat/TUI runs now carry execution-local services such as approval
+resolution and user-visible preview/notice rendering through Python
+`contextvars`, not module-global mutable state. This is an in-process runtime
+bridge for framework-managed tool callbacks and hooks that do not naturally
+receive a workflow/runtime argument.
+
+The split is:
+
+- Django/database rows own durable workflow state, approvals, and job status.
+- Strands session storage owns persisted model/session state in the S3-backed
+object store.
+- `contextvars` owns execution-local services for the current in-process run.
+
+This matters once the agent is hosted behind Django/Gunicorn or streams replies
+asynchronously: module globals bleed across requests, while `ContextVar` values
+follow the active execution context, including async task context, rather than
+only OS threads. Terminal adapters render workflow events; shared workflow/tool
+code should not print directly.
+
+References:
+
+- Python `contextvars`: https://docs.python.org/3/library/contextvars.html
+- PEP 567: https://peps.python.org/pep-0567/
+
 For local S3-compatible storage, point the session backend at a reachable MinIO
 or S3-compatible endpoint. The control-node MinIO service listens on
 `http://127.0.0.1:9000` for S3 API calls and serves the browser console at
