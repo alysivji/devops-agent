@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 devops-agent = "devops_bot.main:main"
+devops-agent-chat = "devops_bot.chat:main"
 
 [dependency-groups]
 dev = [
