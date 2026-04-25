@@ -13,6 +13,7 @@ from ..agents.playbook_editor import (
 )
 from ..agents.playbook_generator import GeneratePlaybookAgent
 from ..agents.playbook_metadata import GeneratedPlaybookMetadata, PlaybookMetadataAgent
+from ..approval import get_approval
 from ..history import record_event
 from .ansible import (
     ansible_list_playbooks,
@@ -160,8 +161,7 @@ def build_playbook_path(name: str) -> Path:
 
 
 def confirm_write(path: Path) -> bool:
-    response = input(f"Write playbook to {path}? [y/N]: ").strip().lower()
-    return response in {"y", "yes"}
+    return get_approval(f"Write playbook to {path}? [y/N]: ")
 
 
 def render_playbook_file(*, yaml: str, metadata: GeneratedPlaybookMetadata) -> str:
@@ -372,8 +372,7 @@ def _validate_registry_playbook_path(playbook_path: str) -> Path:
 
 
 def confirm_edit(path: Path) -> bool:
-    response = input(f"Write edited playbook to {path}? [y/N]: ").strip().lower()
-    return response in {"y", "yes"}
+    return get_approval(f"Write edited playbook to {path}? [y/N]: ")
 
 
 def print_edit_preview(*, path: Path, edited: EditedAnsiblePlaybook) -> None:
