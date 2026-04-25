@@ -12,6 +12,7 @@ from strands import tool
 from ..agents.helm_chart_editor import EditedHelmChart, EditHelmChartAgent
 from ..approval import get_approval
 from ..history import record_event
+from ..workflow import emit_preview
 
 KUBERNETES_OUTPUT_TAIL_LINES: Final[int] = 80
 HELM_CHARTS_DIR: Final[Path] = Path("helm/charts")
@@ -358,7 +359,7 @@ class EditHelmChart:
             requested_change=requested_change,
         )
         edited_paths = _validate_chart_file_edits(target_path, edited)
-        print_chart_edit_preview(chart_path=target_path, edited=edited)
+        emit_chart_edit_preview(chart_path=target_path, edited=edited)
         record_event(
             kind="helm_chart_edit_preview_presented",
             status="completed",
@@ -449,13 +450,27 @@ def _helm_lint(chart_path: Path) -> None:
     )
 
 
-def print_chart_edit_preview(*, chart_path: Path, edited: EditedHelmChart) -> None:
-    print(f"Chart: {chart_path}")
-    print(f"Summary: {edited.summary}")
-    print(f"Requires cluster validation: {str(edited.requires_cluster_validation).lower()}")
-    print("Files:")
-    for file_edit in edited.files:
-        print(f"  - {file_edit.path}")
+def emit_chart_edit_preview(*, chart_path: Path, edited: EditedHelmChart) -> None:
+    files = "\n".join(f"  - {file_edit.path}" for file_edit in edited.files)
+    body = "\n".join(
+        [
+            f"Chart: {chart_path}",
+            f"Summary: {edited.summary}",
+            f"Requires cluster validation: {str(edited.requires_cluster_validation).lower()}",
+            "Files:",
+            files,
+        ]
+    )
+    emit_preview(
+        preview_type="helm_chart_edit",
+        title=f"Helm chart edit preview for {chart_path}",
+        body=body,
+        metadata={
+            "path": str(chart_path),
+            "files": [file_edit.path for file_edit in edited.files],
+            "requires_cluster_validation": edited.requires_cluster_validation,
+        },
+    )
 
 
 def _normalize_file_content(content: str) -> str:

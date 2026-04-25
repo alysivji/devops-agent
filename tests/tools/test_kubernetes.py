@@ -18,6 +18,12 @@ from devops_bot.tools import (
     kubernetes_fix_access,
 )
 from devops_bot.tools.kubernetes import EditHelmChart
+from devops_bot.workflow import (
+    WorkflowEvent,
+    WorkflowRuntime,
+    reset_workflow_runtime,
+    set_workflow_runtime,
+)
 
 
 class StubChartEditor:
@@ -132,6 +138,13 @@ class TestHelmEditChart:
         tool = EditHelmChart(editor=editor, lint_runner=linted.append)
         run_history = RunHistory(prompt="scale nginx chart")
         token = set_active_run_history(run_history)
+        emitted_events: list[WorkflowEvent] = []
+        runtime_token = set_workflow_runtime(
+            WorkflowRuntime(
+                event_sink=emitted_events.append,
+                approval_resolver=lambda request: True,
+            )
+        )
 
         try:
             result = tool.run(
@@ -139,6 +152,7 @@ class TestHelmEditChart:
                 requested_change="Set replica count to 2.",
             )
         finally:
+            reset_workflow_runtime(runtime_token)
             reset_active_run_history(token)
 
         assert result == {
@@ -155,6 +169,9 @@ class TestHelmEditChart:
         event_kinds = [event.kind for event in run_history.session.events]
         assert "helm_chart_edit_preview_presented" in event_kinds
         assert "helm_chart_edit_written" in event_kinds
+        assert emitted_events[0]["kind"] == "preview"
+        assert emitted_events[0]["preview_type"] == "helm_chart_edit"
+        assert "Helm chart edit preview" in emitted_events[0]["title"]
 
     def test_helm_edit_chart_skips_binary_chart_dependencies(
         self,

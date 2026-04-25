@@ -12,6 +12,12 @@ from devops_bot.history import RunHistory, reset_active_run_history, set_active_
 from devops_bot.tools.playbooks import (
     EditAnsiblePlaybook,
 )
+from devops_bot.workflow import (
+    WorkflowEvent,
+    WorkflowRuntime,
+    reset_workflow_runtime,
+    set_workflow_runtime,
+)
 
 ORIGINAL_PLAYBOOK = """\
 # name: hello-control
@@ -90,6 +96,13 @@ def test_ansible_edit_playbook_records_approved_write(
     )
     run_history = RunHistory(prompt="fix the ping playbook")
     token = set_active_run_history(run_history)
+    emitted_events: list[WorkflowEvent] = []
+    runtime_token = set_workflow_runtime(
+        WorkflowRuntime(
+            event_sink=emitted_events.append,
+            approval_resolver=lambda request: True,
+        )
+    )
 
     try:
         result = playbook_tool.run(
@@ -97,6 +110,7 @@ def test_ansible_edit_playbook_records_approved_write(
             requested_change="Rename the ping task for clarity.",
         )
     finally:
+        reset_workflow_runtime(runtime_token)
         reset_active_run_history(token)
 
     assert result.written is True
@@ -107,6 +121,9 @@ def test_ansible_edit_playbook_records_approved_write(
     event_kinds = [event.kind for event in run_history.session.events]
     assert "playbook_edit_preview_presented" in event_kinds
     assert "playbook_edit_written" in event_kinds
+    assert emitted_events[0]["kind"] == "preview"
+    assert emitted_events[0]["preview_type"] == "ansible_playbook_edit"
+    assert emitted_events[-1]["text"] == "Edited playbook at ansible/playbooks/hello-control.yaml."
 
 
 def test_ansible_edit_playbook_records_declined_write(
@@ -134,6 +151,13 @@ def test_ansible_edit_playbook_records_declined_write(
     )
     run_history = RunHistory(prompt="fix the ping playbook")
     token = set_active_run_history(run_history)
+    emitted_events: list[WorkflowEvent] = []
+    runtime_token = set_workflow_runtime(
+        WorkflowRuntime(
+            event_sink=emitted_events.append,
+            approval_resolver=lambda request: False,
+        )
+    )
 
     try:
         result = playbook_tool.run(
@@ -141,6 +165,7 @@ def test_ansible_edit_playbook_records_declined_write(
             requested_change="Rename the ping task for clarity.",
         )
     finally:
+        reset_workflow_runtime(runtime_token)
         reset_active_run_history(token)
 
     assert result.written is False
@@ -148,6 +173,7 @@ def test_ansible_edit_playbook_records_declined_write(
     event_kinds = [event.kind for event in run_history.session.events]
     assert "playbook_edit_declined" in event_kinds
     assert "playbook_edit_written" not in event_kinds
+    assert emitted_events[-1]["text"] == "Playbook edit not written."
 
 
 def test_ansible_edit_playbook_requires_registry_path(

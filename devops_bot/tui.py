@@ -9,8 +9,8 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Footer, Header, Input, Label, OptionList, RichLog
 from textual.widgets.option_list import Option
 
-from .runner import AgentRunner
-from .ui import UIProtocol
+from .approval import ApprovalRequest
+from .workflow import AgentWorkflow, InteractiveAdapter, WorkflowEvent
 
 COMMANDS = {
     "/exit": "Quit the app.",
@@ -19,20 +19,14 @@ COMMANDS = {
 }
 
 
-class TextualUI(UIProtocol):
+class TextualAdapter:
     def __init__(self, app: "DevopsAgentApp") -> None:
         self._app = app
 
-    def post_message(self, role: str, text: str) -> None:
-        self._app.call_from_thread(self._app.write_message, role, text)
+    def render_event(self, event: WorkflowEvent) -> None:
+        self._app.call_from_thread(self._app.handle_workflow_event, event)
 
-    def set_status(self, text: str) -> None:
-        self._app.call_from_thread(self._app.set_status_text, text)
-
-    def clear_status(self) -> None:
-        self._app.call_from_thread(self._app.set_status_text, "")
-
-    def get_approval(self, prompt: str) -> bool:
+    def resolve_approval(self, request: ApprovalRequest) -> bool:
         result: list[bool] = []
         done = threading.Event()
 
@@ -41,7 +35,7 @@ class TextualUI(UIProtocol):
             done.set()
 
         def show_prompt() -> None:
-            self._app.push_screen(YesNoScreen(prompt), callback=handle_result)
+            self._app.push_screen(YesNoScreen(request["prompt"]), callback=handle_result)
 
         self._app.call_from_thread(show_prompt)
         done.wait()
@@ -119,8 +113,9 @@ class DevopsAgentApp(App[None]):
         self._status = self.query_one("#status", Label)
         self._command_menu = self.query_one("#command-menu", OptionList)
         self._prompt = self.query_one("#prompt-input", Input)
-        self._ui = TextualUI(self)
-        self._runner = AgentRunner(self._ui)
+        self._workflow = AgentWorkflow()
+        self._adapter: InteractiveAdapter = TextualAdapter(self)
+        self._busy = False
         self._prompt.focus()
         self._hide_command_menu()
 
@@ -129,6 +124,35 @@ class DevopsAgentApp(App[None]):
 
     def set_status_text(self, text: str) -> None:
         self._status.update(text)
+
+    def set_busy(self, busy: bool) -> None:
+        self._busy = busy
+        self._prompt.disabled = busy
+        if not busy:
+            self._prompt.focus()
+
+    def handle_workflow_event(self, event: WorkflowEvent) -> None:
+        kind = event["kind"]
+        if kind == "status":
+            self.set_status_text(event["text"])
+            return
+
+        if kind == "message":
+            self.write_message(event["role"], event["text"])
+            return
+
+        if kind == "preview":
+            self.write_message("system", f"{event['title']}\n{event['body']}")
+            return
+
+        if kind == "notice":
+            role = "error" if event.get("level") == "error" else "system"
+            self.write_message(role, event["text"])
+            return
+
+        if kind == "approval_resolved":
+            decision = "approved" if event["approved"] else "declined"
+            self.write_message("system", f"Approval {decision}.")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input is not self._prompt:
@@ -163,12 +187,26 @@ class DevopsAgentApp(App[None]):
             self.exit()
             return
         if text == "/reset":
-            self._runner.reset()
+            self._workflow.reset()
             self.write_message("system", "new session started")
+            return
+        if self._busy:
+            self.write_message("system", "A run is already in progress.")
             return
 
         self.write_message("you", text)
-        self.run_worker(lambda: self._runner.run(text), thread=True)
+        self.set_busy(True)
+        self.run_worker(lambda: self._run_prompt(text), thread=True)
+
+    def _run_prompt(self, text: str) -> None:
+        try:
+            self._workflow.run(
+                text,
+                event_sink=self._adapter.render_event,
+                approval_resolver=self._adapter.resolve_approval,
+            )
+        finally:
+            self.call_from_thread(self.set_busy, False)
 
     def _update_command_menu(self, value: str) -> None:
         if not value.startswith("/"):
