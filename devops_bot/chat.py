@@ -1,18 +1,8 @@
 import readline  # noqa: F401 — enables line editing and up-arrow history as a side effect
 import sys
-from uuid import uuid4
 
-from .agents.orchestrator import OrchestratorAgent
-from .history import (
-    RUN_HISTORY_PATH,
-    RunHistory,
-    append_session_jsonl,
-    record_event,
-    reset_active_run_history,
-    run_history_enabled,
-    set_active_run_history,
-)
-from .session import get_session_storage_event_details
+from .runner import AgentRunner
+from .ui import UIProtocol
 
 BANNER = """\
 devops-agent chat
@@ -21,21 +11,25 @@ devops-agent chat
 """
 
 
-def _new_session() -> tuple[str, OrchestratorAgent]:
-    session_id = uuid4().hex
-    return session_id, OrchestratorAgent(session_id=session_id)
+class CliUI(UIProtocol):
+    def post_message(self, role: str, text: str) -> None:
+        stream = sys.stderr if role == "error" else sys.stdout
+        print(f"\n{role}> {text}\n", file=stream)
 
+    def set_status(self, text: str) -> None:
+        print(f"[{text}]", end="\r", flush=True)
 
-def _append_run_history(run_history: RunHistory) -> None:
-    try:
-        append_session_jsonl(run_history.session, RUN_HISTORY_PATH)
-    except OSError as exc:
-        print(f"Failed to write run history: {exc}", file=sys.stderr)
+    def clear_status(self) -> None:
+        print(" " * 60, end="\r", flush=True)
+
+    def get_approval(self, prompt: str) -> bool:
+        return input(prompt).strip().lower() in {"y", "yes"}
 
 
 def main() -> int:
     print(BANNER)
-    session_id, agent = _new_session()
+    ui = CliUI()
+    runner = AgentRunner(ui)
 
     while True:
         try:
@@ -52,64 +46,12 @@ def main() -> int:
         if user_input in ("/exit", "/quit"):
             break
         if user_input == "/reset":
-            session_id, agent = _new_session()
+            runner.reset()
             print("[new session started]\n")
             continue
 
-        run_history = RunHistory(prompt=user_input) if run_history_enabled() else None
-        token = set_active_run_history(run_history) if run_history is not None else None
-
-        if run_history is not None:
-            record_event(
-                kind="run_started",
-                status="started",
-                what="Started chat turn.",
-                why="Capture the user message before orchestration begins.",
-                details={"prompt": user_input},
-            )
-            session_details = get_session_storage_event_details(session_id=session_id)
-            if session_details is not None:
-                record_event(
-                    kind="session_storage_configured",
-                    status="configured",
-                    what="Configured Strands session storage.",
-                    why="Persist agent messages and state separately from the JSONL run history.",
-                    details=session_details,
-                )
-
-        try:
-            response = agent.run(user_input)
-        except Exception as exc:
-            if run_history is not None:
-                record_event(
-                    kind="run_failed",
-                    status="failed",
-                    what="Chat turn failed.",
-                    why="The orchestrator raised an exception.",
-                    details={"error": str(exc), "exception_type": exc.__class__.__name__},
-                )
-                run_history.finalize(f"failed: {exc}")
-                _append_run_history(run_history)
-            if token is not None:
-                reset_active_run_history(token)
-            print(f"error: {exc}\n", file=sys.stderr)
-            continue
-
-        if run_history is not None:
-            record_event(
-                kind="run_completed",
-                status="completed",
-                what="Chat turn completed successfully.",
-                why="Persist the agent response for later review.",
-                details={"response": response},
-            )
-            run_history.finalize(response)
-            _append_run_history(run_history)
-
-        if token is not None:
-            reset_active_run_history(token)
-
-        print(f"\nagent> {response}\n")
+        ui.post_message("you", user_input)
+        runner.run(user_input)
 
     return 0
 

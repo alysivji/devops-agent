@@ -15,6 +15,7 @@ from dotenv import dotenv_values
 from pydantic import BaseModel, ValidationError
 from strands import tool
 
+from ..approval import get_approval
 from ..history import record_event
 
 logger = logging.getLogger(__name__)
@@ -96,13 +97,11 @@ def _serialize_registry_entry(
 
 
 def _confirm_playbook_execution(entry: AnsiblePlaybookRegistryEntry) -> bool:
-    response = input(f"Run playbook '{entry.name}' at {entry.path}? [y/N]: ").strip().lower()
-    return response in {"y", "yes"}
+    return get_approval(f"Run playbook '{entry.name}' at {entry.path}? [y/N]: ")
 
 
 def _confirm_systemd_restart(service_name: str) -> bool:
-    response = input(f"Restart systemd service '{service_name}' on this machine? [y/N]: ")
-    return response.strip().lower() in {"y", "yes"}
+    return get_approval(f"Restart systemd service '{service_name}' on this machine? [y/N]: ")
 
 
 def _ansible_env() -> dict[str, str]:

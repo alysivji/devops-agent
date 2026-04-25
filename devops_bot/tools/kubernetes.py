@@ -10,6 +10,7 @@ import yaml
 from strands import tool
 
 from ..agents.helm_chart_editor import EditedHelmChart, EditHelmChartAgent
+from ..approval import get_approval
 from ..history import record_event
 
 KUBERNETES_OUTPUT_TAIL_LINES: Final[int] = 80
@@ -55,8 +56,7 @@ class HelmChartEditor(Protocol):
 
 
 def _confirm_kubernetes_mutation(summary: str) -> bool:
-    response = input(f"{summary} Proceed? [y/N]: ").strip().lower()
-    return response in {"y", "yes"}
+    return get_approval(f"{summary} Proceed? [y/N]: ")
 
 
 def _run_command(command: list[str], *, event_kind: str, what: str, why: str) -> str:
