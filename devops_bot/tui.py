@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import threading
+from typing import Protocol, cast
 
 from textual import events
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.screen import ModalScreen
-from textual.widgets import Button, Footer, Header, Input, Label, OptionList, TextArea
+from textual.widgets import Button, Footer, Header, Label, OptionList, TextArea
 from textual.widgets.option_list import Option
 
 from .approval import ApprovalRequest
@@ -17,6 +19,55 @@ COMMANDS = {
     "/quit": "Quit the app.",
     "/reset": "Start a new session.",
 }
+
+PROMPT_MIN_LINES = 1
+PROMPT_MAX_LINES = 5
+PROMPT_CHROME_HEIGHT = 2
+
+
+class PromptSubmittingApp(Protocol):
+    def _submit_prompt(self) -> None: ...
+
+    def _paste_into_prompt(self) -> None: ...
+
+    def _insert_into_prompt(self, text: str) -> None: ...
+
+
+class PromptInput(TextArea):
+    BINDINGS = [
+        Binding("ctrl+c", "copy", "Copy", key_display="^c"),
+        Binding("super+c", "copy", "Copy", show=False),
+        Binding("ctrl+v", "paste", "Paste", key_display="^v"),
+        Binding("super+v", "paste", "Paste", show=False),
+    ]
+
+    def on_key(self, event: events.Key) -> None:
+        if event.key != "enter":
+            return
+
+        event.stop()
+        event.prevent_default()
+        cast(PromptSubmittingApp, self.app)._submit_prompt()
+
+
+class ChatLog(TextArea):
+    BINDINGS = [
+        Binding("ctrl+c", "copy", "Copy", key_display="^c"),
+        Binding("super+c", "copy", "Copy", show=False),
+        Binding("ctrl+v", "paste", "Paste", key_display="^v"),
+        Binding("super+v", "paste", "Paste", show=False),
+    ]
+
+    def action_paste(self) -> None:
+        cast(PromptSubmittingApp, self.app)._paste_into_prompt()
+
+    def on_key(self, event: events.Key) -> None:
+        if event.character is None or not event.character.isprintable():
+            return
+
+        event.stop()
+        event.prevent_default()
+        cast(PromptSubmittingApp, self.app)._insert_into_prompt(event.character)
 
 
 class TextualAdapter:
@@ -68,6 +119,12 @@ class DevopsAgentApp(App[None]):
         border: solid $primary;
     }
 
+    #prompt-input {
+        height: 3;
+        min-height: 3;
+        max-height: 7;
+    }
+
     #status {
         height: 1;
         color: $warning;
@@ -98,11 +155,14 @@ class DevopsAgentApp(App[None]):
     }
     """
 
-    BINDINGS = [("ctrl+q", "quit", "Quit"), ("super+q", "quit", "Quit")]
+    BINDINGS = [
+        Binding("ctrl+q", "quit", "Quit"),
+        Binding("super+q", "quit", "Quit", show=False),
+    ]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        yield TextArea(
+        yield ChatLog(
             "",
             id="chat-log",
             read_only=True,
@@ -112,19 +172,26 @@ class DevopsAgentApp(App[None]):
         )
         yield Label("", id="status")
         yield OptionList(id="command-menu")
-        yield Input(placeholder="Ask the devops agent...", id="prompt-input")
+        yield PromptInput(
+            "",
+            id="prompt-input",
+            soft_wrap=True,
+            compact=True,
+            placeholder="Ask the devops agent...",
+        )
         yield Footer()
 
     def on_mount(self) -> None:
-        self._chat_log = self.query_one("#chat-log", TextArea)
+        self._chat_log = self.query_one("#chat-log", ChatLog)
         self._status = self.query_one("#status", Label)
         self._command_menu = self.query_one("#command-menu", OptionList)
-        self._prompt = self.query_one("#prompt-input", Input)
+        self._prompt = self.query_one("#prompt-input", PromptInput)
         self._workflow = AgentWorkflow()
         self._adapter: InteractiveAdapter = TextualAdapter(self)
         self._busy = False
         self._chat_history: list[str] = []
         self._prompt.focus()
+        self._resize_prompt()
         self._hide_command_menu()
 
     def write_message(self, role: str, text: str) -> None:
@@ -164,10 +231,11 @@ class DevopsAgentApp(App[None]):
             decision = "approved" if event["approved"] else "declined"
             self.write_message("system", f"Approval {decision}.")
 
-    def on_input_changed(self, event: Input.Changed) -> None:
-        if event.input is not self._prompt:
+    def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        if event.text_area is not self._prompt:
             return
-        self._update_command_menu(event.value)
+        self._update_command_menu(self._prompt.text)
+        self.call_after_refresh(self._resize_prompt)
 
     def on_key(self, event: events.Key) -> None:
         if self.screen.focused is self._prompt and event.key in {"tab", "shift+tab"}:
@@ -175,7 +243,22 @@ class DevopsAgentApp(App[None]):
             event.prevent_default()
             return
 
-        if self.screen.focused is not self._prompt or not self._command_menu.display:
+        if self.screen.focused is not self._prompt:
+            return
+
+        if event.key == "enter" and self._command_menu.display:
+            self._apply_highlighted_command()
+            event.stop()
+            event.prevent_default()
+            return
+
+        if event.key == "enter":
+            self._submit_prompt()
+            event.stop()
+            event.prevent_default()
+            return
+
+        if not self._command_menu.display:
             return
 
         if event.key == "down":
@@ -188,14 +271,11 @@ class DevopsAgentApp(App[None]):
             event.stop()
             event.prevent_default()
             return
-        if event.key == "enter":
-            self._apply_highlighted_command()
-            event.stop()
-            event.prevent_default()
 
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        text = event.value.strip()
-        event.input.value = ""
+    def _submit_prompt(self) -> None:
+        text = self._prompt.text.strip()
+        self._prompt.load_text("")
+        self._resize_prompt()
         if not text:
             return
         if text in {"/exit", "/quit"}:
@@ -243,10 +323,26 @@ class DevopsAgentApp(App[None]):
         if option is None or option.id is None:
             return
 
-        with self.prevent(Input.Changed):
-            self._prompt.value = option.id
+        with self.prevent(TextArea.Changed):
+            self._prompt.load_text(option.id)
+        self._resize_prompt()
         self._hide_command_menu()
         self._prompt.focus()
+
+    def _resize_prompt(self) -> None:
+        content_height = max(1, self._prompt.virtual_size.height)
+        visible_lines = min(PROMPT_MAX_LINES, max(PROMPT_MIN_LINES, content_height))
+        prompt_height = visible_lines + PROMPT_CHROME_HEIGHT
+        self._prompt.styles.height = prompt_height
+
+    def _paste_into_prompt(self) -> None:
+        self._prompt.focus()
+        self._prompt.action_paste()
+
+    def _insert_into_prompt(self, text: str) -> None:
+        self._prompt.focus()
+        self._prompt.insert(text)
+        self._resize_prompt()
 
 
 def main() -> int:
