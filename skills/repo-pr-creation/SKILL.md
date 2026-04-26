@@ -20,17 +20,27 @@ git branch -vv
 git remote -v
 ```
 
-2. If there are uncommitted changes, commit only the intended files before opening the PR.
+2. Inspect the full branch scope against `origin/main` before renaming the branch or opening the PR. Review the commit list and changed files, not just the latest commit:
 
-3. Push the current branch before creating the PR:
+```bash
+git log --oneline --decorate origin/main..HEAD
+git diff --stat origin/main...HEAD
+git diff --name-status origin/main...HEAD
+```
+
+If the branch name is now misleading relative to the full diff, rename it before pushing or creating the PR.
+
+3. If there are uncommitted changes, commit only the intended files before opening the PR.
+
+4. Push the current branch before creating the PR:
 
 ```bash
 git push -u origin "$(git branch --show-current)"
 ```
 
-4. Fill out `.github/pull_request_template.md` completely. Do not leave summary, validation, infra notes, or risks as placeholders. Mention remote dependencies when the change depends on credentials, network access, host state, Ansible execution, or external systems.
+5. Fill out `.github/pull_request_template.md` completely. Do not leave summary, validation, infra notes, or risks as placeholders. Mention remote dependencies when the change depends on credentials, network access, host state, Ansible execution, or external systems.
 
-5. Create a draft PR directly with `gh pr create` from the already-pushed branch. Use explicit arguments:
+6. Create a draft PR directly with `gh pr create` from the already-pushed branch. Use explicit arguments:
 
 ```bash
 gh pr create \
