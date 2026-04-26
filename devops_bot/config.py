@@ -18,8 +18,7 @@ OPENAI_API_KEY = secret_manager.get(str, "OPENAI_API_KEY")
 RUN_HISTORY_ENABLED = secret_manager.get(bool, "DEVOPS_AGENT_RUN_HISTORY_ENABLED", True)
 
 LANGFUSE_ENABLED = secret_manager.get(bool, "LANGFUSE_ENABLED", False)
-if LANGFUSE_ENABLED:
-    langfuse = get_client()
+langfuse = get_client() if LANGFUSE_ENABLED else None
 
 SESSION_BACKEND = secret_manager.get(str, "DEVOPS_AGENT_SESSION_BACKEND", "none")
 SESSION_S3_BUCKET = secret_manager.get(str, "DEVOPS_AGENT_SESSION_S3_BUCKET", None)
