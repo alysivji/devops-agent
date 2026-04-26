@@ -8,8 +8,7 @@ description: >-
 
 # Repo PR Creation
 
-Use this workflow for this repository checkout because the GitHub connector
-commonly fails here with `Resource not accessible by integration`.
+Use this workflow for this repository checkout because the GitHub connector commonly fails here with `Resource not accessible by integration`.
 
 ## Workflow
 
@@ -21,8 +20,7 @@ git branch -vv
 git remote -v
 ```
 
-2. If there are uncommitted changes, commit only the intended files before
-   opening the PR.
+2. If there are uncommitted changes, commit only the intended files before opening the PR.
 
 3. Push the current branch before creating the PR:
 
@@ -30,13 +28,9 @@ git remote -v
 git push -u origin "$(git branch --show-current)"
 ```
 
-4. Fill out `.github/pull_request_template.md` completely. Do not leave
-   summary, validation, infra notes, or risks as placeholders. Mention remote
-   dependencies when the change depends on credentials, network access, host
-   state, Ansible execution, or external systems.
+4. Fill out `.github/pull_request_template.md` completely. Do not leave summary, validation, infra notes, or risks as placeholders. Mention remote dependencies when the change depends on credentials, network access, host state, Ansible execution, or external systems.
 
-5. Create a draft PR directly with `gh pr create` from the already-pushed
-   branch. Use explicit arguments:
+5. Create a draft PR directly with `gh pr create` from the already-pushed branch. Use explicit arguments:
 
 ```bash
 gh pr create \
@@ -48,18 +42,14 @@ gh pr create \
   --draft
 ```
 
-Use `--body "..."` instead of `--body-file` only for short bodies that still
-fully complete the PR template.
+Use `--body "..."` instead of `--body-file` only for short bodies that still fully complete the PR template.
 
 ## Important Boundaries
 
 - Do not try the GitHub connector first from this checkout.
-- Do not wrap `gh pr create` in inline token extraction or an inline
-  `GH_TOKEN=...` shell assignment. Use the direct `gh pr create` shape above.
-- Do not use `gh --fill` because this repo expects the PR template to be
-  completed deliberately.
-- If `gh pr edit` fails on GitHub GraphQL project-card fields, update the PR
-  body through the REST path instead:
+- Do not wrap `gh pr create` in inline token extraction or an inline `GH_TOKEN=...` shell assignment. Use the direct `gh pr create` shape above.
+- Do not use `gh --fill` because this repo expects the PR template to be completed deliberately.
+- If `gh pr edit` fails on GitHub GraphQL project-card fields, update the PR body through the REST path instead:
 
 ```bash
 gh api repos/alysivji/devops-agent/pulls/<number> \
