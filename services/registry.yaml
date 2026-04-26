@@ -1,0 +1,71 @@
+services:
+  - name: minio
+    description: Host-level MinIO service on the control node.
+    runtime: systemd
+    location: control
+    status: expected
+    managed_by: ansible/playbooks/deploy-and-validate-minio.yaml
+    endpoints:
+      - name: api
+        url: http://127.0.0.1:9000
+        protocol: http
+        scope: control-node-local
+      - name: console
+        url: http://127.0.0.1:9001
+        protocol: http
+        scope: control-node-local
+    tags:
+      - storage
+      - s3
+      - minio
+  - name: grafana
+    description: Host-level Grafana service on the control node.
+    runtime: systemd
+    location: control
+    status: expected
+    managed_by: ansible/playbooks/install-grafana.yaml
+    endpoints:
+      - name: health
+        url: http://127.0.0.1:3000/api/health
+        protocol: http
+        scope: control-node-local
+    tags:
+      - monitoring
+      - grafana
+  - name: prometheus
+    description: Host-level Prometheus service on the control node.
+    runtime: systemd
+    location: control
+    status: expected
+    managed_by: ansible/playbooks/install-prometheus.yaml
+    endpoints:
+      - name: readiness
+        url: http://127.0.0.1:9090/-/ready
+        protocol: http
+        scope: control-node-local
+    tags:
+      - monitoring
+      - prometheus
+  - name: nginx
+    description: Kubernetes nginx service managed through the repo-owned wrapper chart.
+    runtime: kubernetes
+    location: default
+    status: expected
+    managed_by: helm/charts/nginx
+    endpoints:
+      - name: http
+        host: <node-ip>
+        port: 30080
+        protocol: http
+        scope: lan
+        notes: NodePort service `nginx-upstream` in namespace `default`.
+      - name: https
+        host: <node-ip>
+        port: 30443
+        protocol: https
+        scope: lan
+        notes: NodePort service `nginx-upstream` in namespace `default`.
+    tags:
+      - kubernetes
+      - ingress
+      - nginx

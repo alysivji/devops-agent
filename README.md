@@ -43,6 +43,8 @@ Kubernetes and Helm failure handling is also available as a Strands skill under 
 
 The service discovery registry plan lives in `docs/service-discovery-registry-plan.md`. The intended registry is static repo-owned state for known service identities and endpoints, separate from live Helm, kubectl, or Ansible health checks. It is also intentionally separate from any future agent memory system: the service registry is the checked-in source of truth for service identity, ownership, and access paths, while memory would be reserved for broader learned or session-derived context.
 
+The first implementation now lives at `services/registry.yaml` and is exposed through the read-only `service_list_registry` tool. It answers offline discovery questions about declared services and ownership without calling Kubernetes, Ansible, SSH, or any live host APIs.
+
 The first generation tool supports these inventory targets:
 
 - `control` for local playbooks
