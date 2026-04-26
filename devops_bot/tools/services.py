@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import NotRequired, TypedDict, cast
 
 import yaml
 from pydantic import BaseModel, ValidationError, model_validator
@@ -77,33 +77,11 @@ class ServiceRegistryEntry(BaseModel):
 
 
 def _serialize_endpoint(endpoint: ServiceRegistryEndpoint) -> ServiceRegistryEndpointDict:
-    data: ServiceRegistryEndpointDict = {"name": endpoint.name}
-    if endpoint.url is not None:
-        data["url"] = endpoint.url
-    if endpoint.host is not None:
-        data["host"] = endpoint.host
-    if endpoint.port is not None:
-        data["port"] = endpoint.port
-    if endpoint.protocol is not None:
-        data["protocol"] = endpoint.protocol
-    if endpoint.scope is not None:
-        data["scope"] = endpoint.scope
-    if endpoint.notes is not None:
-        data["notes"] = endpoint.notes
-    return data
+    return cast(ServiceRegistryEndpointDict, endpoint.model_dump(exclude_none=True))
 
 
 def _serialize_service(entry: ServiceRegistryEntry) -> ServiceRegistryEntryDict:
-    return {
-        "name": entry.name,
-        "description": entry.description,
-        "runtime": entry.runtime,
-        "location": entry.location,
-        "status": entry.status,
-        "managed_by": entry.managed_by,
-        "endpoints": [_serialize_endpoint(endpoint) for endpoint in entry.endpoints],
-        "tags": entry.tags,
-    }
+    return cast(ServiceRegistryEntryDict, entry.model_dump(exclude_none=True))
 
 
 def _serialize_service_list_item(entry: ServiceRegistryEntryDict) -> ServiceListItemDict:
