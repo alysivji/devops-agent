@@ -4,7 +4,8 @@ from typing import cast
 from textual.binding import Binding
 from textual.widgets import TextArea
 
-from devops_bot.tui import DevopsAgentApp
+from devops_bot.approval import ApprovalRequest
+from devops_bot.tui import DevopsAgentApp, PreviewState, YesNoScreen
 from devops_bot.workflow import AgentWorkflow
 
 
@@ -197,5 +198,82 @@ def test_tui_submits_multiline_prompt_with_enter() -> None:
             assert workflow.runs == ["deploy\nnginx"]
             assert prompt.text == ""
             assert "you> deploy\nnginx" in chat_log.text
+
+    asyncio.run(run_test())
+
+
+def test_tui_approval_uses_matching_preview_details_for_write_requests() -> None:
+    app = DevopsAgentApp()
+    app._latest_preview = PreviewState(
+        title="Generated preview",
+        body="Path: ansible/playbooks/example.yaml\n\n- hosts: localhost",
+        context={"path": "ansible/playbooks/example.yaml"},
+    )
+    request: ApprovalRequest = {
+        "kind": "confirmation",
+        "prompt": "Write playbook to ansible/playbooks/example.yaml? [y/N]: ",
+        "context": {},
+    }
+
+    details = app._approval_details_for_request(request)
+
+    assert details == (
+        "Generated preview\n\nPath: ansible/playbooks/example.yaml\n\n- hosts: localhost"
+    )
+
+
+def test_tui_approval_ignores_preview_for_non_write_requests() -> None:
+    app = DevopsAgentApp()
+
+    app._latest_preview = PreviewState(
+        title="Generated preview",
+        body="Path: ansible/playbooks/example.yaml\n\n- hosts: localhost",
+        context={"path": "ansible/playbooks/example.yaml"},
+    )
+    request: ApprovalRequest = {
+        "kind": "confirmation",
+        "prompt": "Restart systemd service 'grafana' on this machine? [y/N]: ",
+        "context": {},
+    }
+
+    details = app._approval_details_for_request(request)
+
+    assert details is None
+
+
+def test_tui_approval_preview_is_focusable_and_scrolls() -> None:
+    async def run_test() -> None:
+        app = DevopsAgentApp()
+
+        async with app.run_test() as pilot:
+            long_body = "\n".join(f"line {index}" for index in range(80))
+            app._latest_preview = PreviewState(
+                title="Attachment preview",
+                body=long_body,
+                context={"path": ".context/attachments/image.png"},
+            )
+            request: ApprovalRequest = {
+                "kind": "confirmation",
+                "prompt": "Write file to .context/attachments/image.png? [y/N]: ",
+                "context": {},
+            }
+            screen = YesNoScreen(
+                request["prompt"],
+                details=app._approval_details_for_request(request),
+            )
+
+            app.push_screen(screen)
+            await pilot.pause()
+
+            details = screen.query_one("#approval-details", TextArea)
+            assert app.screen.focused is details
+            assert details.read_only is True
+            assert details.show_cursor is False
+
+            starting_scroll_y = details.scroll_y
+            await pilot.press("pagedown")
+            await pilot.pause()
+
+            assert details.scroll_y > starting_scroll_y
 
     asyncio.run(run_test())

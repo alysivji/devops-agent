@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from dataclasses import dataclass
 from typing import Protocol, cast
 
 from textual import events
@@ -23,6 +24,13 @@ COMMANDS = {
 PROMPT_MIN_LINES = 1
 PROMPT_MAX_LINES = 5
 PROMPT_CHROME_HEIGHT = 2
+
+
+@dataclass(slots=True)
+class PreviewState:
+    title: str
+    body: str
+    context: dict[str, object]
 
 
 class PromptSubmittingApp(Protocol):
@@ -86,7 +94,13 @@ class TextualAdapter:
             done.set()
 
         def show_prompt() -> None:
-            self._app.push_screen(YesNoScreen(request["prompt"]), callback=handle_result)
+            self._app.push_screen(
+                YesNoScreen(
+                    request["prompt"],
+                    details=self._app._approval_details_for_request(request),
+                ),
+                callback=handle_result,
+            )
 
         self._app.call_from_thread(show_prompt)
         done.wait()
@@ -94,18 +108,46 @@ class TextualAdapter:
 
 
 class YesNoScreen(ModalScreen[bool]):
-    def __init__(self, prompt: str) -> None:
+    BINDINGS = [
+        Binding("y", "approve", "Yes", show=False),
+        Binding("n", "decline", "No", show=False),
+        Binding("escape", "decline", "No", show=False),
+    ]
+
+    def __init__(self, prompt: str, *, details: str | None = None) -> None:
         super().__init__()
         self._prompt = prompt
+        self._details = details
 
     def compose(self) -> ComposeResult:
         yield Label(self._prompt, id="approval-prompt")
+        if self._details is not None:
+            yield TextArea(
+                self._details,
+                id="approval-details",
+                read_only=True,
+                show_cursor=False,
+                soft_wrap=True,
+                highlight_cursor_line=False,
+            )
         with Horizontal(id="approval-actions"):
             yield Button("Yes", id="yes", variant="success")
             yield Button("No", id="no", variant="error")
 
+    def on_mount(self) -> None:
+        if self._details is None:
+            self.query_one("#yes", Button).focus()
+            return
+        self.query_one("#approval-details", TextArea).focus()
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(event.button.id == "yes")
+
+    def action_approve(self) -> None:
+        self.dismiss(True)
+
+    def action_decline(self) -> None:
+        self.dismiss(False)
 
 
 class DevopsAgentApp(App[None]):
@@ -141,6 +183,13 @@ class DevopsAgentApp(App[None]):
 
     #approval-prompt {
         padding: 1 2;
+    }
+
+    #approval-details {
+        height: 1fr;
+        min-height: 8;
+        border: solid $accent;
+        margin: 0 2 1 2;
     }
 
     #approval-actions {
@@ -190,6 +239,7 @@ class DevopsAgentApp(App[None]):
         self._adapter: InteractiveAdapter = TextualAdapter(self)
         self._busy = False
         self._chat_history: list[str] = []
+        self._latest_preview: PreviewState | None = None
         self._prompt.focus()
         self._resize_prompt()
         self._hide_command_menu()
@@ -219,6 +269,11 @@ class DevopsAgentApp(App[None]):
             return
 
         if kind == "preview":
+            self._latest_preview = PreviewState(
+                title=event["title"],
+                body=event["body"],
+                context=cast(dict[str, object], event.get("context", {})),
+            )
             self.write_message("system", f"{event['title']}\n{event['body']}")
             return
 
@@ -343,6 +398,23 @@ class DevopsAgentApp(App[None]):
         self._prompt.focus()
         self._prompt.insert(text)
         self._resize_prompt()
+
+    def _approval_details_for_request(self, request: ApprovalRequest) -> str | None:
+        preview = self._latest_preview
+        if preview is None:
+            return None
+
+        preview_path = preview.context.get("path")
+        request_path = request["context"].get("path")
+        prompt = request["prompt"]
+
+        if isinstance(request_path, str) and request_path == preview_path:
+            return f"{preview.title}\n\n{preview.body}"
+        if isinstance(preview_path, str) and preview_path in prompt:
+            return f"{preview.title}\n\n{preview.body}"
+        if "write " in prompt.lower():
+            return f"{preview.title}\n\n{preview.body}"
+        return None
 
 
 def main() -> int:
