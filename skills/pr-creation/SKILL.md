@@ -34,10 +34,10 @@ If the branch name is now misleading relative to the full diff, rename it before
 Rename is required when any of these are true:
 
 - the branch name reflects exploratory or stale work such as `inspect-*`, `tmp-*`, `wip-*`, or `debug-*`
-- the branch name no longer matches the requested PR title or the actual branch diff
+- the branch name no longer matches the requested scope or the actual branch diff
 - the branch includes multiple commits whose combined scope is broader than the current branch name suggests
 
-When renaming, default to a lowercase kebab-case slug derived from the requested PR title unless the user explicitly provided a branch name. Rename locally before any push:
+When renaming, default to a lowercase kebab-case slug derived from the requested change scope unless the user explicitly provided a branch name. Rename locally before any push:
 
 ```bash
 git branch -m <new-branch-name>
@@ -51,9 +51,20 @@ git branch -m <new-branch-name>
 git push -u origin "$(git branch --show-current)"
 ```
 
-5. Fill out `.github/pull_request_template.md` completely. Do not leave summary, validation, infra notes, or risks as placeholders. Mention remote dependencies when the change depends on credentials, network access, host state, Ansible execution, or external systems.
+5. Choose a PR title that makes sense to reviewers scanning the PR list or merge history without local branch context. The PR title and branch name serve different purposes.
 
-6. Create a draft PR directly with `gh pr create` from the already-pushed branch. Use explicit arguments:
+Use these title rules:
+
+- do not default the PR title to the branch name
+- prefer a reviewer-facing description of the user-visible or operational change
+- use a user-provided title only if it is already clear and reviewer-friendly
+- if the provided title is vague, stale, or branch-shaped, replace it with a clearer title that matches the actual diff
+
+Good PR titles should still make sense to someone reading the merge list six months later.
+
+6. Fill out `.github/pull_request_template.md` completely. Do not leave summary, validation, infra notes, or risks as placeholders. Mention remote dependencies when the change depends on credentials, network access, host state, Ansible execution, or external systems.
+
+7. Create a draft PR directly with `gh pr create` from the already-pushed branch. Use explicit arguments:
 
 ```bash
 gh pr create \
