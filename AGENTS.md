@@ -3,7 +3,7 @@
 ## Workflow
 
 - When opening a PR, fill out `.github/pull_request_template.md` completely. Do not leave the summary, validation, infra notes, or risks sections as placeholders.
-- Check `Makefile` before running validation or local workflows, and prefer its targets over ad hoc commands when an equivalent target exists.
+- Check `justfile` before running validation or local workflows, and prefer its recipes over ad hoc commands when an equivalent recipe exists.
 - Keep control flow top-down and obvious.
 - If the design starts to need more than ~2 helpers or ~1 new module, stop and ask first.
 
@@ -23,9 +23,9 @@
 - Git HTTP integration tests also require Node dependencies from `package.json`. Install them with `npm install`.
 - Helm/Kubernetes integration tests use KWOK with local Docker, Helm, kubectl, and kwokctl. `./scripts/setup-dev.sh` installs KWOK for local development; CI installs the pinned tool versions directly.
 - The main validation commands in this repo are:
-  - `make check`
-  - `make test`
-  - `make test-git-http`
+  - `just check`
+  - `just test`
+  - `just test-git-http`
 - Ansible playbooks live under `ansible/playbooks`, and the tool surface exposes a validated playbook registry rather than a plain filename list.
 - Checked-in playbooks under `ansible/playbooks` must keep the metadata header fields `name`, `description`, `target`, `requires_approval`, and `tags`, because the registry parser validates them.
 - The Ansible tool writes temp files under `.ansible/tmp` so runs do not depend on a system temp directory layout.
@@ -39,7 +39,7 @@
 - Use `subprocess-vcr` when the realistic local setup is heavier or more fragile, such as Ansible subprocess coverage that depends on local tool installation and host configuration.
 - Use `pytest-vcr` for HTTP-based tool tests when the client library is compatible with VCR interception and the upstream endpoint is stable enough for recorded replay.
 - If the HTTP client is not VCR-interceptable, keep the networked wrapper deterministic with local unit tests at the library boundary instead of forcing live HTTP into the suite.
-- Pytest defaults to replay mode through `addopts`, and `make test` records fixtures intentionally for the subprocess-vcr-backed cases.
+- Pytest defaults to replay mode through `addopts`, and `just test` records fixtures intentionally for the subprocess-vcr-backed cases.
 - Use the `git_http_integration` marker for Git flows that need a realistic remote without hitting an external host.
 - Use the `kwok_integration` marker for Helm/Kubernetes flows that need real Kubernetes API objects without touching the live k3s cluster. Prefer KWOK-backed local coverage over live remote-cluster tests for these tool wrappers.
 - Keep unit tests focused on command construction, argument validation, serialization shape, and error handling for remote-capable tools.

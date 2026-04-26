@@ -21,11 +21,13 @@ run:
 # Run lint checks.
 lint:
     uv run ruff check .
+    npm run markdown:lint
 
 # Format code and auto-fix simple issues.
 format:
     uv run ruff check --fix .
     uv run ruff format .
+    npm run markdown:format
 
 # Run mypy.
 typecheck:

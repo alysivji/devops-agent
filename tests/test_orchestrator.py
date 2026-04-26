@@ -181,7 +181,7 @@ def test_kubernetes_troubleshooting_skill_prefers_repo_owned_wrapper_charts() ->
     skill_text = Path("skills/kubernetes-troubleshooting/SKILL.md").read_text(encoding="utf-8")
 
     assert "prefer deploying the\n     chart path over a public chart reference" in skill_text
-    assert "wrapper charts with\n  `dependencies` in `Chart.yaml`" in skill_text
+    assert "wrapper charts with `dependencies` in `Chart.yaml`" in skill_text
 
 
 def test_kubernetes_troubleshooting_skill_reports_service_access_safely() -> None:

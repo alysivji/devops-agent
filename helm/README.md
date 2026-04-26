@@ -2,15 +2,9 @@
 
 Repo contains Helm configuration.
 
-Repo-owned application charts live under `helm/charts/`. The agent discovers
-charts in that directory through the Helm chart registry and edits existing
-charts with the chart-aware editor before running `helm lint`.
+Repo-owned application charts live under `helm/charts/`. The agent discovers charts in that directory through the Helm chart registry and edits existing charts with the chart-aware editor before running `helm lint`.
 
-For public charts, prefer a repo-owned wrapper chart instead of deploying the
-public chart reference directly. The wrapper chart records the upstream chart in
-`Chart.yaml` under `dependencies` and keeps local cluster overrides in
-`values.yaml`. This gives the agent a registry entry to find and a local desired
-state file to edit before a live deployment.
+For public charts, prefer a repo-owned wrapper chart instead of deploying the public chart reference directly. The wrapper chart records the upstream chart in `Chart.yaml` under `dependencies` and keeps local cluster overrides in `values.yaml`. This gives the agent a registry entry to find and a local desired state file to edit before a live deployment.
 
 Example:
 

@@ -5,8 +5,7 @@ description: Diagnose Kubernetes and Helm failures in this devops-agent repo. Us
 
 # Kubernetes Troubleshooting
 
-Use this skill to diagnose Kubernetes/Helm failures without automatically
-turning an application deploy into host repair.
+Use this skill to diagnose Kubernetes/Helm failures without automatically turning an application deploy into host repair.
 
 ## Workflow
 
@@ -80,10 +79,7 @@ turning an application deploy into host repair.
 ## Repo Conventions
 
 - Repo-owned Helm charts live under `helm/charts`.
-- Public upstream charts can be represented by wrapper charts with
-  `dependencies` in `Chart.yaml` and local overrides in `values.yaml`.
-- Use `helm_create_chart` for new chart scaffolds and `helm_edit_chart` for
-  coordinated edits across values, templates, helpers, and related files.
+- Public upstream charts can be represented by wrapper charts with `dependencies` in `Chart.yaml` and local overrides in `values.yaml`.
+- Use `helm_create_chart` for new chart scaffolds and `helm_edit_chart` for coordinated edits across values, templates, helpers, and related files.
 - Use `helm_upgrade_install` only for live cluster install/upgrade requests.
-- Use Ansible for k3s, kubeconfig, Helm/kubectl installation, node boot/cgroup
-  prerequisites, and host-managed durable services.
+- Use Ansible for k3s, kubeconfig, Helm/kubectl installation, node boot/cgroup prerequisites, and host-managed durable services.
