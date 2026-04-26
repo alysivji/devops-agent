@@ -28,7 +28,7 @@ from ..tools.kubernetes import (
     kubernetes_fix_access,
 )
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
-from ..tools.services import service_list_registry
+from ..tools.services import service_get, service_list
 
 ThinkingLevel = str
 SKILLS_DIR = Path("skills")
@@ -44,7 +44,8 @@ Available tools:
 - `ansible_edit_playbook`: repair an existing registry playbook locally and syntax-check it
 - `env_list_loaded_keys`: inspect which env var keys are available from process env or `.env`
 - `env_example_update`: document environment variables in the local `.env.example`
-- `service_list_registry`: inspect the repo-owned static service discovery registry
+- `service_list`: inspect the repo-owned declared service inventory
+- `service_get`: inspect the full declared details for one service
 - `helm_create_chart`: create a repo-owned Helm chart scaffold with explicit approval
 - `helm_edit_chart`: edit files inside an existing Helm chart with explicit approval
 - `helm_list_charts`: inspect the repo-owned Helm chart registry under helm/charts
@@ -76,10 +77,11 @@ Process:
   sudo/become, registry metadata, or host/cluster inventory targeting.
 - For simple service discovery questions such as "what is running?", "where
   does Grafana live?", or "which automation owns nginx?", inspect
-  `service_list_registry` before considering live Ansible, Helm, or kubectl
-  checks.
-- Treat `service_list_registry` as declared repo-owned metadata only. It is
-  not live health, not observed runtime state, and not general agent memory.
+  `service_list` first and use `service_get` only when the compact list does
+  not carry enough detail.
+- Treat `service_list` and `service_get` as declared repo-owned metadata only.
+  They are not live health, not observed runtime state, and not general agent
+  memory.
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts or cluster state. If the requested state is already
   true, report success instead of continuing through prerequisite or repair
@@ -213,7 +215,8 @@ class OrchestratorAgent:
                 systemd_restart_service,
                 env_list_loaded_keys,
                 env_example_update,
-                service_list_registry,
+                service_list,
+                service_get,
                 ansible_create_playbook,
                 ansible_edit_playbook,
                 helm_create_chart,

@@ -31,6 +31,16 @@ class ServiceRegistryEntryDict(TypedDict):
     tags: list[str]
 
 
+class ServiceListItemDict(TypedDict):
+    name: str
+    description: str
+    runtime: str
+    location: str
+    status: str
+    managed_by: str
+    tags: list[str]
+
+
 class ServiceRegistryEndpoint(BaseModel):
     name: str
     url: str | None = None
@@ -90,20 +100,28 @@ def _serialize_service(entry: ServiceRegistryEntry) -> ServiceRegistryEntryDict:
     }
 
 
+def _serialize_service_list_item(entry: ServiceRegistryEntryDict) -> ServiceListItemDict:
+    return {
+        "name": entry["name"],
+        "description": entry["description"],
+        "runtime": entry["runtime"],
+        "location": entry["location"],
+        "status": entry["status"],
+        "managed_by": entry["managed_by"],
+        "tags": entry["tags"],
+    }
+
+
 def _load_service_registry(path: Path = SERVICE_REGISTRY_PATH) -> list[ServiceRegistryEntryDict]:
     if not path.exists():
         return []
 
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"Service registry must be a mapping: {path}")
-
-    services = payload.get("services")
-    if not isinstance(services, list):
-        raise ValueError(f"Service registry must contain a `services` list: {path}")
+    if not isinstance(payload, list):
+        raise ValueError(f"Service registry must be a list: {path}")
 
     try:
-        validated = [ServiceRegistryEntry.model_validate(service) for service in services]
+        validated = [ServiceRegistryEntry.model_validate(service) for service in payload]
     except ValidationError as exc:
         raise ValueError(f"Invalid service registry entry in {path}: {exc}") from exc
 
@@ -111,17 +129,38 @@ def _load_service_registry(path: Path = SERVICE_REGISTRY_PATH) -> list[ServiceRe
 
 
 @tool
-def service_list_registry() -> list[ServiceRegistryEntryDict]:
-    """Return the repo-owned static service discovery registry."""
+def service_list() -> list[ServiceListItemDict]:
+    """Return compact declared service inventory from the repo-owned registry."""
     registry = _load_service_registry()
     record_event(
-        kind="service_registry_read",
+        kind="service_list_read",
         status="completed",
-        what="Read the service discovery registry.",
+        what="Read the declared service inventory.",
         why=(
-            "Inspect declared service identity, ownership, and access paths without "
-            "touching live infrastructure."
+            "Inspect concise declared service identity, ownership, and placement "
+            "without touching live infrastructure."
         ),
         details={"count": len(registry), "names": [entry["name"] for entry in registry]},
     )
-    return registry
+    return [_serialize_service_list_item(entry) for entry in registry]
+
+
+@tool
+def service_get(name: str) -> ServiceRegistryEntryDict:
+    """Return the full declared registry entry for one named service."""
+    registry = _load_service_registry()
+    for entry in registry:
+        if entry["name"] == name:
+            record_event(
+                kind="service_detail_read",
+                status="completed",
+                what=f"Read the declared service entry for `{name}`.",
+                why=(
+                    "Inspect one service's declared ownership and access paths without "
+                    "touching live infrastructure."
+                ),
+                details={"name": name, "managed_by": entry["managed_by"]},
+            )
+            return entry
+
+    raise ValueError(f"Service is not in the registry: {name}")

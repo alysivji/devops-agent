@@ -72,12 +72,13 @@ def test_orchestrator_prompt_updates_env_example_for_runtime_env_vars() -> None:
 
 
 def test_orchestrator_prompt_uses_service_registry_for_discovery_questions() -> None:
-    assert "`service_list_registry`" in MAIN_SYSTEM_PROMPT
+    assert "`service_list`" in MAIN_SYSTEM_PROMPT
+    assert "`service_get`" in MAIN_SYSTEM_PROMPT
     assert '"what is running?"' in MAIN_SYSTEM_PROMPT
     assert '"where\n  does Grafana live?"' in MAIN_SYSTEM_PROMPT
     assert '"which automation owns nginx?"' in MAIN_SYSTEM_PROMPT
     assert "declared repo-owned metadata only" in MAIN_SYSTEM_PROMPT
-    assert "not live health, not observed runtime state, and not general agent memory" in (
+    assert "not live health, not observed runtime state, and not general agent\n  memory" in (
         MAIN_SYSTEM_PROMPT
     )
 
@@ -154,7 +155,8 @@ def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
         "systemd_restart_service",
         "env_example_update",
         "env_list_loaded_keys",
-        "service_list_registry",
+        "service_list",
+        "service_get",
     }.issubset(tool_names)
     plugins = captured["build_agent"]["plugins"]
     assert len(plugins) == 1
