@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from strands import AgentSkills
 from strands.hooks.events import (
@@ -213,9 +214,8 @@ class OrchestratorAgent:
     ) -> None:
         _ = thinking
         self._latest_rationale: str | None = None
-        session_manager = (
-            build_session_manager(session_id=session_id) if session_id is not None else None
-        )
+        session_id = session_id or uuid4().hex
+        session_manager = build_session_manager(session_id=session_id)
         self.agent = build_agent(
             model=build_model(model_id="gpt-5.4"),
             system_prompt=MAIN_SYSTEM_PROMPT,
@@ -242,6 +242,10 @@ class OrchestratorAgent:
             ],
             plugins=[AgentSkills(skills=[SKILLS_DIR], strict=True)],
             session_manager=session_manager,
+            trace_attributes={
+                "session.id": session_id,
+                "gen_ai.conversation.id": session_id,
+            },
         )
         self.agent.add_hook(self._on_before_invocation, BeforeInvocationEvent)
         self.agent.add_hook(self._on_message_added, MessageAddedEvent)

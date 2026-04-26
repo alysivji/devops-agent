@@ -69,6 +69,12 @@ Every playbook metadata header must include:
 
 Set `OPENAI_MODEL=gpt-5.4` by default for stronger reasoning and coding quality. If you need a lower-cost option, use `gpt-5.4-mini`.
 
+### Logging and Langfuse
+
+The agent uses standard Python logging and sets the `strands` logger to `INFO`.
+
+Langfuse tracing is optional. Set `LANGFUSE_ENABLED=true` and provide `LANGFUSE_BASE_URL`, `LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY` to initialize the Langfuse client for Strands runs.
+
 ### Example
 
 ```bash

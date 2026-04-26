@@ -32,6 +32,7 @@ def build_agent(
     tools: Optional[Sequence[Any]] = None,
     plugins: Optional[Sequence[Plugin]] = None,
     session_manager: SessionManager | None = None,
+    trace_attributes: dict[str, str] | None = None,
 ) -> Agent:
     if tools is None:
         tools = []
@@ -44,4 +45,5 @@ def build_agent(
         tools=list(tools),
         plugins=list(plugins),
         session_manager=session_manager,
+        trace_attributes=trace_attributes,
     )
