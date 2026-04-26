@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Creation"
+  short_description: "Create PRs from this repo checkout"
+  default_prompt: "Use $pr-creation to inspect the branch, rename it if needed, push it, and open a draft PR."

@@ -1,12 +1,13 @@
 ---
-name: repo-pr-creation
+name: pr-creation
 description: >-
-  Open GitHub pull requests from this devops-agent SSH/control-node checkout.
-  Use when the user asks to create, open, publish, or update a PR for this
-  repository, especially after local commits are already on a feature branch.
+  Create, open, publish, or update a GitHub pull request from this
+  devops-agent checkout. Use whenever the user asks to create a PR for this
+  repository, including branch rename, push, and `gh pr create` fallback from
+  the current branch.
 ---
 
-# Repo PR Creation
+# PR Creation
 
 Use this workflow for this repository checkout because the GitHub connector commonly fails here with `Resource not accessible by integration`.
 
@@ -30,9 +31,21 @@ git diff --name-status origin/main...HEAD
 
 If the branch name is now misleading relative to the full diff, rename it before pushing or creating the PR.
 
+Rename is required when any of these are true:
+
+- the branch name reflects exploratory or stale work such as `inspect-*`, `tmp-*`, `wip-*`, or `debug-*`
+- the branch name no longer matches the requested PR title or the actual branch diff
+- the branch includes multiple commits whose combined scope is broader than the current branch name suggests
+
+When renaming, default to a lowercase kebab-case slug derived from the requested PR title unless the user explicitly provided a branch name. Rename locally before any push:
+
+```bash
+git branch -m <new-branch-name>
+```
+
 3. If there are uncommitted changes, commit only the intended files before opening the PR.
 
-4. Push the current branch before creating the PR:
+4. Push the current branch only after the branch name is correct:
 
 ```bash
 git push -u origin "$(git branch --show-current)"
@@ -59,6 +72,7 @@ Use `--body "..."` instead of `--body-file` only for short bodies that still ful
 - Do not try the GitHub connector first from this checkout.
 - Do not wrap `gh pr create` in inline token extraction or an inline `GH_TOKEN=...` shell assignment. Use the direct `gh pr create` shape above.
 - Do not use `gh --fill` because this repo expects the PR template to be completed deliberately.
+- Do not push a stale exploratory branch name just because the branch already exists locally. Rename first when the name is misleading.
 - If `gh pr edit` fails on GitHub GraphQL project-card fields, update the PR body through the REST path instead:
 
 ```bash
