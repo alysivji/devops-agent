@@ -74,6 +74,13 @@ django-runserver:
 celery-worker:
     uv run celery -A apps.api.project worker --loglevel=info
 
+# Start local Redis for the Django/Celery backend.
+redis-up:
+    docker compose up -d redis
+
+redis-down:
+    docker compose stop redis
+
 # Submit a conversation through the Django backend.
 conversation-run prompt:
     uv run python apps/api/manage.py runconversation "{{prompt}}" --wait

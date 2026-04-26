@@ -175,6 +175,7 @@ The first slice exposes:
 Local backend commands:
 
 ```bash
+just redis-up
 just django-migrate
 just celery-worker
 just django-runserver
@@ -182,6 +183,13 @@ just conversation-run "create a hello world playbook for local nodes"
 ```
 
 The backend uses `REDIS_URL` as the base Redis connection and derives Celery broker/result-cache databases from it. Remote dependencies for this slice are limited to the existing model/tool credentials plus a reachable local Redis instance for Celery.
+
+For local development, the repo now includes a minimal `docker-compose.yml` for Redis:
+
+```bash
+just redis-up
+just redis-down
+```
 
 ### Commands
 
