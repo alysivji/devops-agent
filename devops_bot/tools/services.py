@@ -115,10 +115,11 @@ def _load_service_registry(path: Path = SERVICE_REGISTRY_PATH) -> list[ServiceRe
 def _write_service_registry(
     registry: list[ServiceRegistryEntryDict], path: Path = SERVICE_REGISTRY_PATH
 ) -> None:
+    sorted_registry = sorted(registry, key=lambda entry: entry["name"].lower())
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         yaml.safe_dump(
-            registry,
+            sorted_registry,
             sort_keys=False,
             allow_unicode=False,
         ),
@@ -202,7 +203,6 @@ def service_upsert(
             break
     else:
         registry.append(serialized)
-        registry.sort(key=lambda entry: entry["name"])
 
     _write_service_registry(registry)
     record_event(
