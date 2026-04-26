@@ -2,7 +2,7 @@
   "name": "devops-agent",
   "private": true,
   "devDependencies": {
-    "git-http-mock-server": "2.0.0",
+    "git-http-mock-server": "^1.1.0",
     "markdownlint-cli2": "0.22.1"
   },
   "scripts": {
