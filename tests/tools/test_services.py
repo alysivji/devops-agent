@@ -300,6 +300,58 @@ class TestServiceUpsert:
         assert service_get("grafana")["description"] == "Updated description."
         assert service_get("grafana")["tags"] == ["monitoring", "dashboards"]
 
+    def test_service_upsert_rewrites_registry_in_alphabetical_order(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        registry_path = tmp_path / "services" / "registry.yaml"
+        registry_path.parent.mkdir(parents=True)
+        registry_path.write_text(
+            "- name: zebra\n"
+            "  description: Zebra service.\n"
+            "  runtime: systemd\n"
+            "  location: control\n"
+            "  status: expected\n"
+            "  managed_by: ansible/playbooks/install-zebra.yaml\n"
+            "  endpoints:\n"
+            "    - name: health\n"
+            "      url: http://127.0.0.1:9100/health\n"
+            "  tags:\n"
+            "    - monitoring\n"
+            "- name: alpha\n"
+            "  description: Alpha service.\n"
+            "  runtime: systemd\n"
+            "  location: control\n"
+            "  status: expected\n"
+            "  managed_by: ansible/playbooks/install-alpha.yaml\n"
+            "  endpoints:\n"
+            "    - name: health\n"
+            "      url: http://127.0.0.1:9200/health\n"
+            "  tags:\n"
+            "    - monitoring\n",
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        service_upsert(
+            name="zebra",
+            description="Updated zebra service.",
+            runtime="systemd",
+            location="control",
+            status="expected",
+            managed_by="ansible/playbooks/install-zebra.yaml",
+            endpoints=[
+                {
+                    "name": "health",
+                    "url": "http://127.0.0.1:9100/health",
+                }
+            ],
+            tags=["monitoring", "updated"],
+        )
+
+        registry_text = registry_path.read_text(encoding="utf-8")
+        assert registry_text.startswith("- name: alpha\n")
+        assert "endpoints:\n  - name: health\n" in registry_text
+
     def test_service_upsert_rejects_invalid_endpoint_shape(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:

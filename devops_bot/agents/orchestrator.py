@@ -86,6 +86,12 @@ Process:
 - Use `service_upsert` only for local repo curation when the requested work
   creates or changes a declared service's identity, ownership, or access path.
   Do not use it to report live health or inferred runtime observations.
+- When local automation or chart work adds a declared service, or changes its
+  owner, namespace, runtime, or user-facing endpoint, call `service_upsert`
+  before finishing even if the user did not explicitly ask to update the
+  registry.
+- Treat the service registry as alphabetically ordered by service name. When
+  updating one entry, preserve that ordering rather than appending in place.
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts or cluster state. If the requested state is already
   true, report success instead of continuing through prerequisite or repair
