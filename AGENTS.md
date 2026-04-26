@@ -7,6 +7,7 @@
 - Check `justfile` before running validation or local workflows, and prefer its recipes over ad hoc commands when an equivalent recipe exists.
 - Keep control flow top-down and obvious.
 - Prefer the smallest obvious implementation over extensible design. Optimize for readability by a future human maintainer, not reuse.
+- When the user provides a working example, follow its structure closely and treat deviations as a mistake unless required by this repo.
 - If the design starts to need more than ~2 helpers or ~1 new module, stop and ask first.
 
 ## Tools And Remote Boundaries

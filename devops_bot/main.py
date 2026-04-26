@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from .agents.orchestrator import OrchestratorAgent
 from .approval import ApprovalRequest
+from .config import langfuse
 from .history import (
     RUN_HISTORY_PATH,
     RunHistory,
@@ -86,6 +87,8 @@ def main() -> int:
             run_history.finalize(response)
             _append_run_history(run_history)
     finally:
+        if langfuse is not None:
+            langfuse.flush()
         if token is not None:
             reset_active_run_history(token)
         reset_workflow_runtime(runtime_token)

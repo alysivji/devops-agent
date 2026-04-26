@@ -1,10 +1,25 @@
+import logging
+
+from langfuse import get_client
+
 from .secrets import SecretsManager
 
 secret_manager = SecretsManager(path=".env")
 
+# https://strandsagents.com/docs/user-guide/observability-evaluation/logs/
+logging.getLogger("strands").setLevel(logging.INFO)
+logging.basicConfig(
+    format="%(levelname)s | %(name)s | %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+
 OPENAI_API_KEY = secret_manager.get(str, "OPENAI_API_KEY")
 
 RUN_HISTORY_ENABLED = secret_manager.get(bool, "DEVOPS_AGENT_RUN_HISTORY_ENABLED", True)
+
+LANGFUSE_ENABLED = secret_manager.get(bool, "LANGFUSE_ENABLED", False)
+if LANGFUSE_ENABLED:
+    langfuse = get_client()
 
 SESSION_BACKEND = secret_manager.get(str, "DEVOPS_AGENT_SESSION_BACKEND", "none")
 SESSION_S3_BUCKET = secret_manager.get(str, "DEVOPS_AGENT_SESSION_S3_BUCKET", None)
