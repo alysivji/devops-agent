@@ -44,6 +44,7 @@ def test_build_agent_passes_session_manager(monkeypatch) -> None:
         "tools": ["tool"],
         "plugins": [],
         "session_manager": session_manager,
+        "trace_attributes": None,
     }
 
 
@@ -72,4 +73,25 @@ def test_build_agent_passes_plugins(monkeypatch) -> None:
         "tools": ["tool"],
         "plugins": [plugin],
         "session_manager": None,
+        "trace_attributes": None,
     }
+
+
+def test_build_agent_passes_trace_attributes(monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeAgent:
+        def __init__(self, **kwargs: Any) -> None:
+            captured.update(kwargs)
+
+    model = cast(OpenAIModel, object())
+    monkeypatch.setattr(factory_module, "Agent", FakeAgent)
+
+    agent = build_agent(
+        model=model,
+        system_prompt="system",
+        trace_attributes={"session.id": "session-1"},
+    )
+
+    assert isinstance(agent, FakeAgent)
+    assert captured["trace_attributes"] == {"session.id": "session-1"}
