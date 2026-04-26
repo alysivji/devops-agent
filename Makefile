@@ -20,10 +20,12 @@ run: ## run the agent
 
 lint: ## run lint checks
 	uv run ruff check .
+	git ls-files '*.md' | xargs npm exec -- markdownlint-cli2
 
 format: ## format code and auto-fix simple issues
 	uv run ruff check --fix .
 	uv run ruff format .
+	uv run python scripts/format_markdown.py
 
 typecheck: ## run mypy
 	uv run mypy

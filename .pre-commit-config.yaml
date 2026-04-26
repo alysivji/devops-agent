@@ -16,6 +16,16 @@ repos:
 
   - repo: local
     hooks:
+      - id: format-markdown
+        name: format-markdown
+        entry: uv run python scripts/format_markdown.py
+        language: system
+        files: \.md$
+      - id: markdownlint
+        name: markdownlint
+        entry: npm exec -- markdownlint-cli2
+        language: system
+        files: \.md$
       - id: mypy
         name: mypy
         entry: uv run mypy
