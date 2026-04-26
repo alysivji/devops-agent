@@ -41,9 +41,11 @@ For Kubernetes application desired state, prefer repo-owned Helm charts under `h
 
 Kubernetes and Helm failure handling is also available as a Strands skill under `skills/kubernetes-troubleshooting/`; the orchestrator loads repo skills via the Strands `AgentSkills` plugin.
 
-The service discovery registry plan lives in `docs/service-discovery-registry-plan.md`. The intended registry is static repo-owned state for known service identities and endpoints, separate from live Helm, kubectl, or Ansible health checks. It is also intentionally separate from any future agent memory system: the service registry is the checked-in source of truth for service identity, ownership, and access paths, while memory would be reserved for broader learned or session-derived context.
+The service discovery registry is static repo-owned state for known service identities and endpoints, separate from live Helm, kubectl, or Ansible health checks. It is also intentionally separate from agent memory: the service registry is the checked-in source of truth for service identity, ownership, and access paths, while memory would be reserved for broader learned or session-derived context.
 
-The first generation tool supports these inventory targets:
+The service registry lives at `services/registry.yaml` and is exposed through offline `service_list`, `service_get`, and `service_upsert` tools. `service_list` returns a compact declared inventory for low-context discovery, `service_get` returns the full declared entry for one service, and `service_upsert` curates a checked-in service entry when local repo changes add or revise a declared service. These tools stay offline and avoid calling Kubernetes, Ansible, SSH, or any live host APIs.
+
+Generated playbooks support these inventory targets:
 
 - `control` for local playbooks
 - `cluster` for remote playbooks over SSH
@@ -99,11 +101,11 @@ Run history does not include:
 
 Disable run history by setting `DEVOPS_AGENT_RUN_HISTORY_ENABLED=false`.
 
-Human-readable talk generation is intentionally deferred. This first pass writes only the JSONL artifact.
+Run history currently writes only the JSONL artifact, not a separate human-readable summary file.
 
 ## Strands Session Storage
 
-The JSONL run history remains a compact summary and audit artifact. Optional Strands session storage persists the agent's messages and state for object-level inspection and future backend experiments. It is disabled by default.
+The JSONL run history remains a compact summary and audit artifact. Optional Strands session storage persists the agent's messages and state for object-level inspection. It is disabled by default.
 
 ## Runtime Context
 
@@ -162,7 +164,7 @@ Live S3-compatible storage is optional local infrastructure. Default tests do no
 
 The repo now includes a backend-first Django host under `apps/api` with Celery for background agent execution and SQLite for durable conversation state. The existing `devops_bot` CLI remains intact; Django is an additional host that creates `conversation`, `message`, `job`, `event`, and `pending approval` records around the same runtime.
 
-The first slice exposes:
+The backend exposes:
 
 - `POST /conversations` to create a conversation and enqueue the first job
 - `GET /conversations/<id>` for conversation status and final result

@@ -71,6 +71,22 @@ def test_orchestrator_prompt_updates_env_example_for_runtime_env_vars() -> None:
     assert "If required keys are present, continue to the requested run" in MAIN_SYSTEM_PROMPT
 
 
+def test_orchestrator_prompt_uses_service_registry_for_discovery_questions() -> None:
+    assert "`service_list`" in MAIN_SYSTEM_PROMPT
+    assert "`service_get`" in MAIN_SYSTEM_PROMPT
+    assert "`service_upsert`" in MAIN_SYSTEM_PROMPT
+    assert '"what is running?"' in MAIN_SYSTEM_PROMPT
+    assert '"where\n  does Grafana live?"' in MAIN_SYSTEM_PROMPT
+    assert '"which automation owns nginx?"' in MAIN_SYSTEM_PROMPT
+    assert "declared repo-owned metadata only" in MAIN_SYSTEM_PROMPT
+    assert "not live health, not observed runtime state, and not general agent\n  memory" in (
+        MAIN_SYSTEM_PROMPT
+    )
+    assert "creates or changes a declared service's identity, ownership, or access path" in (
+        MAIN_SYSTEM_PROMPT
+    )
+
+
 def test_orchestrator_prompt_defaults_deployments_to_kubernetes() -> None:
     assert "You orchestrate DevOps workflow tools" in MAIN_SYSTEM_PROMPT
     assert "Start by routing the request" in MAIN_SYSTEM_PROMPT
@@ -143,6 +159,9 @@ def test_orchestrator_exposes_kubernetes_workflow_tools(monkeypatch) -> None:
         "systemd_restart_service",
         "env_example_update",
         "env_list_loaded_keys",
+        "service_list",
+        "service_get",
+        "service_upsert",
     }.issubset(tool_names)
     plugins = captured["build_agent"]["plugins"]
     assert len(plugins) == 1
