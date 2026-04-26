@@ -82,7 +82,7 @@ The generated review includes the proposed filename, metadata header fields, and
 
 ## Run History
 
-CLI runs capture a machine-readable run history by default and append each completed session to `docs/autonomous-devops-run-history.jsonl`.
+CLI runs capture a machine-readable run history by default and append each completed conversation session to `docs/autonomous-devops-run-history.jsonl`.
 
 Run history includes:
 
@@ -105,7 +105,7 @@ Run history currently writes only the JSONL artifact, not a separate human-reada
 
 ## Strands Session Storage
 
-The JSONL run history remains a compact summary and audit artifact. Optional Strands session storage persists the agent's messages and state for object-level inspection. It is disabled by default.
+The JSONL run history remains a compact summary and audit artifact. Each JSONL line now represents one conversation session and stores its individual chat turns under `turns`. Optional Strands session storage persists the agent's messages and state for object-level inspection. It is disabled by default.
 
 ## Runtime Context
 
@@ -140,7 +140,7 @@ MINIO_ROOT_PASSWORD=<minio-secret-key>
 
 The session S3 credentials default to `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` for local MinIO. Use `DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID` and `DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY` only when the session store should use different credentials from the MinIO service.
 
-Each CLI invocation creates a new Strands session. When run history is enabled, the S3 session ID matches the JSONL `run_id`, so objects appear under keys like `local/session_<run_id>/`.
+Each CLI invocation creates a new Strands session unless you explicitly reuse `--session-id`. Run history records now carry both a stable `session_id` and per-turn `run_id` values, so follow-up turns can stay on the same JSONL line while still preserving turn-level identifiers.
 
 Pass `--session-id` to choose the Strands session ID explicitly:
 
@@ -148,7 +148,7 @@ Pass `--session-id` to choose the Strands session ID explicitly:
 uv run devops-agent --session-id support-session "create a hello world playbook for local nodes"
 ```
 
-When `--session-id` is set, run history still writes its own `run_id`; the Strands session objects use the CLI-provided session ID.
+When `--session-id` is set, the JSONL record uses that stable `session_id` and each turn still gets its own `run_id`; the Strands session objects use the CLI-provided session ID.
 
 Other S3-compatible providers can use the same session settings with different credentials, bucket, prefix, region, and endpoint URL. Example endpoints:
 

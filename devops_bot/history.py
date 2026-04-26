@@ -1,3 +1,4 @@
+import json
 import os
 from collections.abc import Mapping
 from contextvars import ContextVar, Token
@@ -32,6 +33,7 @@ class RunEvent(BaseModel):
 
 
 class RunSession(BaseModel):
+    session_id: str
     run_id: str
     started_at: datetime
     finished_at: datetime | None = None
@@ -45,8 +47,9 @@ def run_history_enabled() -> bool:
 
 
 class RunHistory:
-    def __init__(self, *, prompt: str) -> None:
+    def __init__(self, *, prompt: str, session_id: str | None = None) -> None:
         self.session = RunSession(
+            session_id=session_id or uuid4().hex,
             run_id=uuid4().hex,
             started_at=datetime.now(UTC),
             prompt=prompt,
@@ -110,9 +113,90 @@ def record_event(
 
 def append_session_jsonl(session: RunSession, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(session.model_dump_json())
-        handle.write(os.linesep)
+    records = _load_jsonl_records(path)
+    updated = False
+
+    for index, record in enumerate(records):
+        if record.get("session_id") == session.session_id:
+            records[index] = _append_turn(record, session)
+            updated = True
+            break
+
+    if not updated:
+        records.append(_build_session_record(session))
+
+    with path.open("w", encoding="utf-8") as handle:
+        for record in records:
+            handle.write(json.dumps(record, separators=(",", ":")))
+            handle.write(os.linesep)
+
+
+def _load_jsonl_records(path: Path) -> list[dict[str, JSONValue]]:
+    if not path.exists():
+        return []
+
+    records: list[dict[str, JSONValue]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        records.append(json.loads(line))
+    return records
+
+
+def _append_turn(record: dict[str, JSONValue], session: RunSession) -> dict[str, JSONValue]:
+    session_payload = _session_payload(session)
+    turns_value = record.get("turns")
+    finished_at = session_payload["finished_at"]
+
+    if isinstance(turns_value, list):
+        next_turns = list(turns_value)
+        next_turns.append(session_payload)
+        return {
+            "session_id": session.session_id,
+            "started_at": record.get("started_at", session_payload["started_at"]),
+            "finished_at": finished_at,
+            "updated_at": finished_at,
+            "turn_count": len(next_turns),
+            "turns": next_turns,
+        }
+
+    existing_turn = _legacy_record_to_turn(record)
+    return {
+        "session_id": session.session_id,
+        "started_at": existing_turn["started_at"],
+        "finished_at": finished_at,
+        "updated_at": finished_at,
+        "turn_count": 2,
+        "turns": [existing_turn, session_payload],
+    }
+
+
+def _build_session_record(session: RunSession) -> dict[str, JSONValue]:
+    session_payload = _session_payload(session)
+    return {
+        "session_id": session.session_id,
+        "started_at": session_payload["started_at"],
+        "finished_at": session_payload["finished_at"],
+        "updated_at": session_payload["finished_at"],
+        "turn_count": 1,
+        "turns": [session_payload],
+    }
+
+
+def _session_payload(session: RunSession) -> dict[str, JSONValue]:
+    return session.model_dump(mode="json")
+
+
+def _legacy_record_to_turn(record: dict[str, JSONValue]) -> dict[str, JSONValue]:
+    return {
+        "session_id": str(record.get("session_id") or record.get("run_id") or ""),
+        "run_id": str(record.get("run_id") or ""),
+        "started_at": record.get("started_at"),
+        "finished_at": record.get("finished_at"),
+        "prompt": str(record.get("prompt") or ""),
+        "outcome": record.get("outcome"),
+        "events": record.get("events") if isinstance(record.get("events"), list) else [],
+    }
 
 
 def _sanitize_details(details: Mapping[str, object]) -> dict[str, JSONValue]:

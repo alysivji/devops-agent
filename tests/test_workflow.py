@@ -83,8 +83,10 @@ def test_workflow_records_successful_chat_turn(
         "run_completed",
         "status",
     ]
-    assert payload["prompt"] == "inspect the registry"
-    assert payload["outcome"] == "handled: inspect the registry"
+    assert payload["session_id"] == "session-1"
+    assert payload["turn_count"] == 1
+    assert payload["turns"][0]["prompt"] == "inspect the registry"
+    assert payload["turns"][0]["outcome"] == "handled: inspect the registry"
     assert workflow_module.get_workflow_runtime() is None
 
 
@@ -114,8 +116,9 @@ def test_workflow_records_failed_chat_turn_without_raising(
         "role": "error",
         "text": "boom: inspect the registry",
     }
-    assert payload["outcome"] == "failed: boom: inspect the registry"
-    assert payload["events"][-1]["kind"] == "run_failed"
+    assert payload["session_id"] == "session-1"
+    assert payload["turns"][0]["outcome"] == "failed: boom: inspect the registry"
+    assert payload["turns"][0]["events"][-1]["kind"] == "run_failed"
     assert workflow_module.get_workflow_runtime() is None
 
 

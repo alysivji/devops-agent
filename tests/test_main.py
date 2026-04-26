@@ -45,9 +45,9 @@ def test_main_appends_run_history_by_default(
     assert exit_code == 0
     assert captured.out.strip() == "handled: inspect the registry"
     payload = json.loads(output_path.read_text(encoding="utf-8").splitlines()[0])
-    assert payload["prompt"] == "inspect the registry"
-    assert payload["outcome"] == "handled: inspect the registry"
-    assert SuccessfulOrchestrator.session_ids == [payload["run_id"]]
+    assert payload["turns"][0]["prompt"] == "inspect the registry"
+    assert payload["turns"][0]["outcome"] == "handled: inspect the registry"
+    assert SuccessfulOrchestrator.session_ids == [payload["session_id"]]
 
 
 def test_main_skips_run_history_when_disabled(
@@ -87,7 +87,8 @@ def test_main_uses_explicit_cli_session_id(
     output_path = tmp_path / "docs" / "autonomous-devops-run-history.jsonl"
     payload = json.loads(output_path.read_text(encoding="utf-8").splitlines()[0])
 
-    assert payload["run_id"] != "support-session"
+    assert payload["session_id"] == "support-session"
+    assert payload["turns"][0]["run_id"] != "support-session"
     assert SuccessfulOrchestrator.session_ids == ["support-session"]
 
 
@@ -106,5 +107,5 @@ def test_main_records_failed_session_before_reraising(
     output_path = tmp_path / "docs" / "autonomous-devops-run-history.jsonl"
     payload = json.loads(output_path.read_text(encoding="utf-8").splitlines()[0])
 
-    assert payload["outcome"] == "failed: boom: inspect the registry"
-    assert payload["events"][-1]["kind"] == "run_failed"
+    assert payload["turns"][0]["outcome"] == "failed: boom: inspect the registry"
+    assert payload["turns"][0]["events"][-1]["kind"] == "run_failed"
