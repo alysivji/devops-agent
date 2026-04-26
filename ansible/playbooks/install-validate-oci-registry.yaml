@@ -1,0 +1,270 @@
+# name: install_validate_oci_registry
+# description: Install and validate the OCI registry foundation service on the control node, ensuring proper configuration and active service status, with pre-validation checks and error handling for service and API response issues.
+# target: control
+# requires_approval: true
+# tags:
+#   - oci
+#   - registry
+#   - installation
+#   - validation
+#   - service
+
+---
+- name: Install and validate OCI registry foundation service on control node
+  hosts: control
+  become: true
+  gather_facts: true
+  vars:
+    registry_validate_metadata:
+      name: local-oci-registry
+      description: Host-level lightweight OCI registry foundation service on the control node
+      owner: devops-agent
+      scope: control
+      interface: http
+    registry_reset: false
+    registry_package_name: docker-registry
+    registry_user: docker-registry
+    registry_group: docker-registry
+    registry_base_dir: /var/lib/docker-registry
+    registry_data_dir: /var/lib/docker-registry/data
+    registry_config_dir: /etc/docker/registry
+    registry_config_file: /etc/docker/registry/config.yml
+    registry_service_name: docker-registry
+    registry_listen_host: 0.0.0.0
+    registry_listen_port: 5000
+    registry_http_addr: "{{ registry_listen_host }}:{{ registry_listen_port }}"
+    registry_api_url: "http://127.0.0.1:{{ registry_listen_port }}/v2/"
+    registry_service_override_dir: "/etc/systemd/system/{{ registry_service_name }}.service.d"
+    registry_service_override_file: "{{ registry_service_override_dir }}/override.conf"
+  pre_tasks:
+    - name: Validate registry playbook metadata header fields are present
+      ansible.builtin.assert:
+        that:
+          - registry_validate_metadata is mapping
+          - registry_validate_metadata.name | length > 0
+          - registry_validate_metadata.description | length > 0
+          - registry_validate_metadata.owner | length > 0
+          - registry_validate_metadata.scope == 'control'
+          - registry_validate_metadata.interface == 'http'
+        fail_msg: >-
+          Registry metadata header fields are missing or invalid. Ensure name,
+          description, owner, scope, and interface are defined for this playbook.
+        success_msg: Registry metadata header fields validated.
+
+    - name: Determine whether registry endpoint already responds successfully
+      ansible.builtin.uri:
+        url: "{{ registry_api_url }}"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: registry_precheck
+      failed_when: false
+      changed_when: false
+
+    - name: Record registry precheck state
+      ansible.builtin.debug:
+        msg:
+          endpoint: "{{ registry_api_url }}"
+          precheck_status: "{{ registry_precheck.status | default('unreachable') }}"
+          already_ready: "{{ (registry_precheck.status | default(0) | int) == 200 and (registry_precheck.json is defined and registry_precheck.json is mapping and registry_precheck.json.errors is not defined) }}"
+
+  tasks:
+    - name: Reset OCI registry service and data when explicitly requested
+      when: registry_reset | bool
+      block:
+        - name: Stop registry service during reset
+          ansible.builtin.systemd:
+            name: "{{ registry_service_name }}"
+            state: stopped
+            enabled: false
+          failed_when: false
+
+        - name: Remove registry systemd override during reset
+          ansible.builtin.file:
+            path: "{{ registry_service_override_file }}"
+            state: absent
+
+        - name: Remove registry override directory during reset
+          ansible.builtin.file:
+            path: "{{ registry_service_override_dir }}"
+            state: absent
+
+        - name: Remove registry configuration file during reset
+          ansible.builtin.file:
+            path: "{{ registry_config_file }}"
+            state: absent
+
+        - name: Remove registry data directory during reset
+          ansible.builtin.file:
+            path: "{{ registry_base_dir }}"
+            state: absent
+
+        - name: Reload systemd after registry reset
+          ansible.builtin.systemd:
+            daemon_reload: true
+
+    - name: Ensure OCI registry package is installed
+      ansible.builtin.package:
+        name: "{{ registry_package_name }}"
+        state: present
+
+    - name: Ensure registry configuration directory exists
+      ansible.builtin.file:
+        path: "{{ registry_config_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Ensure registry persistent storage directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ registry_user }}"
+        group: "{{ registry_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ registry_base_dir }}", mode: '0755' }
+        - { path: "{{ registry_data_dir }}", mode: '0755' }
+      register: registry_storage_dirs
+
+    - name: Install registry configuration
+      ansible.builtin.copy:
+        dest: "{{ registry_config_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          version: 0.1
+          log:
+            fields:
+              service: registry
+          storage:
+            filesystem:
+              rootdirectory: {{ registry_data_dir }}
+            delete:
+              enabled: true
+          http:
+            addr: {{ registry_http_addr }}
+            headers:
+              X-Content-Type-Options:
+                - nosniff
+          health:
+            storagedriver:
+              enabled: true
+              interval: 10s
+              threshold: 3
+      register: registry_config
+
+    - name: Ensure registry systemd override directory exists
+      ansible.builtin.file:
+        path: "{{ registry_service_override_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Configure registry systemd service to use managed configuration
+      ansible.builtin.copy:
+        dest: "{{ registry_service_override_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/bin/docker-registry serve {{ registry_config_file }}
+          WorkingDirectory={{ registry_base_dir }}
+      register: registry_service_override
+
+    - name: Reload systemd when registry unit configuration changes
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: registry_service_override.changed
+
+    - name: Ensure registry service is enabled and running
+      ansible.builtin.systemd:
+        name: "{{ registry_service_name }}"
+        enabled: true
+        state: "{{ 'restarted' if (registry_config.changed or registry_service_override.changed) else 'started' }}"
+      register: registry_service_start
+
+    - name: Validate registry service and API endpoint
+      block:
+        - name: Gather registry service state
+          ansible.builtin.systemd:
+            name: "{{ registry_service_name }}"
+          register: registry_service_status
+          changed_when: false
+
+        - name: Wait for registry API endpoint to respond
+          ansible.builtin.uri:
+            url: "{{ registry_api_url }}"
+            method: GET
+            status_code: 200
+            return_content: true
+          register: registry_api_result
+          retries: 15
+          delay: 2
+          until: registry_api_result.status == 200
+          changed_when: false
+
+        - name: Assert registry service is active and API is healthy
+          ansible.builtin.assert:
+            that:
+              - registry_service_status.status is defined
+              - registry_service_status.status.ActiveState == 'active'
+              - registry_service_status.status.SubState in ['running', 'listening']
+              - registry_api_result.status == 200
+              - registry_api_result.content is search('\\{\\s*\"repositories\"') or (registry_api_result.json is defined) or (registry_api_result.content | trim) == '{}'
+            fail_msg: >-
+              OCI registry validation failed. Ensure the {{ registry_service_name }} service
+              is active and {{ registry_api_url }} responds with a valid registry API payload.
+            success_msg: OCI registry service is active and registry HTTP API is responding.
+
+      rescue:
+        - name: Collect registry service facts after validation failure
+          ansible.builtin.systemd:
+            name: "{{ registry_service_name }}"
+          register: registry_service_failure_state
+          failed_when: false
+          changed_when: false
+
+        - name: Collect registry API response after validation failure
+          ansible.builtin.uri:
+            url: "{{ registry_api_url }}"
+            method: GET
+            return_content: true
+          register: registry_api_failure_state
+          failed_when: false
+          changed_when: false
+
+        - name: Emit structured registry failure context
+          ansible.builtin.debug:
+            msg:
+              service_name: "{{ registry_service_name }}"
+              service_state: "{{ registry_service_failure_state.status | default({}) }}"
+              api_url: "{{ registry_api_url }}"
+              api_status: "{{ registry_api_failure_state.status | default('unreachable') }}"
+              api_content: "{{ registry_api_failure_state.content | default('') }}"
+
+        - name: Fail when registry validation did not succeed
+          ansible.builtin.fail:
+            msg: >-
+              OCI registry service validation failed. Review the emitted service state and API
+              response details for {{ registry_service_name }} on {{ inventory_hostname }}.
+
+    - name: Emit structured final registry state
+      ansible.builtin.debug:
+        msg:
+          metadata: "{{ registry_validate_metadata }}"
+          host: "{{ inventory_hostname }}"
+          service_name: "{{ registry_service_name }}"
+          enabled: "{{ registry_service_status.status.UnitFileState | default('unknown') }}"
+          active_state: "{{ registry_service_status.status.ActiveState | default('unknown') }}"
+          sub_state: "{{ registry_service_status.status.SubState | default('unknown') }}"
+          listen_address: "{{ registry_http_addr }}"
+          api_url: "{{ registry_api_url }}"
+          storage_path: "{{ registry_data_dir }}"
+          api_status: "{{ registry_api_result.status | default('unknown') }}"
+          api_body: "{{ registry_api_result.content | default('') }}"
