@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
-from devops_bot.tools.services import service_get, service_list
+from devops_bot.tools.services import service_get, service_list, service_upsert
 
 
 class TestServiceList:
@@ -210,3 +210,142 @@ class TestServiceGet:
             reset_active_run_history(token)
 
         assert run_history.session.events[-1].kind == "service_detail_read"
+
+
+class TestServiceUpsert:
+    def test_service_upsert_creates_new_entry(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+
+        result = service_upsert(
+            name="grafana",
+            description="Control-node Grafana instance for dashboards.",
+            runtime="systemd",
+            location="control",
+            status="expected",
+            managed_by="ansible/playbooks/install-grafana.yaml",
+            endpoints=[
+                {
+                    "name": "health",
+                    "url": "http://127.0.0.1:3000/api/health",
+                    "protocol": "http",
+                    "scope": "control-node-local",
+                }
+            ],
+            tags=["monitoring", "dashboards"],
+        )
+
+        assert result == {
+            "path": "services/registry.yaml",
+            "action": "created",
+            "service": {
+                "name": "grafana",
+                "description": "Control-node Grafana instance for dashboards.",
+                "runtime": "systemd",
+                "location": "control",
+                "status": "expected",
+                "managed_by": "ansible/playbooks/install-grafana.yaml",
+                "endpoints": [
+                    {
+                        "name": "health",
+                        "url": "http://127.0.0.1:3000/api/health",
+                        "protocol": "http",
+                        "scope": "control-node-local",
+                    }
+                ],
+                "tags": ["monitoring", "dashboards"],
+            },
+        }
+        assert service_get("grafana") == result["service"]
+
+    def test_service_upsert_updates_existing_entry(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        registry_path = tmp_path / "services" / "registry.yaml"
+        registry_path.parent.mkdir(parents=True)
+        registry_path.write_text(
+            "- name: grafana\n"
+            "  description: Old description.\n"
+            "  runtime: systemd\n"
+            "  location: control\n"
+            "  status: expected\n"
+            "  managed_by: ansible/playbooks/install-grafana.yaml\n"
+            "  endpoints:\n"
+            "    - name: health\n"
+            "      url: http://127.0.0.1:3000/api/health\n"
+            "  tags:\n"
+            "    - monitoring\n",
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = service_upsert(
+            name="grafana",
+            description="Updated description.",
+            runtime="systemd",
+            location="control",
+            status="expected",
+            managed_by="ansible/playbooks/install-grafana.yaml",
+            endpoints=[
+                {
+                    "name": "health",
+                    "url": "http://127.0.0.1:3000/api/health",
+                }
+            ],
+            tags=["monitoring", "dashboards"],
+        )
+
+        assert result["action"] == "updated"
+        assert service_get("grafana")["description"] == "Updated description."
+        assert service_get("grafana")["tags"] == ["monitoring", "dashboards"]
+
+    def test_service_upsert_rejects_invalid_endpoint_shape(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.raises(ValueError, match="either `url` or both `host` and `port`"):
+            service_upsert(
+                name="nginx",
+                description="Kubernetes nginx service.",
+                runtime="kubernetes",
+                location="default",
+                status="expected",
+                managed_by="helm/charts/nginx",
+                endpoints=[
+                    {
+                        "name": "http",
+                        "protocol": "http",
+                    }
+                ],
+                tags=["web"],
+            )
+
+    def test_service_upsert_records_run_history(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        run_history = RunHistory(prompt="track grafana in the registry")
+        token = set_active_run_history(run_history)
+
+        try:
+            service_upsert(
+                name="grafana",
+                description="Control-node Grafana instance for dashboards.",
+                runtime="systemd",
+                location="control",
+                status="expected",
+                managed_by="ansible/playbooks/install-grafana.yaml",
+                endpoints=[
+                    {
+                        "name": "health",
+                        "url": "http://127.0.0.1:3000/api/health",
+                    }
+                ],
+                tags=["monitoring"],
+            )
+        finally:
+            reset_active_run_history(token)
+
+        assert run_history.session.events[-1].kind == "service_registry_write"

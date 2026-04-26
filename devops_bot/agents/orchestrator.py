@@ -28,7 +28,7 @@ from ..tools.kubernetes import (
     kubernetes_fix_access,
 )
 from ..tools.playbooks import ansible_create_playbook, ansible_edit_playbook
-from ..tools.services import service_get, service_list
+from ..tools.services import service_get, service_list, service_upsert
 
 ThinkingLevel = str
 SKILLS_DIR = Path("skills")
@@ -46,6 +46,7 @@ Available tools:
 - `env_example_update`: document environment variables in the local `.env.example`
 - `service_list`: inspect the repo-owned declared service inventory
 - `service_get`: inspect the full declared details for one service
+- `service_upsert`: create or update one declared service entry in the repo-owned registry
 - `helm_create_chart`: create a repo-owned Helm chart scaffold with explicit approval
 - `helm_edit_chart`: edit files inside an existing Helm chart with explicit approval
 - `helm_list_charts`: inspect the repo-owned Helm chart registry under helm/charts
@@ -82,6 +83,9 @@ Process:
 - Treat `service_list` and `service_get` as declared repo-owned metadata only.
   They are not live health, not observed runtime state, and not general agent
   memory.
+- Use `service_upsert` only for local repo curation when the requested work
+  creates or changes a declared service's identity, ownership, or access path.
+  Do not use it to report live health or inferred runtime observations.
 - Prefer validating the user's requested end state before running remediation
   that mutates remote hosts or cluster state. If the requested state is already
   true, report success instead of continuing through prerequisite or repair
@@ -217,6 +221,7 @@ class OrchestratorAgent:
                 env_example_update,
                 service_list,
                 service_get,
+                service_upsert,
                 ansible_create_playbook,
                 ansible_edit_playbook,
                 helm_create_chart,

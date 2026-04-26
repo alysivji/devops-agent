@@ -23,7 +23,7 @@ from .kubernetes import (
     kubectl_rollout_status,
     kubernetes_fix_access,
 )
-from .services import service_get, service_list
+from .services import service_get, service_list, service_upsert
 from .web import http_get, search_web
 
 __all__ = [
@@ -51,4 +51,5 @@ __all__ = [
     "kubectl_rollout_status",
     "service_get",
     "service_list",
+    "service_upsert",
 ]

@@ -41,6 +41,12 @@ class ServiceListItemDict(TypedDict):
     tags: list[str]
 
 
+class ServiceUpsertResultDict(TypedDict):
+    path: str
+    action: str
+    service: ServiceRegistryEntryDict
+
+
 class ServiceRegistryEndpoint(BaseModel):
     name: str
     url: str | None = None
@@ -128,6 +134,20 @@ def _load_service_registry(path: Path = SERVICE_REGISTRY_PATH) -> list[ServiceRe
     return [_serialize_service(entry) for entry in validated]
 
 
+def _write_service_registry(
+    registry: list[ServiceRegistryEntryDict], path: Path = SERVICE_REGISTRY_PATH
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        yaml.safe_dump(
+            registry,
+            sort_keys=False,
+            allow_unicode=False,
+        ),
+        encoding="utf-8",
+    )
+
+
 @tool
 def service_list() -> list[ServiceListItemDict]:
     """Return compact declared service inventory from the repo-owned registry."""
@@ -164,3 +184,66 @@ def service_get(name: str) -> ServiceRegistryEntryDict:
             return entry
 
     raise ValueError(f"Service is not in the registry: {name}")
+
+
+@tool
+def service_upsert(
+    name: str,
+    description: str,
+    runtime: str,
+    location: str,
+    status: str,
+    managed_by: str,
+    endpoints: list[ServiceRegistryEndpointDict],
+    tags: list[str],
+) -> ServiceUpsertResultDict:
+    """Create or update one declared service entry in the repo-owned registry."""
+    try:
+        candidate = ServiceRegistryEntry.model_validate(
+            {
+                "name": name,
+                "description": description,
+                "runtime": runtime,
+                "location": location,
+                "status": status,
+                "managed_by": managed_by,
+                "endpoints": endpoints,
+                "tags": tags,
+            }
+        )
+    except ValidationError as exc:
+        raise ValueError(f"Invalid service registry entry: {exc}") from exc
+    serialized = _serialize_service(candidate)
+    registry = _load_service_registry()
+
+    action = "created"
+    for index, entry in enumerate(registry):
+        if entry["name"] == name:
+            registry[index] = serialized
+            action = "updated"
+            break
+    else:
+        registry.append(serialized)
+        registry.sort(key=lambda entry: entry["name"])
+
+    _write_service_registry(registry)
+    record_event(
+        kind="service_registry_write",
+        status="completed",
+        what=f"{action.title()} declared service entry `{name}`.",
+        why=(
+            "Keep the repo-owned service registry current when local automation "
+            "or chart changes add or revise a declared service."
+        ),
+        details={
+            "path": str(SERVICE_REGISTRY_PATH),
+            "name": name,
+            "action": action,
+            "managed_by": managed_by,
+        },
+    )
+    return {
+        "path": str(SERVICE_REGISTRY_PATH),
+        "action": action,
+        "service": serialized,
+    }
