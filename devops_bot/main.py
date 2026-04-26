@@ -29,13 +29,11 @@ def main() -> int:
     parser.add_argument("--session-id", help="Specify the Strands session ID for this run.")
     args = parser.parse_args()
 
-    run_history = RunHistory(prompt=args.prompt) if run_history_enabled() else None
-    token = set_active_run_history(run_history) if run_history is not None else None
-    session_id = (
-        args.session_id
-        if args.session_id is not None
-        else (run_history.session.run_id if run_history is not None else uuid4().hex)
+    session_id = args.session_id if args.session_id is not None else uuid4().hex
+    run_history = (
+        RunHistory(prompt=args.prompt, session_id=session_id) if run_history_enabled() else None
     )
+    token = set_active_run_history(run_history) if run_history is not None else None
     runtime_token = set_workflow_runtime(
         WorkflowRuntime(
             event_sink=_render_workflow_event,

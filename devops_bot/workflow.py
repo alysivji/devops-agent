@@ -170,7 +170,9 @@ class AgentWorkflow:
             approval_resolver=approval_resolver,
         )
         runtime_token = set_workflow_runtime(runtime)
-        run_history = RunHistory(prompt=prompt) if run_history_enabled() else None
+        run_history = (
+            RunHistory(prompt=prompt, session_id=self.session_id) if run_history_enabled() else None
+        )
         history_token = set_active_run_history(run_history) if run_history is not None else None
 
         try:

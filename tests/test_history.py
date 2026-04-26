@@ -20,7 +20,7 @@ def test_run_history_can_be_disabled_with_env_var(monkeypatch) -> None:
 
 
 def test_run_history_redacts_sensitive_fields_and_truncates_text() -> None:
-    run_history = RunHistory(prompt="deploy the cluster")
+    run_history = RunHistory(prompt="deploy the cluster", session_id="session-1")
     run_history.record_event(
         kind="tool_call",
         status="completed",
@@ -44,7 +44,7 @@ def test_run_history_redacts_sensitive_fields_and_truncates_text() -> None:
 
 def test_append_session_jsonl_persists_prompt_and_outcome(tmp_path: Path) -> None:
     output_path = tmp_path / "docs" / "autonomous-devops-run-history.jsonl"
-    run_history = RunHistory(prompt="inspect the registry")
+    run_history = RunHistory(prompt="inspect the registry", session_id="session-1")
     run_history.record_event(
         kind="run_started",
         status="started",
@@ -60,6 +60,28 @@ def test_append_session_jsonl_persists_prompt_and_outcome(tmp_path: Path) -> Non
     assert len(lines) == 1
 
     payload = json.loads(lines[0])
-    assert payload["prompt"] == "inspect the registry"
-    assert payload["outcome"] == "used existing playbook"
-    assert payload["events"][0]["kind"] == "run_started"
+    assert payload["session_id"] == "session-1"
+    assert payload["turn_count"] == 1
+    assert payload["turns"][0]["prompt"] == "inspect the registry"
+    assert payload["turns"][0]["outcome"] == "used existing playbook"
+    assert payload["turns"][0]["events"][0]["kind"] == "run_started"
+
+
+def test_append_session_jsonl_updates_existing_session_on_same_line(tmp_path: Path) -> None:
+    output_path = tmp_path / "docs" / "autonomous-devops-run-history.jsonl"
+    first_turn = RunHistory(prompt="first prompt", session_id="session-1")
+    first_turn.finalize("first outcome")
+    second_turn = RunHistory(prompt="follow-up prompt", session_id="session-1")
+    second_turn.finalize("follow-up outcome")
+
+    append_session_jsonl(first_turn.session, output_path)
+    append_session_jsonl(second_turn.session, output_path)
+
+    lines = output_path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+
+    payload = json.loads(lines[0])
+    assert payload["session_id"] == "session-1"
+    assert payload["turn_count"] == 2
+    assert payload["turns"][0]["prompt"] == "first prompt"
+    assert payload["turns"][1]["prompt"] == "follow-up prompt"
