@@ -158,6 +158,39 @@ The session storage credentials need object read/write/delete and list access: `
 
 Live S3-compatible storage is optional local infrastructure. Default tests do not require MinIO or cloud credentials.
 
+## Django Backend
+
+The repo now includes a backend-first Django host under `apps/api` with Celery for background agent execution and SQLite for durable conversation state. The existing `devops_bot` CLI remains intact; Django is an additional host that creates `conversation`, `message`, `job`, `event`, and `pending approval` records around the same runtime.
+
+The first slice exposes:
+
+- `POST /conversations` to create a conversation and enqueue the first job
+- `GET /conversations/<id>` for conversation status and final result
+- `GET /conversations/<id>/messages` for chat history polling
+- `POST /conversations/<id>/messages/new` to submit the next user message
+- `GET /conversations/<id>/events` for execution event polling
+- `GET /conversations/<id>/jobs` for execution history
+- `POST /pending-approvals/<id>/approve` and `/decline` for persisted approval decisions
+
+Local backend commands:
+
+```bash
+just redis-up
+just django-migrate
+just celery-worker
+just django-runserver
+just conversation-run "create a hello world playbook for local nodes"
+```
+
+The backend uses `REDIS_URL` as the base Redis connection and derives Celery broker/result-cache databases from it. Remote dependencies for this slice are limited to the existing model/tool credentials plus a reachable local Redis instance for Celery.
+
+For local development, the repo now includes a minimal `docker-compose.yml` for Redis:
+
+```bash
+just redis-up
+just redis-down
+```
+
 ### Commands
 
 ```bash

@@ -54,3 +54,33 @@ shell:
 # Run the CLI.
 cli:
     uv run devops-agent --help
+
+# Run Django management commands.
+django-manage *args:
+    uv run python apps/api/manage.py {{args}}
+
+# Create or apply Django migrations.
+django-makemigrations:
+    uv run python apps/api/manage.py makemigrations
+
+django-migrate:
+    uv run python apps/api/manage.py migrate
+
+# Run the Django API server.
+django-runserver:
+    uv run python apps/api/manage.py runserver
+
+# Run the Celery worker for backend jobs.
+celery-worker:
+    uv run celery -A apps.api.project worker --loglevel=info
+
+# Start local Redis for the Django/Celery backend.
+redis-up:
+    docker compose up -d redis
+
+redis-down:
+    docker compose stop redis
+
+# Submit a conversation through the Django backend.
+conversation-run prompt:
+    uv run python apps/api/manage.py runconversation "{{prompt}}" --wait
