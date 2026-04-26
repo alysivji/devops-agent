@@ -6,6 +6,7 @@
 - When opening a PR, fill out `.github/pull_request_template.md` completely. Do not leave the summary, validation, infra notes, or risks sections as placeholders.
 - Check `justfile` before running validation or local workflows, and prefer its recipes over ad hoc commands when an equivalent recipe exists.
 - Keep control flow top-down and obvious.
+- Prefer the smallest obvious implementation over extensible design. Optimize for readability by a future human maintainer, not reuse.
 - If the design starts to need more than ~2 helpers or ~1 new module, stop and ask first.
 
 ## Tools And Remote Boundaries
