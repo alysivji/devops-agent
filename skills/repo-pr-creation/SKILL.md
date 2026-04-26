@@ -59,8 +59,8 @@ gh api repos/alysivji/devops-agent/pulls/<number> \
 
 ## Validation Note
 
-Prefer Makefile targets before PR creation. For the main validation path, use:
+Prefer `justfile` recipes before PR creation. For the main validation path, use:
 
 ```bash
-make check
+just check
 ```

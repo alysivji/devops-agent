@@ -86,10 +86,11 @@ if [[ ! -f "$TARGET" ]]; then
   echo "wrote $ROOT/$TARGET from $SOURCE (mode 600)"
 fi
 
-if command -v just >/dev/null 2>&1; then
-  just install
-else
-  make install
+if ! command -v just >/dev/null 2>&1; then
+  echo "error: just is required. Install it first, for example with: brew install just" >&2
+  exit 1
 fi
+
+just install
 
 ensure_kwok

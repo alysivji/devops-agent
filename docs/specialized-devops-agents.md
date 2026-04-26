@@ -130,7 +130,7 @@ Owns repository change lifecycle.
 Responsibilities:
 
 - Summarize code/playbook/doc changes.
-- Run the repo's preferred validation targets from `Makefile`.
+- Run the repo's preferred validation recipes from `justfile`.
 - Fill `.github/pull_request_template.md` completely when opening a PR.
 - Document remote dependencies, credentials, and manual verification when automation depends on external systems.
 
