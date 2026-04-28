@@ -8,10 +8,14 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from .config import RUN_HISTORY_ENABLED, secret_manager
+from .config import (
+    LEGACY_RUN_HISTORY_ENV_VAR,
+    RUN_HISTORY_ENABLED,
+    RUN_HISTORY_ENV_VAR,
+    secret_manager,
+)
 
 MAX_TEXT_LENGTH = 500
-RUN_HISTORY_ENV_VAR = "DEVOPS_AGENT_RUN_HISTORY_ENABLED"
 RUN_HISTORY_PATH = Path("docs/autonomous-devops-run-history.jsonl")
 
 type JSONPrimitive = None | bool | int | float | str
@@ -43,7 +47,10 @@ class RunSession(BaseModel):
 
 
 def run_history_enabled() -> bool:
-    return bool(secret_manager.get(bool, RUN_HISTORY_ENV_VAR, RUN_HISTORY_ENABLED))
+    value = secret_manager.get(bool, RUN_HISTORY_ENV_VAR, None)
+    if value is not None:
+        return bool(value)
+    return bool(secret_manager.get(bool, LEGACY_RUN_HISTORY_ENV_VAR, RUN_HISTORY_ENABLED))
 
 
 class RunHistory:

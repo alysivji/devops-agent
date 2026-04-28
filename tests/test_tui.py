@@ -4,9 +4,9 @@ from typing import cast
 from textual.binding import Binding
 from textual.widgets import TextArea
 
-from devops_bot.approval import ApprovalRequest
-from devops_bot.tui import DevopsAgentApp, PreviewState, YesNoScreen
-from devops_bot.workflow import AgentWorkflow
+from homelab_operator.approval import ApprovalRequest
+from homelab_operator.tui import HomelabOperatorApp, PreviewState, YesNoScreen
+from homelab_operator.workflow import AgentWorkflow
 
 
 class DummyWorkflow:
@@ -29,7 +29,7 @@ def prompt_height(prompt: TextArea) -> float:
 
 def test_tui_keeps_prompt_focus_on_tab() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             prompt = app.query_one("#prompt-input")
@@ -45,7 +45,7 @@ def test_tui_keeps_prompt_focus_on_tab() -> None:
 
 def test_tui_uses_ctrl_q_and_cmd_q_for_quit() -> None:
     bindings: dict[str, str] = {}
-    for binding in DevopsAgentApp.BINDINGS:
+    for binding in HomelabOperatorApp.BINDINGS:
         if isinstance(binding, Binding):
             bindings[binding.key] = binding.action
         else:
@@ -57,7 +57,7 @@ def test_tui_uses_ctrl_q_and_cmd_q_for_quit() -> None:
 
 def test_tui_prompt_exposes_visible_copy_and_paste_bindings() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             await pilot.pause()
@@ -78,7 +78,7 @@ def test_tui_prompt_exposes_visible_copy_and_paste_bindings() -> None:
 
 def test_tui_chat_log_keeps_copy_and_paste_bindings_visible_when_focused() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             chat_log = app.query_one("#chat-log", TextArea)
@@ -101,7 +101,7 @@ def test_tui_chat_log_keeps_copy_and_paste_bindings_visible_when_focused() -> No
 
 def test_tui_paste_from_chat_log_redirects_to_prompt() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             del pilot
@@ -125,7 +125,7 @@ def test_tui_paste_from_chat_log_redirects_to_prompt() -> None:
 
 def test_tui_typing_from_chat_log_redirects_to_prompt() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             chat_log = app.query_one("#chat-log", TextArea)
@@ -144,7 +144,7 @@ def test_tui_typing_from_chat_log_redirects_to_prompt() -> None:
 
 def test_tui_chat_log_is_read_only_text_area() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             del pilot
@@ -158,7 +158,7 @@ def test_tui_chat_log_is_read_only_text_area() -> None:
 
 def test_tui_prompt_is_multiline_and_resizes_with_content() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             del pilot
@@ -182,7 +182,7 @@ def test_tui_prompt_is_multiline_and_resizes_with_content() -> None:
 
 def test_tui_submits_multiline_prompt_with_enter() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             workflow = DummyWorkflow()
@@ -203,7 +203,7 @@ def test_tui_submits_multiline_prompt_with_enter() -> None:
 
 
 def test_tui_approval_uses_matching_preview_details_for_write_requests() -> None:
-    app = DevopsAgentApp()
+    app = HomelabOperatorApp()
     app._latest_preview = PreviewState(
         title="Generated preview",
         body="Path: ansible/playbooks/example.yaml\n\n- hosts: localhost",
@@ -223,7 +223,7 @@ def test_tui_approval_uses_matching_preview_details_for_write_requests() -> None
 
 
 def test_tui_approval_ignores_preview_for_non_write_requests() -> None:
-    app = DevopsAgentApp()
+    app = HomelabOperatorApp()
 
     app._latest_preview = PreviewState(
         title="Generated preview",
@@ -243,7 +243,7 @@ def test_tui_approval_ignores_preview_for_non_write_requests() -> None:
 
 def test_tui_approval_preview_is_focusable_and_scrolls() -> None:
     async def run_test() -> None:
-        app = DevopsAgentApp()
+        app = HomelabOperatorApp()
 
         async with app.run_test() as pilot:
             long_body = "\n".join(f"line {index}" for index in range(80))

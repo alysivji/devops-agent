@@ -3,8 +3,8 @@ from typing import Any, cast
 from strands.models.openai import OpenAIModel
 from strands.session.session_manager import SessionManager
 
-from devops_bot import factory as factory_module
-from devops_bot.factory import build_agent, build_model
+from homelab_operator import factory as factory_module
+from homelab_operator.factory import build_agent, build_model
 
 
 def test_build_model_omits_none_params() -> None:

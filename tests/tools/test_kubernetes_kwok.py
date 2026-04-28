@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from devops_bot.tools import (
+from homelab_operator.tools import (
     helm_list_releases,
     helm_status,
     helm_upgrade_install,
@@ -99,7 +99,9 @@ def test_helm_and_kubectl_tools_round_trip_against_kwok_objects(
     _write_fake_chart(chart_path)
     release = "kwok-fake-app"
     namespace = "kwok-tools-test"
-    monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kwok_cluster.kubeconfig)
+    monkeypatch.setattr(
+        "homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kwok_cluster.kubeconfig
+    )
     monkeypatch.setattr("builtins.input", lambda _: "y")
 
     try:
@@ -153,7 +155,9 @@ def test_kubectl_get_surfaces_real_kwok_api_errors(
     kwok_cluster,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kwok_cluster.kubeconfig)
+    monkeypatch.setattr(
+        "homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kwok_cluster.kubeconfig
+    )
 
     with pytest.raises(RuntimeError, match='resource type "definitely-not-a-resource"'):
         kubectl_get("definitely-not-a-resource")

@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
-from devops_bot.tools.services import service_get, service_list, service_upsert
+from homelab_operator.history import RunHistory, reset_active_run_history, set_active_run_history
+from homelab_operator.tools.services import service_get, service_list, service_upsert
 
 
 class TestServiceList:

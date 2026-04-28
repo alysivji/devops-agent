@@ -107,7 +107,7 @@ Run history does not include:
 - full rendered playbook YAML bodies in the history artifact
 - unredacted values for fields that look like secrets, tokens, passwords, or keys
 
-Disable run history by setting `DEVOPS_AGENT_RUN_HISTORY_ENABLED=false`.
+Disable run history by setting `HOMELAB_OPERATOR_RUN_HISTORY_ENABLED=false`. The legacy `DEVOPS_AGENT_RUN_HISTORY_ENABLED` name still works as a compatibility alias.
 
 Run history currently writes only the JSONL artifact, not a separate human-readable summary file.
 
@@ -137,16 +137,16 @@ For local S3-compatible storage, point the session backend at a reachable MinIO 
 Use these `.env` values for local MinIO exploration, replacing the bucket and credentials with values provisioned on the MinIO server:
 
 ```bash
-DEVOPS_AGENT_SESSION_BACKEND=s3
-DEVOPS_AGENT_SESSION_S3_BUCKET=devops-agent-sessions
-DEVOPS_AGENT_SESSION_S3_PREFIX=local/
-DEVOPS_AGENT_SESSION_S3_REGION=us-east-1
-DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL=http://127.0.0.1:9000
+HOMELAB_OPERATOR_SESSION_BACKEND=s3
+HOMELAB_OPERATOR_SESSION_S3_BUCKET=homelab-operator-sessions
+HOMELAB_OPERATOR_SESSION_S3_PREFIX=local/
+HOMELAB_OPERATOR_SESSION_S3_REGION=us-east-1
+HOMELAB_OPERATOR_SESSION_S3_ENDPOINT_URL=http://127.0.0.1:9000
 MINIO_ROOT_USER=<minio-access-key>
 MINIO_ROOT_PASSWORD=<minio-secret-key>
 ```
 
-The session S3 credentials default to `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` for local MinIO. Use `DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID` and `DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY` only when the session store should use different credentials from the MinIO service.
+The session S3 credentials default to `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` for local MinIO. Use `HOMELAB_OPERATOR_SESSION_S3_ACCESS_KEY_ID` and `HOMELAB_OPERATOR_SESSION_S3_SECRET_ACCESS_KEY` only when the session store should use different credentials from the MinIO service. Legacy `DEVOPS_AGENT_SESSION_*` variable names still work as compatibility aliases.
 
 Each CLI invocation creates a new Strands session unless you explicitly reuse `--session-id`. Run history records now carry both a stable `session_id` and per-turn `run_id` values, so follow-up turns can stay on the same JSONL line while still preserving turn-level identifiers.
 
@@ -170,7 +170,7 @@ Live S3-compatible storage is optional local infrastructure. Default tests do no
 
 ## Django Backend
 
-The repo now includes a backend-first Django host under `apps/api` with Celery for background agent execution and SQLite for durable conversation state. The existing `devops_bot` CLI remains intact; Django is an additional host that creates `conversation`, `message`, `job`, `event`, and `pending approval` records around the same runtime.
+The repo now includes a backend-first Django host under `apps/api` with Celery for background agent execution and SQLite for durable conversation state. The existing CLI and `homelab_operator` runtime modules remain intact; Django is an additional host that creates `conversation`, `message`, `job`, `event`, and `pending approval` records around the same runtime.
 
 The backend exposes:
 

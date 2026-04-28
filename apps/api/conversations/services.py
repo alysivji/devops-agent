@@ -8,8 +8,8 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from devops_bot.approval import ApprovalRequest, WaitingForApproval
-from devops_bot.workflow import AgentWorkflow, WorkflowEvent, WorkflowResult
+from homelab_operator.approval import ApprovalRequest, WaitingForApproval
+from homelab_operator.workflow import AgentWorkflow, WorkflowEvent, WorkflowResult
 
 from .models import (
     ApprovalStatus,

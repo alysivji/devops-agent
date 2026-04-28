@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
-from devops_bot.secrets import SecretsManager
+from homelab_operator.secrets import SecretsManager
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 SECRET_MANAGER = SecretsManager(path=BASE_DIR / ".env")
@@ -38,7 +38,7 @@ def _redis_database_url(url: str, database: int) -> str:
     return urlunsplit((parsed.scheme, parsed.netloc, path, parsed.query, parsed.fragment))
 
 
-SECRET_KEY = str(_config("DJANGO_SECRET_KEY", "devops-agent-local-secret-key"))
+SECRET_KEY = str(_config("DJANGO_SECRET_KEY", "homelab-operator-local-secret-key"))
 DEBUG = bool(_config("DJANGO_DEBUG", True))
 ALLOWED_HOSTS = _list_config("DJANGO_ALLOWED_HOSTS", ["127.0.0.1", "localhost"])
 

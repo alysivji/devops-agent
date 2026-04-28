@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-from devops_bot.history import RunHistory, append_session_jsonl, run_history_enabled
+from homelab_operator.history import RunHistory, append_session_jsonl, run_history_enabled
 
 
 def test_run_history_enabled_by_default(monkeypatch) -> None:
     monkeypatch.setattr(
-        "devops_bot.history.secret_manager.get",
+        "homelab_operator.history.secret_manager.get",
         lambda secret_type, name, default: default,
     )
 
@@ -14,7 +14,7 @@ def test_run_history_enabled_by_default(monkeypatch) -> None:
 
 
 def test_run_history_can_be_disabled_with_env_var(monkeypatch) -> None:
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "false")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "false")
 
     assert run_history_enabled() is False
 

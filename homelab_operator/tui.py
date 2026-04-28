@@ -79,7 +79,7 @@ class ChatLog(TextArea):
 
 
 class TextualAdapter:
-    def __init__(self, app: "DevopsAgentApp") -> None:
+    def __init__(self, app: "HomelabOperatorApp") -> None:
         self._app = app
 
     def render_event(self, event: WorkflowEvent) -> None:
@@ -150,7 +150,7 @@ class YesNoScreen(ModalScreen[bool]):
         self.dismiss(False)
 
 
-class DevopsAgentApp(App[None]):
+class HomelabOperatorApp(App[None]):
     CSS = """
     Screen {
         layout: vertical;
@@ -418,5 +418,5 @@ class DevopsAgentApp(App[None]):
 
 
 def main() -> int:
-    DevopsAgentApp().run()
+    HomelabOperatorApp().run()
     return 0

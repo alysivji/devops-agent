@@ -6,6 +6,6 @@ from celery import Celery
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.api.project.settings")
 
-app = Celery("devops_bot")
+app = Celery("homelab_operator")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()

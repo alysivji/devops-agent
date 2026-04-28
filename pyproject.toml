@@ -1,5 +1,5 @@
 [project]
-name = "devops-agent"
+name = "homelab-operator"
 version = "0.1.0"
 description = "Homelab Operator for agentic infrastructure and cluster workflows."
 readme = "README.md"
@@ -19,12 +19,12 @@ dependencies = [
 ]
 
 [project.scripts]
-devops-agent = "devops_bot.main:main"
-devops-agent-chat = "devops_bot.chat:main"
-devops-agent-tui = "devops_bot.tui:main"
-homelab-operator = "devops_bot.main:main"
-homelab-operator-chat = "devops_bot.chat:main"
-homelab-operator-tui = "devops_bot.tui:main"
+devops-agent = "homelab_operator.main:main"
+devops-agent-chat = "homelab_operator.chat:main"
+devops-agent-tui = "homelab_operator.tui:main"
+homelab-operator = "homelab_operator.main:main"
+homelab-operator-chat = "homelab_operator.chat:main"
+homelab-operator-tui = "homelab_operator.tui:main"
 
 [dependency-groups]
 dev = [
@@ -62,7 +62,7 @@ markers = [
 package = true
 
 [tool.setuptools.packages.find]
-include = ["devops_bot*"]
+include = ["homelab_operator*"]
 
 [tool.ruff]
 target-version = "py313"
@@ -73,7 +73,7 @@ select = ["E", "F", "I"]
 
 [tool.mypy]
 python_version = "3.13"
-files = ["devops_bot", "tests"]
+files = ["homelab_operator", "tests"]
 check_untyped_defs = true
 ignore_missing_imports = true
 pretty = true

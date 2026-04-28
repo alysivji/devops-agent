@@ -4,10 +4,10 @@ from typing import Any, cast
 
 import pytest
 
-from devops_bot.agents.playbook_metadata import GeneratedPlaybookMetadata
-from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
-from devops_bot.tools.playbooks import CreateAnsiblePlaybook
-from devops_bot.workflow import (
+from homelab_operator.agents.playbook_metadata import GeneratedPlaybookMetadata
+from homelab_operator.history import RunHistory, reset_active_run_history, set_active_run_history
+from homelab_operator.tools.playbooks import CreateAnsiblePlaybook
+from homelab_operator.workflow import (
     WorkflowEvent,
     WorkflowRuntime,
     reset_workflow_runtime,
@@ -37,7 +37,7 @@ def test_create_playbook_records_approved_write(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        "devops_bot.tools.playbooks.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
+        "homelab_operator.tools.playbooks.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
     )
     (tmp_path / "ansible" / "playbooks").mkdir(parents=True)
     monkeypatch.setattr("builtins.input", lambda _: "y")
@@ -102,7 +102,7 @@ def test_create_playbook_records_declined_write(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        "devops_bot.tools.playbooks.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
+        "homelab_operator.tools.playbooks.PLAYBOOKS_DIR", tmp_path / "ansible" / "playbooks"
     )
     (tmp_path / "ansible" / "playbooks").mkdir(parents=True)
     monkeypatch.setattr("builtins.input", lambda _: "n")

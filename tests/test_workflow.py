@@ -4,8 +4,8 @@ from typing import Any, cast
 
 import pytest
 
-from devops_bot import approval
-from devops_bot import workflow as workflow_module
+from homelab_operator import approval
+from homelab_operator import workflow as workflow_module
 
 
 class SuccessfulOrchestrator:
@@ -56,7 +56,7 @@ def test_workflow_records_successful_chat_turn(
     tmp_path: Path,
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "true")
     SuccessfulOrchestrator.prompts = []
     SuccessfulOrchestrator.session_ids = []
     captured_events: list[workflow_module.WorkflowEvent] = []
@@ -95,7 +95,7 @@ def test_workflow_records_failed_chat_turn_without_raising(
     tmp_path: Path,
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "true")
     captured_events: list[workflow_module.WorkflowEvent] = []
 
     result = _build_workflow(FailingOrchestrator).run(
@@ -125,7 +125,7 @@ def test_workflow_records_failed_chat_turn_without_raising(
 def test_workflow_uses_context_scoped_approval_resolver(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "false")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "false")
     requests: list[approval.ApprovalRequest] = []
 
     def approve(request: approval.ApprovalRequest) -> bool:
@@ -154,7 +154,7 @@ def test_workflow_uses_context_scoped_approval_resolver(
 def test_workflow_can_pause_for_approval(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "false")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "false")
 
     def pause(request: approval.ApprovalRequest) -> bool:
         raise approval.WaitingForApproval(request)

@@ -249,7 +249,7 @@ def kwok_cluster(tmp_path_factory: pytest.TempPathFactory) -> Iterator[KwokClust
 
     base_dir = tmp_path_factory.mktemp("kwok")
     cluster = KwokCluster(
-        name=f"devops-agent-kwok-{uuid.uuid4().hex[:8]}",
+        name=f"homelab-operator-kwok-{uuid.uuid4().hex[:8]}",
         kubeconfig=base_dir / "kubeconfig.yaml",
     )
     env = cluster.env
@@ -338,8 +338,8 @@ def git_working_repo_with_remote(
 
     with _chdir(repo_path):
         _run_git(["init"], cwd=repo_path)
-        _run_git(["config", "user.name", "DevOps Agent Tests"], cwd=repo_path)
-        _run_git(["config", "user.email", "devops-agent-tests@example.com"], cwd=repo_path)
+        _run_git(["config", "user.name", "Homelab Operator Tests"], cwd=repo_path)
+        _run_git(["config", "user.email", "homelab-operator-tests@example.com"], cwd=repo_path)
 
         tracked_file = repo_path / "README.md"
         tracked_file.write_text("# Temp Repo\n", encoding="utf-8")

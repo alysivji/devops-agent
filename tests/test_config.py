@@ -21,7 +21,7 @@ def test_langfuse_client_receives_dotenv_configuration(
         )
     )
 
-    previous_config = sys.modules.pop("devops_bot.config", None)
+    previous_config = sys.modules.pop("homelab_operator.config", None)
     previous_langfuse = sys.modules.get("langfuse")
 
     for name in (
@@ -57,7 +57,7 @@ def test_langfuse_client_receives_dotenv_configuration(
     monkeypatch.chdir(tmp_path)
 
     try:
-        config = importlib.import_module("devops_bot.config")
+        config = importlib.import_module("homelab_operator.config")
         assert config.LANGFUSE_ENABLED is True
         assert isinstance(config.langfuse, FakeLangfuse)
         assert captured == {
@@ -66,8 +66,8 @@ def test_langfuse_client_receives_dotenv_configuration(
             "base_url": "https://langfuse.example.test",
         }
     finally:
-        sys.modules.pop("devops_bot.config", None)
+        sys.modules.pop("homelab_operator.config", None)
         if previous_config is not None:
-            sys.modules["devops_bot.config"] = previous_config
+            sys.modules["homelab_operator.config"] = previous_config
         if previous_langfuse is not None:
             sys.modules["langfuse"] = previous_langfuse

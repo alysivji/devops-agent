@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from devops_bot import main as main_module
+from homelab_operator import main as main_module
 
 
 class SuccessfulOrchestrator:
@@ -32,10 +32,10 @@ def test_main_appends_run_history_by_default(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "true")
     SuccessfulOrchestrator.session_ids = []
     monkeypatch.setattr(main_module, "OrchestratorAgent", SuccessfulOrchestrator)
-    monkeypatch.setattr(sys, "argv", ["devops_bot", "inspect the registry"])
+    monkeypatch.setattr(sys, "argv", ["homelab_operator", "inspect the registry"])
 
     exit_code = main_module.main()
 
@@ -55,11 +55,11 @@ def test_main_skips_run_history_when_disabled(
     tmp_path: Path,
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "false")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "false")
     SuccessfulOrchestrator.session_ids = []
     monkeypatch.setattr(main_module, "uuid4", lambda: SimpleNamespace(hex="generated-session"))
     monkeypatch.setattr(main_module, "OrchestratorAgent", SuccessfulOrchestrator)
-    monkeypatch.setattr(sys, "argv", ["devops_bot", "inspect the registry"])
+    monkeypatch.setattr(sys, "argv", ["homelab_operator", "inspect the registry"])
 
     main_module.main()
 
@@ -73,13 +73,13 @@ def test_main_uses_explicit_cli_session_id(
     tmp_path: Path,
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "true")
     SuccessfulOrchestrator.session_ids = []
     monkeypatch.setattr(main_module, "OrchestratorAgent", SuccessfulOrchestrator)
     monkeypatch.setattr(
         sys,
         "argv",
-        ["devops_bot", "--session-id", "support-session", "inspect the registry"],
+        ["homelab_operator", "--session-id", "support-session", "inspect the registry"],
     )
 
     main_module.main()
@@ -97,9 +97,9 @@ def test_main_records_failed_session_before_reraising(
     tmp_path: Path,
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("DEVOPS_AGENT_RUN_HISTORY_ENABLED", "true")
+    monkeypatch.setenv("HOMELAB_OPERATOR_RUN_HISTORY_ENABLED", "true")
     monkeypatch.setattr(main_module, "OrchestratorAgent", FailingOrchestrator)
-    monkeypatch.setattr(sys, "argv", ["devops_bot", "inspect the registry"])
+    monkeypatch.setattr(sys, "argv", ["homelab_operator", "inspect the registry"])
 
     with pytest.raises(RuntimeError, match="boom: inspect the registry"):
         main_module.main()
