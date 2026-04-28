@@ -1,0 +1,172 @@
+# name: install_control_node_utilities
+# description: This playbook installs and validates CLI utilities on the control node, allowing for reset options while enforcing checks on available packages before installation and safety gates to prevent lingering utilities.
+# target: control
+# requires_approval: true
+# tags:
+#   - control
+#   - utilities
+#   - installation
+#   - validation
+#   - cli
+
+---
+- name: Install and validate common control node CLI utilities
+  hosts: control
+  gather_facts: true
+  become: true
+  vars:
+    target: control
+    requires_approval: true
+    control_node_utilities_reset: false
+    control_node_utility_packages:
+      - ripgrep
+      - just
+
+  tasks:
+    - name: Collect package manager service facts
+      ansible.builtin.service_facts:
+
+    - name: Remove managed control node CLI utilities when reset is requested
+      ansible.builtin.package:
+        name: "{{ control_node_utility_packages }}"
+        state: absent
+      when: control_node_utilities_reset | bool
+
+    - name: Validate managed control node CLI utilities are absent after reset
+      when: control_node_utilities_reset | bool
+      block:
+        - name: Check whether rg remains available on PATH after reset
+          ansible.builtin.command:
+            cmd: command -v rg
+          register: rg_reset_check
+          changed_when: false
+          failed_when: false
+
+        - name: Check whether just remains available on PATH after reset
+          ansible.builtin.command:
+            cmd: command -v just
+          register: just_reset_check
+          changed_when: false
+          failed_when: false
+
+        - name: Assert managed control node CLI utilities are absent after reset
+          ansible.builtin.assert:
+            that:
+              - rg_reset_check.rc != 0
+              - just_reset_check.rc != 0
+            fail_msg: >-
+              Reset requested, but one or more managed utilities are still available on PATH.
+              rg_rc={{ rg_reset_check.rc }}, just_rc={{ just_reset_check.rc }}
+            success_msg: Managed control node CLI utilities were removed successfully.
+
+        - name: Emit final reset state summary
+          ansible.builtin.debug:
+            msg:
+              target: "{{ target }}"
+              reset: true
+              packages_removed: "{{ control_node_utility_packages }}"
+              rg_path_check_rc: "{{ rg_reset_check.rc }}"
+              just_path_check_rc: "{{ just_reset_check.rc }}"
+
+    - name: Validate current rg availability on PATH before installation
+      ansible.builtin.command:
+        cmd: rg --version
+      register: rg_precheck
+      changed_when: false
+      failed_when: false
+      when: not control_node_utilities_reset | bool
+
+    - name: Validate current just availability on PATH before installation
+      ansible.builtin.command:
+        cmd: just --version
+      register: just_precheck
+      changed_when: false
+      failed_when: false
+      when: not control_node_utilities_reset | bool
+
+    - name: Install missing control node CLI utility packages
+      ansible.builtin.package:
+        name: "{{ control_node_utility_packages }}"
+        state: present
+      register: utility_package_install
+      when:
+        - not control_node_utilities_reset | bool
+        - rg_precheck.rc != 0 or just_precheck.rc != 0
+
+    - name: Validate rg is available on PATH with a version response
+      when: not control_node_utilities_reset | bool
+      block:
+        - name: Run rg --version for final validation
+          ansible.builtin.command:
+            cmd: rg --version
+          register: rg_version_check
+          changed_when: false
+
+        - name: Assert rg is available on PATH and reports a version
+          ansible.builtin.assert:
+            that:
+              - rg_version_check.rc == 0
+              - rg_version_check.stdout is search('^ripgrep ')
+            fail_msg: >-
+              ripgrep validation failed. Expected `rg --version` to succeed and report a ripgrep version.
+            success_msg: ripgrep is installed and available on PATH.
+      rescue:
+        - name: Emit ripgrep validation failure context
+          ansible.builtin.debug:
+            msg:
+              utility: rg
+              precheck_rc: "{{ rg_precheck.rc | default('unknown') }}"
+              install_changed: "{{ utility_package_install.changed | default(false) }}"
+              validation_rc: "{{ rg_version_check.rc | default('unknown') }}"
+              validation_stdout: "{{ rg_version_check.stdout | default('') }}"
+              validation_stderr: "{{ rg_version_check.stderr | default('') }}"
+
+        - name: Fail because ripgrep is not available on PATH
+          ansible.builtin.fail:
+            msg: Set up of ripgrep failed on the control node; see debug output for validation details.
+
+    - name: Validate just is available on PATH with a version response
+      when: not control_node_utilities_reset | bool
+      block:
+        - name: Run just --version for final validation
+          ansible.builtin.command:
+            cmd: just --version
+          register: just_version_check
+          changed_when: false
+
+        - name: Assert just is available on PATH and reports a version
+          ansible.builtin.assert:
+            that:
+              - just_version_check.rc == 0
+              - just_version_check.stdout is search('^just ')
+            fail_msg: >-
+              just validation failed. Expected `just --version` to succeed and report a just version.
+            success_msg: just is installed and available on PATH.
+      rescue:
+        - name: Emit just validation failure context
+          ansible.builtin.debug:
+            msg:
+              utility: just
+              precheck_rc: "{{ just_precheck.rc | default('unknown') }}"
+              install_changed: "{{ utility_package_install.changed | default(false) }}"
+              validation_rc: "{{ just_version_check.rc | default('unknown') }}"
+              validation_stdout: "{{ just_version_check.stdout | default('') }}"
+              validation_stderr: "{{ just_version_check.stderr | default('') }}"
+
+        - name: Fail because just is not available on PATH
+          ansible.builtin.fail:
+            msg: Set up of just failed on the control node; see debug output for validation details.
+
+    - name: Emit final control node utility state summary
+      ansible.builtin.debug:
+        msg:
+          target: "{{ target }}"
+          requires_approval: "{{ requires_approval }}"
+          reset: false
+          package_manager: "{{ ansible_pkg_mgr }}"
+          packages_managed: "{{ control_node_utility_packages }}"
+          install_attempted: "{{ (rg_precheck.rc != 0 or just_precheck.rc != 0) | bool }}"
+          install_changed: "{{ utility_package_install.changed | default(false) }}"
+          rg_version: "{{ rg_version_check.stdout_lines[0] | default('') }}"
+          just_version: "{{ just_version_check.stdout_lines[0] | default('') }}"
+      when: not control_node_utilities_reset | bool
