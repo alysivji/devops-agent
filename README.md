@@ -1,6 +1,8 @@
-# Devops Agent
+# Homelab Operator
 
-Figuring out agentic DevOps tooling with a Turing Pi cluster.
+Homelab Operator is an agentic operations runtime for a Turing Pi homelab.
+
+The repository and compatibility command names remain `devops-agent` for now. The product/display name is `Homelab Operator`.
 
 See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectations, and PR writeups.
 
@@ -51,7 +53,7 @@ Generated playbooks support these inventory targets:
 - `cluster` for remote playbooks over SSH
 - `both` for playbooks that include work on both host groups
 
-The agent now generates an Ansible playbook from a natural-language prompt, drafts metadata for the playbook header, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
+Homelab Operator now generates an Ansible playbook from a natural-language prompt, drafts metadata for the playbook header, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
 
 ### Draft metadata
 

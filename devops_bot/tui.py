@@ -226,7 +226,7 @@ class DevopsAgentApp(App[None]):
             id="prompt-input",
             soft_wrap=True,
             compact=True,
-            placeholder="Ask the devops agent...",
+            placeholder="Ask Homelab Operator...",
         )
         yield Footer()
 
