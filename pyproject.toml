@@ -22,6 +22,9 @@ dependencies = [
 devops-agent = "devops_bot.main:main"
 devops-agent-chat = "devops_bot.chat:main"
 devops-agent-tui = "devops_bot.tui:main"
+homelab-operator = "devops_bot.main:main"
+homelab-operator-chat = "devops_bot.chat:main"
+homelab-operator-tui = "devops_bot.tui:main"
 
 [dependency-groups]
 dev = [
