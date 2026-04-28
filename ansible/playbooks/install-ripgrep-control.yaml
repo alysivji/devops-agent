@@ -1,11 +1,12 @@
-# name: install_ripgrep_control
-# description: Install ripgrep on the control node if it is not already present, validating rg availability post-installation and failing with a detailed context in case of errors, ensuring reliable setup.
+# name: install_ripgrep_control (deprecated; use ansible/playbooks/install-control-node-utilities.yaml)
+# description: DEPRECATED - Install ripgrep on the control node if it is not already present, validating rg availability post-installation and failing with a detailed context in case of errors, ensuring reliable setup. Use ansible/playbooks/install-control-node-utilities.yaml instead.
 # target: control
 # requires_approval: true
 # tags:
 #   - ripgrep
 #   - package
 #   - install
+# Deprecated: use ansible/playbooks/install-control-node-utilities.yaml for the preferred control-node utility installation playbook.
 
 ---
 - name: "Registry metadata | Install ripgrep on control node"
@@ -13,8 +14,8 @@
   gather_facts: false
   vars:
     registry_metadata:
-      name: install-ripgrep-control
-      description: Install ripgrep on the control node if it is not already present and validate rg availability.
+      name: install-ripgrep-control (deprecated; use ansible/playbooks/install-control-node-utilities.yaml)
+      description: DEPRECATED - Install ripgrep on the control node if it is not already present and validate rg availability. Use ansible/playbooks/install-control-node-utilities.yaml instead.
       target: control
       requires_approval: true
       tags:

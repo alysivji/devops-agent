@@ -1,6 +1,6 @@
 import logging
 
-from langfuse import get_client
+from langfuse import Langfuse
 
 from .secrets import SecretsManager
 
@@ -18,7 +18,15 @@ OPENAI_API_KEY = secret_manager.get(str, "OPENAI_API_KEY")
 RUN_HISTORY_ENABLED = secret_manager.get(bool, "DEVOPS_AGENT_RUN_HISTORY_ENABLED", True)
 
 LANGFUSE_ENABLED = secret_manager.get(bool, "LANGFUSE_ENABLED", False)
-langfuse = get_client() if LANGFUSE_ENABLED else None
+langfuse = (
+    Langfuse(
+        public_key=secret_manager.get(str, "LANGFUSE_PUBLIC_KEY", None),
+        secret_key=secret_manager.get(str, "LANGFUSE_SECRET_KEY", None),
+        base_url=secret_manager.get(str, "LANGFUSE_BASE_URL", None),
+    )
+    if LANGFUSE_ENABLED
+    else None
+)
 
 SESSION_BACKEND = secret_manager.get(str, "DEVOPS_AGENT_SESSION_BACKEND", "none")
 SESSION_S3_BUCKET = secret_manager.get(str, "DEVOPS_AGENT_SESSION_S3_BUCKET", None)
