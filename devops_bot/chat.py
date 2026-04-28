@@ -6,7 +6,7 @@ from .approval import ApprovalRequest
 from .workflow import AgentWorkflow, InteractiveAdapter, WorkflowEvent
 
 BANNER = """\
-devops-agent chat
+Homelab Operator chat
   /reset  start a new session (clears conversation history)
   /exit   quit  (also Ctrl-D)
 """

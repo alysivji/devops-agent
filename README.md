@@ -1,6 +1,8 @@
-# Devops Agent
+# Homelab Operator
 
-Figuring out agentic DevOps tooling with a Turing Pi cluster.
+Homelab Operator is an agentic operations runtime for a Turing Pi homelab.
+
+The repository name remains unchanged. The preferred CLI names are now `homelab-operator`, `homelab-operator-chat`, and `homelab-operator-tui`; the existing `devops-agent` command names remain available as compatibility aliases.
 
 See `AGENTS.md` for repo-specific guidance on remote tooling, testing expectations, and PR writeups.
 
@@ -51,7 +53,7 @@ Generated playbooks support these inventory targets:
 - `cluster` for remote playbooks over SSH
 - `both` for playbooks that include work on both host groups
 
-The agent now generates an Ansible playbook from a natural-language prompt, drafts metadata for the playbook header, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
+Homelab Operator now generates an Ansible playbook from a natural-language prompt, drafts metadata for the playbook header, shows a structured review, and asks for explicit yes/no approval before creating any file in `ansible/playbooks/`.
 
 ### Draft metadata
 
@@ -78,10 +80,10 @@ Langfuse tracing is optional. Set `LANGFUSE_ENABLED=true` and provide `LANGFUSE_
 ### Example
 
 ```bash
-uv run devops-agent "create a hello world playbook for local nodes"
-uv run devops-agent "Install a k3s cluster with a single control plane on the control node and all cluster nodes joining as workers."
-uv run devops-agent "Install Helm"
-uv run devops-agent "deploy nginx to Kubernetes with Helm"
+uv run homelab-operator "create a hello world playbook for local nodes"
+uv run homelab-operator "Install a k3s cluster with a single control plane on the control node and all cluster nodes joining as workers."
+uv run homelab-operator "Install Helm"
+uv run homelab-operator "deploy nginx to Kubernetes with Helm"
 ```
 
 The generated review includes the proposed filename, metadata header fields, and the full YAML before asking for approval.
@@ -151,7 +153,7 @@ Each CLI invocation creates a new Strands session unless you explicitly reuse `-
 Pass `--session-id` to choose the Strands session ID explicitly:
 
 ```bash
-uv run devops-agent --session-id support-session "create a hello world playbook for local nodes"
+uv run homelab-operator --session-id support-session "create a hello world playbook for local nodes"
 ```
 
 When `--session-id` is set, the JSONL record uses that stable `session_id` and each turn still gets its own `run_id`; the Strands session objects use the CLI-provided session ID.

@@ -25,7 +25,7 @@ from .workflow import (
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Dev Ops Agent.")
+    parser = argparse.ArgumentParser(description="Homelab Operator.")
     parser.add_argument("prompt", help="Natural-language prompt.")
     parser.add_argument("--session-id", help="Specify the Strands session ID for this run.")
     args = parser.parse_args()

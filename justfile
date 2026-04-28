@@ -16,7 +16,7 @@ install-pre-commit:
 
 # Run the agent.
 run:
-    uv run devops-agent
+    uv run homelab-operator
 
 # Run lint checks.
 lint:
@@ -53,7 +53,11 @@ shell:
 
 # Run the CLI.
 cli:
-    uv run devops-agent --help
+    uv run homelab-operator --help
+
+# Run the TUI.
+tui:
+    uv run homelab-operator-tui
 
 # Run Django management commands.
 django-manage *args:
