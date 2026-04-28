@@ -107,7 +107,7 @@ Run history does not include:
 - full rendered playbook YAML bodies in the history artifact
 - unredacted values for fields that look like secrets, tokens, passwords, or keys
 
-Disable run history by setting `HOMELAB_OPERATOR_RUN_HISTORY_ENABLED=false`. The legacy `DEVOPS_AGENT_RUN_HISTORY_ENABLED` name still works as a compatibility alias.
+Disable run history by setting `HOMELAB_OPERATOR_RUN_HISTORY_ENABLED=false`.
 
 Run history currently writes only the JSONL artifact, not a separate human-readable summary file.
 
@@ -146,7 +146,7 @@ MINIO_ROOT_USER=<minio-access-key>
 MINIO_ROOT_PASSWORD=<minio-secret-key>
 ```
 
-The session S3 credentials default to `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` for local MinIO. Use `HOMELAB_OPERATOR_SESSION_S3_ACCESS_KEY_ID` and `HOMELAB_OPERATOR_SESSION_S3_SECRET_ACCESS_KEY` only when the session store should use different credentials from the MinIO service. Legacy `DEVOPS_AGENT_SESSION_*` variable names still work as compatibility aliases.
+The session S3 credentials default to `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` for local MinIO. Use `HOMELAB_OPERATOR_SESSION_S3_ACCESS_KEY_ID` and `HOMELAB_OPERATOR_SESSION_S3_SECRET_ACCESS_KEY` only when the session store should use different credentials from the MinIO service.
 
 Each CLI invocation creates a new Strands session unless you explicitly reuse `--session-id`. Run history records now carry both a stable `session_id` and per-turn `run_id` values, so follow-up turns can stay on the same JSONL line while still preserving turn-level identifiers.
 

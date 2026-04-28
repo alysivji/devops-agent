@@ -8,15 +8,6 @@ from strands.session.s3_session_manager import S3SessionManager
 from strands.session.session_manager import SessionManager
 
 from .config import (
-    LEGACY_SESSION_BACKEND_ENV_VAR,
-    LEGACY_SESSION_S3_ACCESS_KEY_ID_ENV_VAR,
-    LEGACY_SESSION_S3_ADDRESSING_STYLE_ENV_VAR,
-    LEGACY_SESSION_S3_BUCKET_ENV_VAR,
-    LEGACY_SESSION_S3_ENDPOINT_URL_ENV_VAR,
-    LEGACY_SESSION_S3_PREFIX_ENV_VAR,
-    LEGACY_SESSION_S3_REGION_ENV_VAR,
-    LEGACY_SESSION_S3_SECRET_ACCESS_KEY_ENV_VAR,
-    LEGACY_SESSION_S3_SESSION_TOKEN_ENV_VAR,
     SESSION_BACKEND,
     SESSION_BACKEND_ENV_VAR,
     SESSION_S3_ACCESS_KEY_ID,
@@ -99,63 +90,26 @@ def get_session_storage_event_details(*, session_id: str) -> dict[str, str | Non
 
 
 def _load_session_storage_settings() -> _SessionStorageSettings:
-    backend = _config(
-        SESSION_BACKEND_ENV_VAR,
-        LEGACY_SESSION_BACKEND_ENV_VAR,
-        SESSION_BACKEND,
-    )
+    backend = _config(SESSION_BACKEND_ENV_VAR, SESSION_BACKEND)
     return _SessionStorageSettings(
         backend=(backend or "none").strip().lower(),
-        bucket=_config(
-            SESSION_S3_BUCKET_ENV_VAR,
-            LEGACY_SESSION_S3_BUCKET_ENV_VAR,
-            SESSION_S3_BUCKET,
-        ),
-        prefix=_config(
-            SESSION_S3_PREFIX_ENV_VAR,
-            LEGACY_SESSION_S3_PREFIX_ENV_VAR,
-            SESSION_S3_PREFIX,
-        )
-        or "",
-        region=_config(
-            SESSION_S3_REGION_ENV_VAR,
-            LEGACY_SESSION_S3_REGION_ENV_VAR,
-            SESSION_S3_REGION,
-        ),
-        endpoint_url=_config(
-            SESSION_S3_ENDPOINT_URL_ENV_VAR,
-            LEGACY_SESSION_S3_ENDPOINT_URL_ENV_VAR,
-            SESSION_S3_ENDPOINT_URL,
-        ),
-        addressing_style=_config(
-            SESSION_S3_ADDRESSING_STYLE_ENV_VAR,
-            LEGACY_SESSION_S3_ADDRESSING_STYLE_ENV_VAR,
-            SESSION_S3_ADDRESSING_STYLE,
-        )
+        bucket=_config(SESSION_S3_BUCKET_ENV_VAR, SESSION_S3_BUCKET),
+        prefix=_config(SESSION_S3_PREFIX_ENV_VAR, SESSION_S3_PREFIX) or "",
+        region=_config(SESSION_S3_REGION_ENV_VAR, SESSION_S3_REGION),
+        endpoint_url=_config(SESSION_S3_ENDPOINT_URL_ENV_VAR, SESSION_S3_ENDPOINT_URL),
+        addressing_style=_config(SESSION_S3_ADDRESSING_STYLE_ENV_VAR, SESSION_S3_ADDRESSING_STYLE)
         or "path",
-        access_key_id=_config(
-            SESSION_S3_ACCESS_KEY_ID_ENV_VAR,
-            LEGACY_SESSION_S3_ACCESS_KEY_ID_ENV_VAR,
-            SESSION_S3_ACCESS_KEY_ID,
-        ),
+        access_key_id=_config(SESSION_S3_ACCESS_KEY_ID_ENV_VAR, SESSION_S3_ACCESS_KEY_ID),
         secret_access_key=_config(
             SESSION_S3_SECRET_ACCESS_KEY_ENV_VAR,
-            LEGACY_SESSION_S3_SECRET_ACCESS_KEY_ENV_VAR,
             SESSION_S3_SECRET_ACCESS_KEY,
         ),
-        session_token=_config(
-            SESSION_S3_SESSION_TOKEN_ENV_VAR,
-            LEGACY_SESSION_S3_SESSION_TOKEN_ENV_VAR,
-            SESSION_S3_SESSION_TOKEN,
-        ),
+        session_token=_config(SESSION_S3_SESSION_TOKEN_ENV_VAR, SESSION_S3_SESSION_TOKEN),
     )
 
 
-def _config(name: str, legacy_name: str, default: str | None) -> str | None:
-    value = secret_manager.get(str, name, None)
-    if value is not None:
-        return value
-    return secret_manager.get(str, legacy_name, default)
+def _config(name: str, default: str | None) -> str | None:
+    return secret_manager.get(str, name, default)
 
 
 def _build_boto_session(settings: _SessionStorageSettings) -> boto3.Session | None:

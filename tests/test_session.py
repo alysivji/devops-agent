@@ -81,28 +81,6 @@ def test_build_session_manager_configures_s3_compatible_endpoint(
     assert call["boto_client_config"].s3 == {"addressing_style": "path"}
 
 
-def test_build_session_manager_accepts_legacy_env_var_names(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    FakeS3SessionManager.calls = []
-    monkeypatch.setattr(session_module, "S3SessionManager", FakeS3SessionManager)
-    _patch_session_env(
-        monkeypatch,
-        {
-            "DEVOPS_AGENT_SESSION_BACKEND": "s3",
-            "DEVOPS_AGENT_SESSION_S3_BUCKET": "legacy-bucket",
-            "DEVOPS_AGENT_SESSION_S3_PREFIX": "legacy-prefix/",
-        },
-    )
-
-    build_session_manager("run-legacy")
-
-    call = FakeS3SessionManager.calls[0]
-    assert call["session_id"] == "run-legacy"
-    assert call["bucket"] == "legacy-bucket"
-    assert call["prefix"] == "legacy-prefix/"
-
-
 def test_build_session_manager_uses_default_s3_credentials(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
