@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from devops_bot.agents import env_example_editor as env_example_editor_module
-from devops_bot.agents.env_example_editor import EditedEnvExample, EnvExampleUpdateAgent
-from devops_bot.tools.env import env_example_update, env_list_loaded_keys
+from homelab_operator.agents import env_example_editor as env_example_editor_module
+from homelab_operator.agents.env_example_editor import EditedEnvExample, EnvExampleUpdateAgent
+from homelab_operator.tools.env import env_example_update, env_list_loaded_keys
 
 
 class StubEnvExampleUpdateAgent:
@@ -106,7 +106,7 @@ def test_env_example_update_adds_missing_variable_names(
         "GRAFANA_ADMIN_PASSWORD=change-me\n"
     )
     stub_editor = StubEnvExampleUpdateAgent(edited_content)
-    monkeypatch.setattr("devops_bot.tools.env.EnvExampleUpdateAgent", lambda: stub_editor)
+    monkeypatch.setattr("homelab_operator.tools.env.EnvExampleUpdateAgent", lambda: stub_editor)
 
     result = env_example_update("GRAFANA_ADMIN_PASSWORD")
 
@@ -161,7 +161,7 @@ def test_env_example_update_scans_ansible_env_lookups(
         "# GRAFANA_HTTP_PORT=change-me\n"
     )
     stub_editor = StubEnvExampleUpdateAgent(edited_content)
-    monkeypatch.setattr("devops_bot.tools.env.EnvExampleUpdateAgent", lambda: stub_editor)
+    monkeypatch.setattr("homelab_operator.tools.env.EnvExampleUpdateAgent", lambda: stub_editor)
 
     result = env_example_update(source_path="ansible/playbooks/install-grafana.yaml")
 
@@ -209,7 +209,7 @@ def test_env_example_update_skips_agent_when_variables_are_already_documented(
     def fail_if_called() -> StubEnvExampleUpdateAgent:
         raise AssertionError("env editor agent should not run when all variables are documented")
 
-    monkeypatch.setattr("devops_bot.tools.env.EnvExampleUpdateAgent", fail_if_called)
+    monkeypatch.setattr("homelab_operator.tools.env.EnvExampleUpdateAgent", fail_if_called)
 
     result = env_example_update(source_path="ansible/playbooks/install-grafana.yaml")
 

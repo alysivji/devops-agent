@@ -4,9 +4,9 @@ from typing import Any
 
 import pytest
 
-from devops_bot.agents.helm_chart_editor import EditedHelmChart, HelmChartFileEdit
-from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
-from devops_bot.tools import (
+from homelab_operator.agents.helm_chart_editor import EditedHelmChart, HelmChartFileEdit
+from homelab_operator.history import RunHistory, reset_active_run_history, set_active_run_history
+from homelab_operator.tools import (
     helm_create_chart,
     helm_edit_chart,
     helm_list_charts,
@@ -17,8 +17,8 @@ from devops_bot.tools import (
     kubectl_rollout_status,
     kubernetes_fix_access,
 )
-from devops_bot.tools.kubernetes import EditHelmChart
-from devops_bot.workflow import (
+from homelab_operator.tools.kubernetes import EditHelmChart
+from homelab_operator.workflow import (
     WorkflowEvent,
     WorkflowRuntime,
     reset_workflow_runtime,
@@ -44,7 +44,7 @@ class StubChartEditor:
 
 def _isolate_missing_default_kubeconfig(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
-        "devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG",
+        "homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG",
         tmp_path / "missing-kubeconfig",
     )
     monkeypatch.delenv("KUBECONFIG", raising=False)
@@ -95,7 +95,7 @@ class TestHelmCreateChart:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         result = helm_create_chart("nginx")
 
@@ -274,7 +274,7 @@ class TestHelmEditChart:
         monkeypatch.chdir(tmp_path)
         monkeypatch.setattr("builtins.input", lambda _: "y")
         monkeypatch.setattr(
-            "devops_bot.tools.kubernetes.EditHelmChartAgent",
+            "homelab_operator.tools.kubernetes.EditHelmChartAgent",
             lambda: StubChartEditor(
                 EditedHelmChart(
                     files=[HelmChartFileEdit(path="values.yaml", content="replicaCount: 2\n")],
@@ -283,7 +283,7 @@ class TestHelmEditChart:
                 )
             ),
         )
-        monkeypatch.setattr("devops_bot.tools.kubernetes._helm_lint", lambda _: None)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes._helm_lint", lambda _: None)
 
         result = helm_edit_chart("charts/nginx", "Set replica count to 2.")
 
@@ -342,7 +342,7 @@ class TestHelmListReleases:
             recorded["args"] = args
             return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="[]\n", stderr="")
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         result = helm_list_releases()
 
@@ -359,7 +359,7 @@ class TestHelmListReleases:
             recorded["args"] = args
             return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="[]\n", stderr="")
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         helm_list_releases(namespace="apps", all_namespaces=False)
 
@@ -370,7 +370,7 @@ class TestHelmListReleases:
     ) -> None:
         kubeconfig = tmp_path / "config"
         kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
-        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
         monkeypatch.setenv("KUBECONFIG", "/etc/rancher/k3s/k3s.yaml")
         recorded: dict[str, Any] = {}
 
@@ -378,7 +378,7 @@ class TestHelmListReleases:
             recorded["env"] = kwargs["env"]
             return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="[]\n", stderr="")
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         helm_list_releases()
 
@@ -389,14 +389,14 @@ class TestHelmListReleases:
     ) -> None:
         kubeconfig = tmp_path / "config"
         kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
-        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
         recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
             recorded["args"] = args
             return subprocess.CompletedProcess(args=args[0], returncode=0, stdout="[]\n", stderr="")
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         helm_list_releases()
 
@@ -455,7 +455,7 @@ class TestKubernetesFixAccess:
                 stdout = ""
             return subprocess.CompletedProcess(args=command, returncode=0, stdout=stdout, stderr="")
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         result = kubernetes_fix_access()
 
@@ -511,7 +511,7 @@ class TestHelmStatus:
                 args=args[0], returncode=0, stdout='{"info":{}}\n', stderr=""
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         helm_status("nginx", namespace="apps")
 
@@ -524,7 +524,7 @@ class TestHelmStatus:
     ) -> None:
         kubeconfig = tmp_path / "config"
         kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
-        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
         recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -533,7 +533,7 @@ class TestHelmStatus:
                 args=args[0], returncode=0, stdout='{"info":{}}\n', stderr=""
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         helm_status("nginx", namespace="apps")
 
@@ -587,7 +587,7 @@ class TestHelmUpgradeInstall:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         result = helm_upgrade_install(
             release="nginx",
@@ -630,7 +630,7 @@ class TestHelmUpgradeInstall:
                 stderr="cluster unreachable",
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         with pytest.raises(RuntimeError, match="cluster unreachable"):
             helm_upgrade_install(release="nginx", chart="nginx")
@@ -664,7 +664,7 @@ class TestHelmUpgradeInstall:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         helm_upgrade_install(release="nginx", chart=str(chart_path))
 
@@ -690,7 +690,7 @@ class TestHelmUpgradeInstall:
     ) -> None:
         kubeconfig = tmp_path / "config"
         kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
-        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
         monkeypatch.setattr("builtins.input", lambda _: "y")
         recorded: dict[str, Any] = {}
 
@@ -703,7 +703,7 @@ class TestHelmUpgradeInstall:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         helm_upgrade_install(release="nginx", chart="nginx", namespace="apps")
 
@@ -739,7 +739,7 @@ class TestKubectlGet:
                 args=args[0], returncode=0, stdout="pods\n", stderr=""
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         kubectl_get("pods", namespace="apps")
 
@@ -752,7 +752,7 @@ class TestKubectlGet:
     ) -> None:
         kubeconfig = tmp_path / "config"
         kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
-        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
         monkeypatch.setenv("KUBECONFIG", "/etc/rancher/k3s/k3s.yaml")
         recorded: dict[str, Any] = {}
 
@@ -762,7 +762,7 @@ class TestKubectlGet:
                 args=args[0], returncode=0, stdout="pods\n", stderr=""
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         kubectl_get("pods")
 
@@ -773,7 +773,7 @@ class TestKubectlGet:
     ) -> None:
         kubeconfig = tmp_path / "config"
         kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
-        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
         recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -782,7 +782,7 @@ class TestKubectlGet:
                 args=args[0], returncode=0, stdout="pods\n", stderr=""
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         kubectl_get("pods", namespace="apps")
 
@@ -817,7 +817,7 @@ class TestKubectlRolloutStatus:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         kubectl_rollout_status("deployment/nginx", namespace="apps", timeout="300s")
 
@@ -838,7 +838,7 @@ class TestKubectlRolloutStatus:
     ) -> None:
         kubeconfig = tmp_path / "config"
         kubeconfig.write_text("apiVersion: v1\n", encoding="utf-8")
-        monkeypatch.setattr("devops_bot.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.DEFAULT_KUBECONFIG", kubeconfig)
         recorded: dict[str, Any] = {}
 
         def fake_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -850,7 +850,7 @@ class TestKubectlRolloutStatus:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.kubernetes.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.kubernetes.subprocess.run", fake_run)
 
         kubectl_rollout_status("deployment/nginx", namespace="apps", timeout="300s")
 

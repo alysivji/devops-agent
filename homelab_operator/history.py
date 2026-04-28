@@ -8,10 +8,9 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from .config import RUN_HISTORY_ENABLED, secret_manager
+from .config import RUN_HISTORY_ENABLED, RUN_HISTORY_ENV_VAR, secret_manager
 
 MAX_TEXT_LENGTH = 500
-RUN_HISTORY_ENV_VAR = "DEVOPS_AGENT_RUN_HISTORY_ENABLED"
 RUN_HISTORY_PATH = Path("docs/autonomous-devops-run-history.jsonl")
 
 type JSONPrimitive = None | bool | int | float | str

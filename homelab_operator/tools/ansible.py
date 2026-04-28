@@ -71,6 +71,9 @@ class SystemdServiceRestartResult(TypedDict):
 
 ALLOWED_SYSTEMD_SERVICES: Final[frozenset[str]] = frozenset(
     {
+        "homelab-operator",
+        "homelab-operator-worker",
+        "homelab-operator-web",
         "devops-agent",
         "devops-agent-worker",
         "devops-agent-web",

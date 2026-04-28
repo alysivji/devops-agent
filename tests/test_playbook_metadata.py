@@ -1,4 +1,4 @@
-from devops_bot.agents.playbook_metadata import SYSTEM_PROMPT, GeneratedPlaybookMetadata
+from homelab_operator.agents.playbook_metadata import SYSTEM_PROMPT, GeneratedPlaybookMetadata
 
 
 def test_metadata_prompt_requests_medium_one_line_description() -> None:

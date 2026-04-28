@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from devops_bot.tools import (
+from homelab_operator.tools import (
     git_create_branch,
     git_create_commit,
     git_list_commits,
@@ -33,13 +33,13 @@ def git_repo(tmp_path: Path) -> Path:
     with _chdir(repo_path):
         subprocess.run(["git", "init"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         subprocess.run(
-            ["git", "config", "user.name", "DevOps Agent Tests"],
+            ["git", "config", "user.name", "Homelab Operator Tests"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
         subprocess.run(
-            ["git", "config", "user.email", "devops-agent-tests@example.com"],
+            ["git", "config", "user.email", "homelab-operator-tests@example.com"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -192,14 +192,14 @@ class TestGitPush:
                 text=True,
             )
             subprocess.run(
-                ["git", "config", "user.name", "DevOps Agent Tests"],
+                ["git", "config", "user.name", "Homelab Operator Tests"],
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
             subprocess.run(
-                ["git", "config", "user.email", "devops-agent-tests@example.com"],
+                ["git", "config", "user.email", "homelab-operator-tests@example.com"],
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

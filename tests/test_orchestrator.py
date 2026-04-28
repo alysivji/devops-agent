@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Any
 
-from devops_bot.agents import orchestrator as orchestrator_module
-from devops_bot.agents.orchestrator import MAIN_SYSTEM_PROMPT, OrchestratorAgent
+from homelab_operator.agents import orchestrator as orchestrator_module
+from homelab_operator.agents.orchestrator import MAIN_SYSTEM_PROMPT, OrchestratorAgent
 
 
 class FakeAgent:

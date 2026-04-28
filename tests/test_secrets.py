@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from devops_bot.secrets import SecretNotFound, SecretsManager
+from homelab_operator.secrets import SecretNotFound, SecretsManager
 
 
 def write_env_file(tmp_path: Path, contents: str) -> Path:

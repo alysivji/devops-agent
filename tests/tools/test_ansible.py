@@ -4,8 +4,8 @@ from typing import Any, cast
 
 import pytest
 
-from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
-from devops_bot.tools import (
+from homelab_operator.history import RunHistory, reset_active_run_history, set_active_run_history
+from homelab_operator.tools import (
     ansible_list_inventory_groups,
     ansible_list_playbooks,
     ansible_run_playbook,
@@ -39,7 +39,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         cast(Any, ansible_run_playbook)("ansible/playbooks/hello-control.yaml")
 
@@ -69,7 +69,7 @@ class TestRunAnsiblePlaybook:
                 stderr="inventory parse failed",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         with pytest.raises(RuntimeError, match="inventory parse failed"):
             ansible_run_playbook("ansible/playbooks/hello-control.yaml")
@@ -85,7 +85,7 @@ class TestRunAnsiblePlaybook:
                 stderr="inventory parse failed",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         with pytest.raises(
             RuntimeError,
@@ -115,7 +115,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         with pytest.raises(RuntimeError) as exc_info:
             ansible_run_playbook("ansible/playbooks/hello-control.yaml")
@@ -131,7 +131,7 @@ class TestRunAnsiblePlaybook:
     ):
         monkeypatch.setattr("builtins.input", lambda _: "y")
         monkeypatch.setattr(
-            "devops_bot.tools.ansible._available_locales",
+            "homelab_operator.tools.ansible._available_locales",
             lambda: {"C", "POSIX", "en_US.UTF-8"},
         )
 
@@ -146,7 +146,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
         monkeypatch.setenv("LC_ALL", "C.UTF-8")
         monkeypatch.setenv("LANG", "C.UTF-8")
         monkeypatch.setenv("LC_CTYPE", "C.UTF-8")
@@ -188,7 +188,9 @@ class TestRunAnsiblePlaybook:
             encoding="utf-8",
         )
         monkeypatch.chdir(tmp_path)
-        monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+        monkeypatch.setattr(
+            "homelab_operator.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks")
+        )
         monkeypatch.setattr("builtins.input", lambda _: "y")
         monkeypatch.delenv("MINIO_ROOT_USER", raising=False)
         monkeypatch.setenv("MINIO_ROOT_PASSWORD", "os-password")
@@ -204,7 +206,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         ansible_run_playbook("ansible/playbooks/hello-control.yaml")
 
@@ -228,7 +230,7 @@ class TestRunAnsiblePlaybook:
                 stderr="",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         try:
             ansible_run_playbook("ansible/playbooks/hello-control.yaml")
@@ -253,7 +255,7 @@ class TestRunAnsiblePlaybook:
                 stderr="inventory parse failed",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         try:
             with pytest.raises(
@@ -345,7 +347,7 @@ class TestSystemdRestartService:
                 stdout = ""
             return subprocess.CompletedProcess(args=command, returncode=0, stdout=stdout, stderr="")
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         result = systemd_restart_service("prometheus")
 
@@ -371,7 +373,7 @@ class TestSystemdRestartService:
                 stderr="sudo: a password is required",
             )
 
-        monkeypatch.setattr("devops_bot.tools.ansible.subprocess.run", fake_run)
+        monkeypatch.setattr("homelab_operator.tools.ansible.subprocess.run", fake_run)
 
         with pytest.raises(RuntimeError, match="sudo: a password is required"):
             systemd_restart_service("prometheus")

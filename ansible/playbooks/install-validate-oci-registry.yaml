@@ -18,7 +18,7 @@
     registry_validate_metadata:
       name: local-oci-registry
       description: Host-level lightweight OCI registry foundation service on the control node
-      owner: devops-agent
+      owner: homelab-operator
       scope: control
       interface: http
     registry_reset: false

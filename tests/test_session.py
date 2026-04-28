@@ -2,8 +2,8 @@ from typing import Any, cast
 
 import pytest
 
-from devops_bot import session as session_module
-from devops_bot.session import build_session_manager
+from homelab_operator import session as session_module
+from homelab_operator.session import build_session_manager
 
 
 class FakeS3SessionManager:
@@ -28,7 +28,7 @@ def _patch_session_env(
 def test_build_session_manager_returns_none_when_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _patch_session_env(monkeypatch, {"DEVOPS_AGENT_SESSION_BACKEND": "none"})
+    _patch_session_env(monkeypatch, {"HOMELAB_OPERATOR_SESSION_BACKEND": "none"})
 
     assert build_session_manager("run-123") is None
 
@@ -39,12 +39,12 @@ def test_build_session_manager_requires_s3_bucket(
     _patch_session_env(
         monkeypatch,
         {
-            "DEVOPS_AGENT_SESSION_BACKEND": "s3",
-            "DEVOPS_AGENT_SESSION_S3_BUCKET": None,
+            "HOMELAB_OPERATOR_SESSION_BACKEND": "s3",
+            "HOMELAB_OPERATOR_SESSION_S3_BUCKET": None,
         },
     )
 
-    with pytest.raises(ValueError, match="DEVOPS_AGENT_SESSION_S3_BUCKET is required"):
+    with pytest.raises(ValueError, match="HOMELAB_OPERATOR_SESSION_S3_BUCKET is required"):
         build_session_manager("run-123")
 
 
@@ -56,14 +56,14 @@ def test_build_session_manager_configures_s3_compatible_endpoint(
     _patch_session_env(
         monkeypatch,
         {
-            "DEVOPS_AGENT_SESSION_BACKEND": "s3",
-            "DEVOPS_AGENT_SESSION_S3_BUCKET": "devops-agent-sessions",
-            "DEVOPS_AGENT_SESSION_S3_PREFIX": "local/",
-            "DEVOPS_AGENT_SESSION_S3_REGION": "us-east-1",
-            "DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL": "http://127.0.0.1:9000",
-            "DEVOPS_AGENT_SESSION_S3_ADDRESSING_STYLE": "path",
-            "DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID": "devops-agent",
-            "DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY": "local-minio-secret",
+            "HOMELAB_OPERATOR_SESSION_BACKEND": "s3",
+            "HOMELAB_OPERATOR_SESSION_S3_BUCKET": "homelab-operator-sessions",
+            "HOMELAB_OPERATOR_SESSION_S3_PREFIX": "local/",
+            "HOMELAB_OPERATOR_SESSION_S3_REGION": "us-east-1",
+            "HOMELAB_OPERATOR_SESSION_S3_ENDPOINT_URL": "http://127.0.0.1:9000",
+            "HOMELAB_OPERATOR_SESSION_S3_ADDRESSING_STYLE": "path",
+            "HOMELAB_OPERATOR_SESSION_S3_ACCESS_KEY_ID": "homelab-operator",
+            "HOMELAB_OPERATOR_SESSION_S3_SECRET_ACCESS_KEY": "local-minio-secret",
         },
     )
 
@@ -72,11 +72,11 @@ def test_build_session_manager_configures_s3_compatible_endpoint(
     assert isinstance(manager, FakeS3SessionManager)
     call = FakeS3SessionManager.calls[0]
     assert call["session_id"] == "run-123"
-    assert call["bucket"] == "devops-agent-sessions"
+    assert call["bucket"] == "homelab-operator-sessions"
     assert call["prefix"] == "local/"
     assert call["region_name"] == "us-east-1"
     assert call["boto_session"].client("s3").meta.endpoint_url == "http://127.0.0.1:9000"
-    assert call["boto_session"].get_credentials().access_key == "devops-agent"
+    assert call["boto_session"].get_credentials().access_key == "homelab-operator"
     assert call["boto_client_config"].signature_version == "s3v4"
     assert call["boto_client_config"].s3 == {"addressing_style": "path"}
 
@@ -91,8 +91,8 @@ def test_build_session_manager_uses_default_s3_credentials(
     _patch_session_env(
         monkeypatch,
         {
-            "DEVOPS_AGENT_SESSION_BACKEND": "s3",
-            "DEVOPS_AGENT_SESSION_S3_BUCKET": "devops-agent-sessions",
+            "HOMELAB_OPERATOR_SESSION_BACKEND": "s3",
+            "HOMELAB_OPERATOR_SESSION_S3_BUCKET": "homelab-operator-sessions",
         },
     )
 
@@ -110,10 +110,10 @@ def test_session_storage_event_details_redacts_endpoint_credentials(
     _patch_session_env(
         monkeypatch,
         {
-            "DEVOPS_AGENT_SESSION_BACKEND": "s3",
-            "DEVOPS_AGENT_SESSION_S3_BUCKET": "devops-agent-sessions",
-            "DEVOPS_AGENT_SESSION_S3_PREFIX": "devops-agent/",
-            "DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL": "https://user:pass@example.com:9000",
+            "HOMELAB_OPERATOR_SESSION_BACKEND": "s3",
+            "HOMELAB_OPERATOR_SESSION_S3_BUCKET": "homelab-operator-sessions",
+            "HOMELAB_OPERATOR_SESSION_S3_PREFIX": "homelab-operator/",
+            "HOMELAB_OPERATOR_SESSION_S3_ENDPOINT_URL": "https://user:pass@example.com:9000",
         },
     )
 
@@ -121,8 +121,8 @@ def test_session_storage_event_details_redacts_endpoint_credentials(
 
     assert details == {
         "backend": "s3",
-        "bucket": "devops-agent-sessions",
-        "prefix": "devops-agent/",
+        "bucket": "homelab-operator-sessions",
+        "prefix": "homelab-operator/",
         "endpoint_url": "https://[REDACTED]@example.com:9000",
         "session_id": "run-123",
     }

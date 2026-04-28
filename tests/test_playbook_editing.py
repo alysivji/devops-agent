@@ -3,16 +3,16 @@ from typing import Any
 
 import pytest
 
-from devops_bot.agents.playbook_editor import (
+from homelab_operator.agents.playbook_editor import (
     SYSTEM_PROMPT,
     EditAnsiblePlaybookAgent,
     EditedAnsiblePlaybook,
 )
-from devops_bot.history import RunHistory, reset_active_run_history, set_active_run_history
-from devops_bot.tools.playbooks import (
+from homelab_operator.history import RunHistory, reset_active_run_history, set_active_run_history
+from homelab_operator.tools.playbooks import (
     EditAnsiblePlaybook,
 )
-from devops_bot.workflow import (
+from homelab_operator.workflow import (
     WorkflowEvent,
     WorkflowRuntime,
     reset_workflow_runtime,
@@ -79,8 +79,8 @@ def test_ansible_edit_playbook_records_approved_write(
     playbook_path = playbooks_dir / "hello-control.yaml"
     playbook_path.write_text(ORIGINAL_PLAYBOOK, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
-    monkeypatch.setattr("devops_bot.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("homelab_operator.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("homelab_operator.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
     monkeypatch.setattr("builtins.input", lambda _: "y")
 
     syntax_checked: list[str] = []
@@ -135,8 +135,8 @@ def test_ansible_edit_playbook_records_declined_write(
     playbook_path = playbooks_dir / "hello-control.yaml"
     playbook_path.write_text(ORIGINAL_PLAYBOOK, encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
-    monkeypatch.setattr("devops_bot.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("homelab_operator.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("homelab_operator.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
     monkeypatch.setattr("builtins.input", lambda _: "n")
 
     playbook_tool = EditAnsiblePlaybook(
@@ -183,8 +183,8 @@ def test_ansible_edit_playbook_requires_registry_path(
     playbooks_dir = tmp_path / "ansible" / "playbooks"
     playbooks_dir.mkdir(parents=True)
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("devops_bot.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
-    monkeypatch.setattr("devops_bot.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("homelab_operator.tools.ansible.PLAYBOOKS_DIR", Path("ansible/playbooks"))
+    monkeypatch.setattr("homelab_operator.tools.playbooks.PLAYBOOKS_DIR", Path("ansible/playbooks"))
 
     playbook_tool = EditAnsiblePlaybook(
         editor=StubEditor(
@@ -264,8 +264,8 @@ def test_editor_agent_has_web_research_tools(monkeypatch: pytest.MonkeyPatch) ->
         captured.update(kwargs)
         return object()
 
-    monkeypatch.setattr("devops_bot.agents.playbook_editor.build_model", lambda **_: object())
-    monkeypatch.setattr("devops_bot.agents.playbook_editor.build_agent", fake_build_agent)
+    monkeypatch.setattr("homelab_operator.agents.playbook_editor.build_model", lambda **_: object())
+    monkeypatch.setattr("homelab_operator.agents.playbook_editor.build_agent", fake_build_agent)
 
     EditAnsiblePlaybookAgent()
 

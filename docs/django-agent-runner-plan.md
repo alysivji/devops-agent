@@ -31,7 +31,7 @@ Django web chat
   -> existing agent/tools
 ```
 
-Django owns the web UI, persisted workflow state, approval UI, locking, and job visibility. Strands owns persisted agent messages and state. Celery owns long-running execution. The existing `devops_bot` CLI and agent/tool modules remain the core execution path.
+Django owns the web UI, persisted workflow state, approval UI, locking, and job visibility. Strands owns persisted agent messages and state. Celery owns long-running execution. The existing `homelab_operator` CLI and agent/tool modules remain the core execution path.
 
 ## First Slice
 

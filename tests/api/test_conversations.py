@@ -26,8 +26,8 @@ from apps.api.conversations.services import (
     submit_conversation_message,
 )
 from apps.api.conversations.tasks import run_conversation_job
-from devops_bot.approval import WaitingForApproval
-from devops_bot.workflow import WorkflowResult
+from homelab_operator.approval import WaitingForApproval
+from homelab_operator.workflow import WorkflowResult
 
 
 class _AsyncResult:

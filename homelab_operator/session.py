@@ -9,26 +9,26 @@ from strands.session.session_manager import SessionManager
 
 from .config import (
     SESSION_BACKEND,
+    SESSION_BACKEND_ENV_VAR,
     SESSION_S3_ACCESS_KEY_ID,
+    SESSION_S3_ACCESS_KEY_ID_ENV_VAR,
     SESSION_S3_ADDRESSING_STYLE,
+    SESSION_S3_ADDRESSING_STYLE_ENV_VAR,
     SESSION_S3_BUCKET,
+    SESSION_S3_BUCKET_ENV_VAR,
     SESSION_S3_ENDPOINT_URL,
+    SESSION_S3_ENDPOINT_URL_ENV_VAR,
     SESSION_S3_PREFIX,
+    SESSION_S3_PREFIX_ENV_VAR,
     SESSION_S3_REGION,
+    SESSION_S3_REGION_ENV_VAR,
     SESSION_S3_SECRET_ACCESS_KEY,
+    SESSION_S3_SECRET_ACCESS_KEY_ENV_VAR,
     SESSION_S3_SESSION_TOKEN,
+    SESSION_S3_SESSION_TOKEN_ENV_VAR,
     secret_manager,
 )
 
-SESSION_BACKEND_ENV_VAR = "DEVOPS_AGENT_SESSION_BACKEND"
-SESSION_S3_BUCKET_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_BUCKET"
-SESSION_S3_PREFIX_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_PREFIX"
-SESSION_S3_REGION_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_REGION"
-SESSION_S3_ENDPOINT_URL_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_ENDPOINT_URL"
-SESSION_S3_ADDRESSING_STYLE_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_ADDRESSING_STYLE"
-SESSION_S3_ACCESS_KEY_ID_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_ACCESS_KEY_ID"
-SESSION_S3_SECRET_ACCESS_KEY_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_SECRET_ACCESS_KEY"
-SESSION_S3_SESSION_TOKEN_ENV_VAR = "DEVOPS_AGENT_SESSION_S3_SESSION_TOKEN"
 SESSION_S3_BACKEND = "s3"
 
 
@@ -52,13 +52,14 @@ def build_session_manager(session_id: str) -> SessionManager | None:
 
     if settings.backend != SESSION_S3_BACKEND:
         raise ValueError(
-            "Unsupported DEVOPS_AGENT_SESSION_BACKEND="
+            "Unsupported HOMELAB_OPERATOR_SESSION_BACKEND="
             f"{settings.backend!r}; expected 'none' or 's3'"
         )
 
     if not settings.bucket:
         raise ValueError(
-            "DEVOPS_AGENT_SESSION_S3_BUCKET is required when DEVOPS_AGENT_SESSION_BACKEND=s3"
+            "HOMELAB_OPERATOR_SESSION_S3_BUCKET is required when "
+            "HOMELAB_OPERATOR_SESSION_BACKEND=s3"
         )
 
     return S3SessionManager(
@@ -96,15 +97,9 @@ def _load_session_storage_settings() -> _SessionStorageSettings:
         prefix=_config(SESSION_S3_PREFIX_ENV_VAR, SESSION_S3_PREFIX) or "",
         region=_config(SESSION_S3_REGION_ENV_VAR, SESSION_S3_REGION),
         endpoint_url=_config(SESSION_S3_ENDPOINT_URL_ENV_VAR, SESSION_S3_ENDPOINT_URL),
-        addressing_style=_config(
-            SESSION_S3_ADDRESSING_STYLE_ENV_VAR,
-            SESSION_S3_ADDRESSING_STYLE,
-        )
+        addressing_style=_config(SESSION_S3_ADDRESSING_STYLE_ENV_VAR, SESSION_S3_ADDRESSING_STYLE)
         or "path",
-        access_key_id=_config(
-            SESSION_S3_ACCESS_KEY_ID_ENV_VAR,
-            SESSION_S3_ACCESS_KEY_ID,
-        ),
+        access_key_id=_config(SESSION_S3_ACCESS_KEY_ID_ENV_VAR, SESSION_S3_ACCESS_KEY_ID),
         secret_access_key=_config(
             SESSION_S3_SECRET_ACCESS_KEY_ENV_VAR,
             SESSION_S3_SECRET_ACCESS_KEY,

@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from devops_bot.agents.playbook_generator import (
+from homelab_operator.agents.playbook_generator import (
     SYSTEM_PROMPT,
     GeneratedPlaybookYaml,
     GeneratePlaybookAgent,
@@ -163,8 +163,10 @@ def test_generator_agent_exposes_playbook_configuration_skill(
         captured.update(kwargs)
         return object()
 
-    monkeypatch.setattr("devops_bot.agents.playbook_generator.build_model", lambda **_: object())
-    monkeypatch.setattr("devops_bot.agents.playbook_generator.build_agent", fake_build_agent)
+    monkeypatch.setattr(
+        "homelab_operator.agents.playbook_generator.build_model", lambda **_: object()
+    )
+    monkeypatch.setattr("homelab_operator.agents.playbook_generator.build_agent", fake_build_agent)
 
     GeneratePlaybookAgent()
 
